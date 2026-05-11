@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,8 +17,8 @@ const formSchema = z.object({
   phone: z.string().min(10, "Valid phone number required"),
   city: z.string().min(2, "City is required"),
   primaryGoal: z.enum([
-    PatientSignupInputPrimaryGoal.weight_loss, 
-    PatientSignupInputPrimaryGoal.diabetes_management, 
+    PatientSignupInputPrimaryGoal.weight_loss,
+    PatientSignupInputPrimaryGoal.diabetes_management,
     PatientSignupInputPrimaryGoal.both
   ], {
     required_error: "Please select a goal",
@@ -30,10 +30,9 @@ const formSchema = z.object({
 
 export default function PatientSignup() {
   const { toast } = useToast();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const signup = usePatientSignup();
 
-  // Extract plan from URL if present
   const queryParams = new URLSearchParams(window.location.search);
   const defaultPlan = queryParams.get("plan") || "comprehensive";
 
@@ -65,7 +64,6 @@ export default function PatientSignup() {
         });
       },
       onError: () => {
-        // Fallback to demo mode
         localStorage.setItem("cloudberry_token", "demo_token");
         setLocation("/patient/dashboard");
         toast({
@@ -77,62 +75,59 @@ export default function PatientSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-blue-50/50 flex flex-col md:flex-row">
       {/* Left Panel */}
-      <div className="w-full md:w-5/12 lg:w-1/2 bg-primary/5 p-8 md:p-12 lg:p-20 flex flex-col border-b md:border-b-0 md:border-r border-border">
-        <Link href="/" className="inline-flex items-center gap-2 mb-12">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-serif text-xl italic font-bold">C</div>
-          <span className="font-serif text-2xl tracking-tight text-foreground font-bold">Cloudberry</span>
-        </Link>
-        
-        <div className="flex-grow">
-          <h1 className="text-3xl lg:text-4xl font-serif font-bold mb-6 leading-tight">
-            Doctor-Led Care for Sustainable Weight & Diabetes Management
-          </h1>
-          <p className="text-muted-foreground text-lg mb-10">
-            Join the platform that treats metabolic health holistically through clinical oversight and daily support.
-          </p>
-          
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Personalized Plans</h3>
-                <p className="text-muted-foreground text-sm mt-1">Protocols tailored to your unique biology, not generic diets.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Continuous Support</h3>
-                <p className="text-muted-foreground text-sm mt-1">Daily accountability and habit building, not just monthly visits.</p>
-              </div>
-            </div>
+      <div className="w-full md:w-5/12 lg:w-1/2 relative flex flex-col border-b md:border-b-0 md:border-r border-border/40 overflow-hidden">
+        {/* Background image with overlay */}
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80"
+            alt="Doctor consultation"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/80 via-primary/60 to-blue-700/70" />
+        </div>
 
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Coordinated Care Team</h3>
-                <p className="text-muted-foreground text-sm mt-1">Doctors, nutritionists, and fitness coaches working together for you.</p>
-              </div>
+        <div className="relative z-10 p-8 md:p-12 lg:p-16 flex flex-col h-full min-h-[340px] md:min-h-screen">
+          <Link href="/" className="inline-flex items-center gap-2 mb-10">
+            <span className="font-sans text-2xl font-bold tracking-tight text-white">Cloudberry</span>
+          </Link>
+
+          <div className="flex-grow flex flex-col justify-center">
+            <h1 className="text-3xl lg:text-4xl font-bold mb-5 leading-tight text-white">
+              Doctor-Led Care for Sustainable Weight & Diabetes Management
+            </h1>
+            <p className="text-white/80 text-base mb-10">
+              Join the platform that treats metabolic health holistically through clinical oversight and daily support.
+            </p>
+
+            <div className="space-y-5">
+              {[
+                { title: "Personalized Plans", desc: "Protocols tailored to your unique biology, not generic diets." },
+                { title: "Continuous Support", desc: "Daily accountability and habit building, not just monthly visits." },
+                { title: "Coordinated Care Team", desc: "Doctors, nutritionists, and fitness coaches working together for you." },
+              ].map((item) => (
+                <div key={item.title} className="flex items-start gap-4">
+                  <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <CheckCircle2 className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white text-base">{item.title}</h3>
+                    <p className="text-white/70 text-sm mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
       {/* Right Panel - Form */}
-      <div className="w-full md:w-7/12 lg:w-1/2 p-8 md:p-12 lg:p-20 overflow-y-auto">
+      <div className="w-full md:w-7/12 lg:w-1/2 p-8 md:p-12 lg:p-16 overflow-y-auto">
         <div className="max-w-md mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-semibold">Start Your Journey</h2>
-            <Link href="/patient/signin" className="text-sm text-primary font-medium hover:underline">
+            <h2 className="text-2xl font-bold text-foreground">Start Your Journey</h2>
+            <Link href="/patient/signin" className="text-sm text-primary font-semibold hover:underline">
               Log in instead
             </Link>
           </div>
@@ -144,38 +139,38 @@ export default function PatientSignup() {
                 name="fullName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name *</FormLabel>
+                    <FormLabel className="font-medium">Full Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} data-testid="input-signup-name" />
+                      <Input placeholder="John Doe" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mobile Number *</FormLabel>
+                      <FormLabel className="font-medium">Mobile Number *</FormLabel>
                       <FormControl>
-                        <Input placeholder="+91" {...field} data-testid="input-signup-phone" />
+                        <Input placeholder="+91" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-phone" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address</FormLabel>
+                      <FormLabel className="font-medium">Email Address</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="john@example.com" {...field} data-testid="input-signup-email" />
+                        <Input type="email" placeholder="john@example.com" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-email" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -183,15 +178,15 @@ export default function PatientSignup() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City *</FormLabel>
+                      <FormLabel className="font-medium">City *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Indore" {...field} data-testid="input-signup-city" />
+                        <Input placeholder="Indore" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-city" />
                       </FormControl>
                       <p className="text-[10px] text-muted-foreground mt-1">Currently available in Indore. Expanding soon.</p>
                       <FormMessage />
@@ -204,9 +199,9 @@ export default function PatientSignup() {
                   name="preferredCallbackTime"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Preferred Callback Time</FormLabel>
+                      <FormLabel className="font-medium">Preferred Callback Time</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. 2 PM - 5 PM" {...field} data-testid="input-signup-time" />
+                        <Input placeholder="e.g. 2 PM - 5 PM" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-time" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -219,10 +214,10 @@ export default function PatientSignup() {
                 name="primaryGoal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Primary Goal *</FormLabel>
+                    <FormLabel className="font-medium">Primary Goal *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-signup-goal">
+                        <SelectTrigger className="rounded-xl h-11 border-border/60" data-testid="select-signup-goal">
                           <SelectValue placeholder="Select your main goal" />
                         </SelectTrigger>
                       </FormControl>
@@ -242,10 +237,10 @@ export default function PatientSignup() {
                 name="selectedPlan"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preferred Program</FormLabel>
+                    <FormLabel className="font-medium">Preferred Program</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-signup-plan">
+                        <SelectTrigger className="rounded-xl h-11 border-border/60" data-testid="select-signup-plan">
                           <SelectValue placeholder="Select a program (optional)" />
                         </SelectTrigger>
                       </FormControl>
@@ -261,12 +256,17 @@ export default function PatientSignup() {
                 )}
               />
 
-              <Button type="submit" className="w-full mt-8 rounded-full h-12 text-md" disabled={signup.isPending} data-testid="btn-signup-submit">
+              <Button
+                type="submit"
+                className="w-full mt-6 rounded-full h-12 text-base bg-primary hover:bg-primary/90 shadow-sm"
+                disabled={signup.isPending}
+                data-testid="btn-signup-submit"
+              >
                 {signup.isPending ? "Setting up..." : "Start My Journey"}
               </Button>
-              
-              <p className="text-xs text-center text-muted-foreground mt-4">
-                By submitting this form, you agree to our Terms of Service and Privacy Policy. Our team will call you to complete your onboarding.
+
+              <p className="text-xs text-center text-muted-foreground mt-3">
+                By submitting, you agree to our Terms of Service and Privacy Policy. Our team will call you to complete onboarding.
               </p>
             </form>
           </Form>

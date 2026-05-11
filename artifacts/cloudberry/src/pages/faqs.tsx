@@ -37,13 +37,14 @@ export default function FaqsPage() {
 
   return (
     <MarketingLayout>
-      <div className="bg-gradient-to-b from-muted/50 to-blue-soft/20 py-16 border-b">
+      <div className="bg-gradient-to-br from-amber-50/60 via-white to-blue-50/60 py-16 border-b border-border/30">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Frequently Asked Questions</h1>
           <p className="text-lg text-muted-foreground">Everything you need to know about Cloudberry's metabolic care programs.</p>
         </div>
       </div>
 
+      <div className="bg-gradient-to-b from-white to-blue-50/20">
       <div className="container mx-auto px-4 md:px-6 max-w-3xl py-16">
         <Accordion type="single" collapsible className="w-full space-y-4">
           {faqs.map((faq, i) => (
@@ -70,6 +71,7 @@ export default function FaqsPage() {
           </Button>
           <p className="text-xs text-muted-foreground mt-3">Currently available in Indore. Expansion to additional cities planned gradually.</p>
         </div>
+      </div>
       </div>
     </MarketingLayout>
   );

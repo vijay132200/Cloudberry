@@ -49,52 +49,70 @@ export default function CoachSignin() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50/60 via-white to-blue-50/60 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-serif text-xl italic font-bold">C</div>
-            <span className="font-serif text-2xl tracking-tight text-foreground font-bold">Cloudberry</span>
+          <Link href="/" className="inline-block mb-4">
+            <span className="font-sans text-2xl font-bold tracking-tight text-foreground">Cloudberry</span>
           </Link>
+          <p className="text-muted-foreground text-sm">Coach Portal</p>
         </div>
 
-        <Card className="border-border shadow-md">
-          <CardHeader className="text-center border-b pb-6">
-            <CardTitle className="text-xl font-semibold">Coach Portal</CardTitle>
+        <Card className="border-border/60 shadow-lg bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-blue-400" />
+          <CardHeader className="text-center border-b border-border/40 pb-5 pt-6 bg-gradient-to-br from-primary/5 to-blue-50/50">
+            <CardTitle className="text-xl font-bold text-foreground">Coach Portal</CardTitle>
             <CardDescription>Sign in to manage your patients</CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 px-6 pb-7">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Work Email</FormLabel>
+                      <FormLabel className="font-medium">Work Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="coach@cloudberry.health" {...field} data-testid="input-coach-email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} data-testid="input-coach-password" />
+                        <Input
+                          type="email"
+                          placeholder="coach@cloudberry.health"
+                          className="rounded-xl h-11 border-border/60"
+                          {...field}
+                          data-testid="input-coach-email"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button type="submit" className="w-full mt-6" size="lg" disabled={signin.isPending} data-testid="btn-coach-submit">
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-medium">Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          className="rounded-xl h-11 border-border/60"
+                          {...field}
+                          data-testid="input-coach-password"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full mt-4 rounded-full h-12 text-base"
+                  disabled={signin.isPending}
+                  data-testid="btn-coach-submit"
+                >
                   {signin.isPending ? "Authenticating..." : "Access Portal"}
                 </Button>
               </form>

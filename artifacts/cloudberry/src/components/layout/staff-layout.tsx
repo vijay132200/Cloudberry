@@ -18,35 +18,42 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
     setLocation(`/${type}/signin`);
   };
 
-  const navItems = type === "coach" 
+  const navItems = type === "coach"
     ? [{ name: "My Patients", href: "/coach/patients", icon: Users }]
     : [{ name: "Command Center", href: "/ops/dashboard", icon: LayoutDashboard }];
 
+  const isOps = type === "ops";
+
   return (
-    <div className={`min-h-screen ${type === 'ops' ? 'bg-slate-950 text-slate-200' : 'bg-muted/30'} flex flex-col font-sans`}>
-      <header className={`border-b sticky top-0 z-20 px-4 py-3 flex items-center justify-between ${type === 'ops' ? 'bg-slate-900 border-slate-800' : 'bg-card'}`}>
+    <div className={`min-h-screen flex flex-col font-sans ${isOps ? "bg-slate-950 text-slate-200" : "bg-gradient-to-br from-amber-50/40 via-white to-blue-50/40"}`}>
+      <header className={`border-b sticky top-0 z-20 px-4 py-3 flex items-center justify-between ${
+        isOps
+          ? "bg-slate-900 border-slate-800"
+          : "bg-white/90 backdrop-blur-sm border-border/60 shadow-sm"
+      }`}>
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-md flex items-center justify-center font-serif text-xl italic font-bold ${type === 'ops' ? 'bg-primary text-primary-foreground' : 'bg-primary text-primary-foreground rounded-full'}`}>C</div>
-            <span className={`font-serif text-xl tracking-tight font-bold ${type === 'ops' ? 'text-white' : 'text-foreground'}`}>Cloudberry</span>
+            <span className={`font-sans text-xl font-bold tracking-tight ${isOps ? "text-white" : "text-foreground"}`}>
+              Cloudberry
+            </span>
           </Link>
-          <Badge variant="outline" className={type === 'ops' ? 'border-slate-700 text-slate-300' : 'bg-primary/10 text-primary border-none'}>
-            {type === 'ops' ? 'Operations' : 'Coach Portal'}
+          <Badge variant="outline" className={isOps ? "border-slate-700 text-slate-300" : "bg-primary/10 text-primary border-primary/20"}>
+            {isOps ? "Operations" : "Coach Portal"}
           </Badge>
         </div>
-        
+
         <div className="flex items-center gap-6">
           <nav className="hidden md:flex items-center gap-4">
             {navItems.map((item) => {
               const isActive = location === item.href;
               return (
-                <Link 
-                  key={item.name} 
+                <Link
+                  key={item.name}
                   href={item.href}
                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive 
-                      ? type === 'ops' ? "bg-slate-800 text-white" : "bg-primary/10 text-primary" 
-                      : type === 'ops' ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-foreground"
+                    isActive
+                      ? isOps ? "bg-slate-800 text-white" : "bg-primary/10 text-primary"
+                      : isOps ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -55,10 +62,10 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
               );
             })}
           </nav>
-          
-          <button 
-            onClick={handleLogout} 
-            className={`flex items-center gap-2 text-sm ${type === 'ops' ? 'text-slate-400 hover:text-white' : 'text-muted-foreground hover:text-foreground'}`}
+
+          <button
+            onClick={handleLogout}
+            className={`flex items-center gap-2 text-sm ${isOps ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-foreground"}`}
           >
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Sign Out</span>

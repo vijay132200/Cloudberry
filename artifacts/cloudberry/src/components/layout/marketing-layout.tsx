@@ -29,6 +29,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
     { name: "Programs & Pricing", href: "/#pricing" },
     { name: "Patient Portal", href: "/patient/signin" },
     { name: "Physician Portal", href: "/physician" },
+    { name: "Operations Portal", href: "/ops/signin" },
     { name: "Blogs", href: "/blogs" },
     { name: "FAQs", href: "/faqs" },
     { name: "About Us", href: "/about" },
@@ -50,12 +51,16 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-6">
+          <nav className="hidden lg:flex items-center gap-5">
             {navLinks.map((link) => (
-              <Link 
-                key={link.name} 
+              <Link
+                key={link.name}
                 href={link.href}
-                className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
+                className={`text-sm font-medium transition-colors ${
+                  link.name === "Operations Portal"
+                    ? "text-slate-500 hover:text-slate-800"
+                    : "text-foreground/80 hover:text-primary"
+                }`}
               >
                 {link.name}
               </Link>
@@ -66,7 +71,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           {/* Mobile Menu Toggle */}
-          <button 
+          <button
             className="lg:hidden z-50 p-2 -mr-2 text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
@@ -78,10 +83,10 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
           <div className={`fixed inset-0 bg-background z-40 flex flex-col pt-24 px-6 transition-transform duration-300 ease-in-out lg:hidden ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             <nav className="flex flex-col gap-6 text-lg">
               {navLinks.map((link) => (
-                <Link 
-                  key={link.name} 
+                <Link
+                  key={link.name}
                   href={link.href}
-                  className="font-medium text-foreground border-b pb-2"
+                  className={`font-medium border-b pb-2 ${link.name === "Operations Portal" ? "text-slate-500" : "text-foreground"}`}
                 >
                   {link.name}
                 </Link>
@@ -109,7 +114,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 Doctor-led metabolic care for sustainable health improvement.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-8 md:col-span-2 lg:col-span-1 justify-between md:justify-around">
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Platform</h4>
@@ -117,6 +122,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 <Link href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs</Link>
                 <Link href="/faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</Link>
                 <Link href="/physician" className="text-white/60 hover:text-white text-sm transition-colors">For Physicians</Link>
+                <Link href="/ops/signin" className="text-white/60 hover:text-white text-sm transition-colors">Operations Portal</Link>
               </div>
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Legal</h4>
@@ -131,7 +137,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
               <p className="text-white/40 text-xs">Social links coming soon.</p>
             </div>
           </div>
-          
+
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/40">
             <p className="max-w-2xl text-center md:text-left">
               Cloudberry is a digital health platform providing doctor-led metabolic care. All medical decisions are made by licensed physicians. This service is not a substitute for emergency medical care.
@@ -141,7 +147,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
 
-      {/* Floating Get Started CTA - desktop */}
+      {/* Get Started Dialog */}
       <Dialog open={getStartedOpen} onOpenChange={setGetStartedOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -164,6 +170,15 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                   <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors" />
                 </div>
                 <p className="text-sm text-muted-foreground">Explore Partnership → Learn how Cloudberry supports long-term patient adherence.</p>
+              </div>
+            </Link>
+            <Link href="/ops/signin" onClick={() => setGetStartedOpen(false)}>
+              <div className="border rounded-2xl p-6 hover:border-slate-400 hover:bg-slate-50 transition-all cursor-pointer group">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-lg text-slate-700">Operations Portal</span>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-slate-700 transition-colors" />
+                </div>
+                <p className="text-sm text-muted-foreground">Staff login → Access the operations command center.</p>
               </div>
             </Link>
           </div>

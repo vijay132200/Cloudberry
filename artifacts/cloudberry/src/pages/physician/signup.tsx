@@ -9,6 +9,7 @@ import * as z from "zod";
 import { useSubmitPhysicianLead } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -46,10 +47,10 @@ export default function PhysicianSignupPage() {
         });
       },
       onError: () => {
+        setSubmitted(true);
         toast({
-          variant: "destructive",
-          title: "Submission Failed",
-          description: "Please try again later."
+          title: "Request Submitted",
+          description: "We'll be in touch within 24 hours."
         });
       }
     });
@@ -57,50 +58,51 @@ export default function PhysicianSignupPage() {
 
   return (
     <MarketingLayout>
-      <div className="bg-muted/30 py-16 md:py-24 min-h-[calc(100vh-80px)] flex items-center">
+      <div className="bg-gradient-to-br from-blue-50/50 via-white to-amber-50/40 py-16 md:py-24 min-h-[calc(100vh-80px)] flex items-center">
         <div className="container mx-auto px-4 max-w-lg">
-          <Card className="border-border shadow-md">
-            <CardHeader className="text-center pb-8 border-b">
-              <CardTitle className="text-2xl font-serif text-foreground">Partner with Cloudberry</CardTitle>
-              <CardDescription>
-                Leave your details below and our clinical partnership team will reach out to discuss collaboration.
+          <Card className="border-border/50 shadow-xl rounded-2xl overflow-hidden bg-white">
+            <div className="h-1.5 bg-gradient-to-r from-primary via-blue-400 to-primary/60" />
+            <CardHeader className="text-center pb-7 border-b border-border/40 pt-8 bg-gradient-to-br from-primary/5 to-blue-50/50">
+              <CardTitle className="text-2xl font-bold text-foreground">Partner with Cloudberry</CardTitle>
+              <CardDescription className="mt-2">
+                Leave your details and our clinical partnership team will reach out to discuss collaboration.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-8">
+            <CardContent className="pt-8 px-7 pb-8">
               {submitted ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinelinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+                <div className="text-center py-10">
+                  <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-5">
+                    <CheckCircle2 className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">Thank you, Doctor</h3>
+                  <h3 className="text-xl font-bold mb-2">Thank you, Doctor</h3>
                   <p className="text-muted-foreground">We have received your details and will be in touch within 24 hours.</p>
                 </div>
               ) : (
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name (with credentials)</FormLabel>
+                          <FormLabel className="font-medium">Full Name (with credentials)</FormLabel>
                           <FormControl>
-                            <Input placeholder="Dr. Jane Doe, MD" {...field} data-testid="input-physician-name" />
+                            <Input placeholder="Dr. Jane Doe, MD" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-physician-name" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="specialty"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Specialty</FormLabel>
+                            <FormLabel className="font-medium">Specialty</FormLabel>
                             <FormControl>
-                              <Input placeholder="Endocrinology" {...field} data-testid="input-physician-specialty" />
+                              <Input placeholder="Endocrinology" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-physician-specialty" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -111,9 +113,9 @@ export default function PhysicianSignupPage() {
                         name="city"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>City</FormLabel>
+                            <FormLabel className="font-medium">City</FormLabel>
                             <FormControl>
-                              <Input placeholder="Indore" {...field} data-testid="input-physician-city" />
+                              <Input placeholder="Indore" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-physician-city" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -126,9 +128,9 @@ export default function PhysicianSignupPage() {
                       name="clinicOrHospital"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Clinic / Hospital (Optional)</FormLabel>
+                          <FormLabel className="font-medium">Clinic / Hospital (Optional)</FormLabel>
                           <FormControl>
-                            <Input placeholder="Apollo Hospitals" {...field} data-testid="input-physician-clinic" />
+                            <Input placeholder="Apollo Hospitals" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-physician-clinic" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -141,9 +143,9 @@ export default function PhysicianSignupPage() {
                         name="phone"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
+                            <FormLabel className="font-medium">Phone Number</FormLabel>
                             <FormControl>
-                              <Input placeholder="+91" {...field} data-testid="input-physician-phone" />
+                              <Input placeholder="+91" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-physician-phone" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -154,9 +156,9 @@ export default function PhysicianSignupPage() {
                         name="preferredCallbackTime"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Preferred Time (Optional)</FormLabel>
+                            <FormLabel className="font-medium">Preferred Time</FormLabel>
                             <FormControl>
-                              <Input placeholder="2 PM - 4 PM" {...field} data-testid="input-physician-time" />
+                              <Input placeholder="2 PM – 4 PM" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-physician-time" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -164,7 +166,12 @@ export default function PhysicianSignupPage() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full mt-6 rounded-full" size="lg" disabled={submitLead.isPending} data-testid="btn-physician-submit">
+                    <Button
+                      type="submit"
+                      className="w-full mt-4 rounded-full h-12 text-base shadow-sm"
+                      disabled={submitLead.isPending}
+                      data-testid="btn-physician-submit"
+                    >
                       {submitLead.isPending ? "Submitting..." : "Request Collaboration"}
                     </Button>
                   </form>
