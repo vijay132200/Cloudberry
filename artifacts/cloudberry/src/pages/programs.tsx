@@ -108,7 +108,7 @@ const whatIsIncluded = [
     title: "Movement Guidance",
     desc: "A fitness coach creates practical, achievable routines designed around your current fitness level and daily schedule.",
     plans: ["comprehensive", "premium"],
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=500&q=80",
+    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=500&q=80",
   },
   {
     icon: <Activity className="w-6 h-6 text-primary" />,
@@ -338,7 +338,7 @@ export default function ProgramsPage() {
       {/* CTA */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?auto=format&fit=crop&w=1400&q=80" alt="CTA" className="w-full h-full object-cover" />
+          <img src="https://images.unsplash.com/photo-1551190822-a9333d879b1f?auto=format&fit=crop&w=1400&q=80" alt="CTA" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/80 to-foreground/80" />
         </div>
         <div className="container mx-auto px-4 md:px-6 relative z-10 text-center">

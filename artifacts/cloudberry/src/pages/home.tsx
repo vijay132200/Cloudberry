@@ -13,7 +13,7 @@ const carouselFrames = [
     title: "Doctor-Led Care",
     overlay: "Medical care built around your long-term health goals.",
     bg: "from-emerald-900/70 to-emerald-700/50",
-    image: "https://images.unsplash.com/photo-1638202993928-7d1c7a29b47e?auto=format&fit=crop&w=900&q=80",
+    image: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=900&q=80",
     tag: "👨‍⚕️ Physician-Supervised",
   },
   {
@@ -27,7 +27,7 @@ const carouselFrames = [
     title: "Daily Accountability",
     overlay: "Small daily actions that create sustainable, lasting health change.",
     bg: "from-teal-900/70 to-teal-700/50",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=900&q=80",
+    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80",
     tag: "🏃 Fitness Coaching",
   },
   {
@@ -57,7 +57,7 @@ const teamMembers = [
   {
     role: "Fitness Coach",
     desc: "Designs practical movement routines for real life.",
-    image: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80",
+    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=400&q=80",
     name: "Karan V.",
     spec: "Lifestyle & Movement",
   },
@@ -125,13 +125,13 @@ const journeySteps = [
     week: "Week 0",
     title: "Assessment & Planning",
     desc: "Meet your care team to understand your health goals, medical history, lifestyle, and challenges. Together, we create a personalized plan aligned with your doctor's guidance.",
-    image: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1551190822-a9333d879b1f?auto=format&fit=crop&w=600&q=80",
   },
   {
     week: "Week 1",
     title: "Start Your Program",
     desc: "Begin your nutrition plan, movement routine, and habit tracking. Receive structured support and daily accountability.",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1593810451137-5dc55105dcd6?auto=format&fit=crop&w=600&q=80",
   },
   {
     week: "Week 2 onwards",
