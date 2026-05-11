@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useGetPatientDashboard, useSubmitCheckin, useListTips, useListAppointments } from "@workspace/api-client-react";
+import { useGetPatientDashboard, useSubmitCheckin } from "@workspace/api-client-react";
 import { CheckinInputEnergyLevel, CheckinInputMealsFollowed, CheckinInputMood } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Activity, TrendingDown, Target, Droplet, Heart, ChevronRight, Video, Calendar, Clock, Apple, Dumbbell, Salad, Flame, Lock } from "lucide-react";
+import { useMemo } from "react";
 
 const checkinSchema = z.object({
   mealsFollowed: z.enum([CheckinInputMealsFollowed.yes, CheckinInputMealsFollowed.partially, CheckinInputMealsFollowed.no]),
@@ -22,17 +23,26 @@ const checkinSchema = z.object({
 
 type Plan = "basic" | "comprehensive" | "premium";
 
+function getPlanFromStorage(): Plan {
+  const stored = localStorage.getItem("cloudberry_plan");
+  if (stored === "basic" || stored === "comprehensive" || stored === "premium") return stored;
+  return "comprehensive";
+}
+
 function planIncludes(plan: Plan, feature: "nutrition" | "movement" | "glucose" | "advanced_reviews"): boolean {
   if (feature === "nutrition" || feature === "movement") return plan === "comprehensive" || plan === "premium";
   if (feature === "glucose" || feature === "advanced_reviews") return plan === "premium";
   return false;
 }
 
-function PlanLockedBanner({ plan, feature }: { plan: Plan; feature: string }) {
+function PlanLockedBanner({ feature }: { feature: string }) {
   return (
     <div className="flex items-center gap-3 bg-muted/60 border border-dashed border-border rounded-xl px-5 py-4 text-muted-foreground text-sm">
-      <Lock className="w-4 h-4 shrink-0" />
-      <span><span className="font-semibold text-foreground">{feature}</span> is available on the Comprehensive or Premium plan. <a href="/#pricing" className="text-primary underline underline-offset-2">Upgrade your plan</a></span>
+      <Lock className="w-4 h-4 shrink-0 text-muted-foreground/60" />
+      <span>
+        <span className="font-semibold text-foreground">{feature}</span> is not included in your current plan.{" "}
+        <a href="/programs" className="text-primary underline underline-offset-2 hover:text-primary/80">Upgrade your plan</a> to access this feature.
+      </span>
     </div>
   );
 }
@@ -42,6 +52,8 @@ export default function PatientDashboard() {
 
   const { data: dashData } = useGetPatientDashboard();
   const submitCheckin = useSubmitCheckin();
+
+  const plan = useMemo(() => getPlanFromStorage(), []);
 
   const form = useForm<z.infer<typeof checkinSchema>>({
     resolver: zodResolver(checkinSchema),
@@ -58,6 +70,7 @@ export default function PatientDashboard() {
       },
       onError: () => {
         toast({ title: "Demo Check-in", description: "Logged in demo mode." });
+        form.reset();
       }
     });
   };
@@ -69,28 +82,39 @@ export default function PatientDashboard() {
     return "Evening";
   };
 
+  const storedName = localStorage.getItem("cloudberry_name") || "Rahul Sharma";
+
   const demoPatient = {
-    patient: { fullName: "Rahul Sharma", weekNumber: 3 },
+    patient: { fullName: storedName, weekNumber: 3 },
     weekNumber: 3,
-    todayGoals: ["30-minute walk", "Follow lunch plan", "Record fasting glucose"],
+    todayGoals: plan === "basic"
+      ? ["Log your meals", "Take your medication", "Do a 20-minute walk"]
+      : plan === "premium"
+        ? ["30-minute walk", "Follow lunch plan", "Record fasting glucose", "Log energy & mood"]
+        : ["30-minute walk", "Follow lunch plan", "Log energy & mood"],
     weightChange: -1.2,
     glucoseScore: 82,
     nutritionAdherence: 8,
     activityAdherence: 75,
     streak: 12,
     medicationNote: "Take Metformin 500mg after dinner",
-    nextConsultation: "Oct 15, 10:00 AM",
-    plan: "comprehensive" as Plan,
+    nextConsultation: "Tomorrow, 10:00 AM",
+    plan,
   };
 
   const pData = dashData || demoPatient;
   const patient = pData.patient;
-  const plan: Plan = (pData as any).plan || "comprehensive";
 
   const planLabel: Record<Plan, string> = {
     basic: "Accountability Program",
     comprehensive: "Structured Coaching",
     premium: "Advanced Monitoring",
+  };
+
+  const planColor: Record<Plan, string> = {
+    basic: "bg-slate-100 text-slate-700 border-slate-200",
+    comprehensive: "bg-primary/10 text-primary border-primary/20",
+    premium: "bg-amber-50 text-amber-700 border-amber-200",
   };
 
   return (
@@ -101,10 +125,10 @@ export default function PatientDashboard() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              Good {getGreeting()}, {patient?.fullName?.split(' ')[0] || "Rahul"}!
+              Good {getGreeting()}, {patient?.fullName?.split(' ')[0] || storedName.split(" ")[0]}!
               <span className="block text-base text-muted-foreground font-normal mt-1">You're on Week {pData.weekNumber} of your journey.</span>
             </h1>
-            <Badge variant="outline" className="text-xs px-3 py-1 border-primary/30 bg-primary/5 text-primary font-medium shrink-0">
+            <Badge variant="outline" className={`text-xs px-3 py-1 font-medium shrink-0 border ${planColor[plan]}`}>
               {planLabel[plan]}
             </Badge>
           </div>
@@ -113,7 +137,7 @@ export default function PatientDashboard() {
           <div className="bg-gradient-to-r from-primary/8 to-blue-soft/40 border border-primary/20 rounded-xl px-5 py-4">
             <p className="text-sm font-semibold text-foreground mb-2">Today's Goals</p>
             <div className="flex flex-wrap gap-2">
-              {(pData.todayGoals || ["30-minute walk", "Follow lunch plan", "Record fasting glucose"]).map((goal: string, i: number) => (
+              {(pData.todayGoals || demoPatient.todayGoals).map((goal: string, i: number) => (
                 <span key={i} className="text-xs bg-white/70 border border-primary/15 text-foreground/80 rounded-full px-3 py-1">{goal}</span>
               ))}
             </div>
@@ -149,21 +173,25 @@ export default function PatientDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="min-w-[140px] snap-center shrink-0 shadow-sm border-border">
-            <CardContent className="p-4 flex flex-col items-center text-center">
-              <Apple className="w-5 h-5 text-muted-foreground mb-2" />
-              <div className="text-2xl font-bold">{pData.nutritionAdherence || "8"}<span className="text-sm font-normal text-muted-foreground">/10</span></div>
-              <div className="text-xs text-muted-foreground mt-1">Nutrition</div>
-            </CardContent>
-          </Card>
+          {planIncludes(plan, "nutrition") && (
+            <Card className="min-w-[140px] snap-center shrink-0 shadow-sm border-border">
+              <CardContent className="p-4 flex flex-col items-center text-center">
+                <Apple className="w-5 h-5 text-muted-foreground mb-2" />
+                <div className="text-2xl font-bold">{pData.nutritionAdherence || "8"}<span className="text-sm font-normal text-muted-foreground">/10</span></div>
+                <div className="text-xs text-muted-foreground mt-1">Nutrition</div>
+              </CardContent>
+            </Card>
+          )}
 
-          <Card className="min-w-[140px] snap-center shrink-0 shadow-sm border-border">
-            <CardContent className="p-4 flex flex-col items-center text-center">
-              <Dumbbell className="w-5 h-5 text-muted-foreground mb-2" />
-              <div className="text-2xl font-bold">{pData.activityAdherence || "75"}<span className="text-sm font-normal text-muted-foreground">%</span></div>
-              <div className="text-xs text-muted-foreground mt-1">Activity</div>
-            </CardContent>
-          </Card>
+          {planIncludes(plan, "movement") && (
+            <Card className="min-w-[140px] snap-center shrink-0 shadow-sm border-border">
+              <CardContent className="p-4 flex flex-col items-center text-center">
+                <Dumbbell className="w-5 h-5 text-muted-foreground mb-2" />
+                <div className="text-2xl font-bold">{pData.activityAdherence || "75"}<span className="text-sm font-normal text-muted-foreground">%</span></div>
+                <div className="text-xs text-muted-foreground mt-1">Activity</div>
+              </CardContent>
+            </Card>
+          )}
 
           {planIncludes(plan, "glucose") && (
             <Card className="min-w-[140px] snap-center shrink-0 shadow-sm border-border">
@@ -175,6 +203,19 @@ export default function PatientDashboard() {
             </Card>
           )}
         </div>
+
+        {/* Plan upgrade banner for basic */}
+        {plan === "basic" && (
+          <div className="bg-gradient-to-r from-primary/10 to-blue-soft/40 border border-primary/20 rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="font-semibold text-foreground text-sm">Unlock Nutrition & Fitness Coaching</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Upgrade to Structured Coaching for personalized meal plans and movement guidance.</p>
+            </div>
+            <Button asChild size="sm" className="rounded-full shrink-0 text-xs">
+              <a href="/programs">Upgrade Plan</a>
+            </Button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -315,7 +356,7 @@ export default function PatientDashboard() {
                         )}
                       />
                     ) : (
-                      <PlanLockedBanner plan={plan} feature="Fasting glucose tracking" />
+                      <PlanLockedBanner feature="Fasting glucose tracking" />
                     )}
 
                     <Button type="submit" className="w-full rounded-xl" size="lg" disabled={submitCheckin.isPending} data-testid="btn-submit-checkin">
@@ -343,7 +384,7 @@ export default function PatientDashboard() {
                 </CardContent>
               </Card>
             ) : (
-              <PlanLockedBanner plan={plan} feature="Personalized nutrition plan" />
+              <PlanLockedBanner feature="Personalized nutrition plan" />
             )}
 
             {/* Movement Guidance — Comprehensive & Premium */}
@@ -371,11 +412,11 @@ export default function PatientDashboard() {
                 </CardContent>
               </Card>
             ) : (
-              <PlanLockedBanner plan={plan} feature="Personalized movement guidance" />
+              <PlanLockedBanner feature="Personalized movement guidance" />
             )}
 
             {/* Advanced Progress Reviews — Premium only */}
-            {planIncludes(plan, "advanced_reviews") && (
+            {planIncludes(plan, "advanced_reviews") ? (
               <Card className="border-border shadow-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2"><Activity className="w-5 h-5 text-primary" /> Advanced Progress Review</CardTitle>
@@ -397,6 +438,8 @@ export default function PatientDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            ) : (
+              <PlanLockedBanner feature="Advanced progress reviews" />
             )}
 
             {/* Curated Tips */}
@@ -407,7 +450,7 @@ export default function PatientDashboard() {
                   { title: "Walk after dinner", tip: "A short walk after dinner may help glucose control." },
                   { title: "Protein at breakfast", tip: "Adding protein to breakfast can improve fullness." },
                   { title: "Consistency first", tip: "Consistency matters more than perfection." },
-                ].slice(0, plan === "basic" ? 1 : 2).map((tip, i) => (
+                ].slice(0, plan === "basic" ? 1 : plan === "comprehensive" ? 2 : 3).map((tip, i) => (
                   <Card key={i} className={`border-border hover:border-primary/40 transition-colors ${i === 0 ? 'bg-primary/5 border-primary/20' : 'bg-card'}`}>
                     <CardContent className="p-4">
                       <h4 className="font-semibold text-foreground mb-1 text-sm">{tip.title}</h4>
@@ -431,8 +474,8 @@ export default function PatientDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
-                    M
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0 overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=80&q=80" alt="Dr. A. Mehta" className="w-full h-full object-cover" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm">Dr. A. Mehta</h4>
@@ -459,34 +502,65 @@ export default function PatientDashboard() {
                 <CardTitle className="text-base">Your Care Team</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
+                {/* Doctor — always visible */}
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">P</div>
+                    <div className="w-8 h-8 rounded-full bg-primary/10 overflow-hidden shrink-0">
+                      <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=80&q=80" alt="Dr. A. Mehta" className="w-full h-full object-cover" />
+                    </div>
                     <div>
-                      <h4 className="text-sm font-medium">Priya S.</h4>
+                      <h4 className="text-sm font-medium">Dr. A. Mehta</h4>
+                      <p className="text-xs text-muted-foreground">Doctor</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${!planIncludes(plan, "nutrition") ? "opacity-40 grayscale" : ""}`}>
+                      <img src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=80&q=80" alt="Priya S." className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <h4 className={`text-sm font-medium ${!planIncludes(plan, "nutrition") ? "text-muted-foreground" : ""}`}>Priya S.</h4>
                       <p className="text-xs text-muted-foreground">Nutritionist</p>
                     </div>
                   </div>
                   {planIncludes(plan, "nutrition") ? (
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   ) : (
-                    <Lock className="w-3 h-3 text-muted-foreground" />
+                    <Lock className="w-3 h-3 text-muted-foreground/50" />
                   )}
                 </div>
 
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">K</div>
+                    <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${!planIncludes(plan, "movement") ? "opacity-40 grayscale" : ""}`}>
+                      <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=80&q=80" alt="Karan V." className="w-full h-full object-cover" />
+                    </div>
                     <div>
-                      <h4 className="text-sm font-medium">Karan V.</h4>
+                      <h4 className={`text-sm font-medium ${!planIncludes(plan, "movement") ? "text-muted-foreground" : ""}`}>Karan V.</h4>
                       <p className="text-xs text-muted-foreground">Fitness Coach</p>
                     </div>
                   </div>
                   {planIncludes(plan, "movement") ? (
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   ) : (
-                    <Lock className="w-3 h-3 text-muted-foreground" />
+                    <Lock className="w-3 h-3 text-muted-foreground/50" />
                   )}
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                      <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=80&q=80" alt="Anita R." className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium">Anita R.</h4>
+                      <p className="text-xs text-muted-foreground">Care Coordinator</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
 
                 <Button variant="ghost" className="w-full rounded-xl mt-1 border-dashed border h-9 text-xs">
@@ -502,7 +576,7 @@ export default function PatientDashboard() {
                 <p className="font-bold text-foreground text-sm mb-3">{planLabel[plan]}</p>
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 text-xs text-foreground/70">
-                    <span className={`w-1.5 h-1.5 rounded-full ${plan !== "basic" ? "bg-primary" : "bg-muted-foreground/40"}`} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                     Daily WhatsApp check-ins
                   </div>
                   <div className="flex items-center gap-2 text-xs text-foreground/70">
@@ -524,9 +598,29 @@ export default function PatientDashboard() {
                 </div>
                 {plan !== "premium" && (
                   <Button asChild size="sm" variant="outline" className="w-full mt-4 rounded-full text-xs border-primary/30 text-primary hover:bg-primary/10">
-                    <a href="/#pricing">Upgrade Plan</a>
+                    <a href="/programs">Upgrade Plan</a>
                   </Button>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Heart health tip */}
+            <Card className="border-border shadow-sm overflow-hidden">
+              <div className="aspect-video overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=500&q=80"
+                  alt="Healthy food"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="w-4 h-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Health Tip</p>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Eating a colorful plate with vegetables, protein, and healthy fats at every meal supports stable blood sugar and energy throughout the day.
+                </p>
               </CardContent>
             </Card>
           </div>

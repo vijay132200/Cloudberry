@@ -24,9 +24,18 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
     setMobileMenuOpen(false);
   }, [location]);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
+
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Programs & Pricing", href: "/#pricing" },
+    { name: "Programs & Pricing", href: "/programs" },
     { name: "Patient Portal", href: "/patient/signin" },
     { name: "Physician Portal", href: "/physician" },
     { name: "Operations Portal", href: "/ops/signin" },
@@ -43,7 +52,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
         }`}
       >
         <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 z-50">
+          <Link href="/" className="flex items-center gap-2 z-50 relative">
             <div className="flex flex-col">
               <span className="font-sans text-xl font-bold tracking-tight leading-none text-foreground">Cloudberry</span>
               <span className="text-[10px] text-muted-foreground hidden md:block leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
@@ -72,32 +81,38 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Menu Toggle */}
           <button
-            className="lg:hidden z-50 p-2 -mr-2 text-foreground"
+            className="lg:hidden relative z-[9999] p-2 -mr-2 text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-
-          {/* Mobile Nav */}
-          <div className={`fixed inset-0 bg-background z-40 flex flex-col pt-24 px-6 transition-transform duration-300 ease-in-out lg:hidden ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-            <nav className="flex flex-col gap-6 text-lg">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className={`font-medium border-b pb-2 ${link.name === "Operations Portal" ? "text-slate-500" : "text-foreground"}`}
-                >
-                  {link.name}
-                </Link>
-              ))}
-              <Button size="lg" className="mt-4 rounded-full" onClick={() => { setMobileMenuOpen(false); setGetStartedOpen(true); }} data-testid="btn-mobile-nav-get-started">
-                Get Started
-              </Button>
-            </nav>
-          </div>
         </div>
       </header>
+
+      {/* Mobile Nav — rendered outside header to avoid stacking context issues */}
+      <div
+        className={`fixed inset-0 z-[9998] flex flex-col pt-24 px-6 transition-transform duration-300 ease-in-out lg:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        style={{ backgroundColor: "#ffffff" }}
+      >
+        <nav className="flex flex-col gap-6 text-lg">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`font-medium border-b pb-3 border-border/40 ${link.name === "Operations Portal" ? "text-slate-500" : "text-foreground"}`}
+            >
+              {link.name}
+            </Link>
+          ))}
+          <Button size="lg" className="mt-4 rounded-full" onClick={() => { setMobileMenuOpen(false); setGetStartedOpen(true); }} data-testid="btn-mobile-nav-get-started">
+            Get Started
+          </Button>
+        </nav>
+      </div>
 
       <main className="flex-grow flex flex-col w-full overflow-x-hidden pt-20">
         {children}
@@ -119,7 +134,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Platform</h4>
                 <Link href="/about" className="text-white/60 hover:text-white text-sm transition-colors">About Us</Link>
-                <Link href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs</Link>
+                <Link href="/programs" className="text-white/60 hover:text-white text-sm transition-colors">Programs</Link>
                 <Link href="/faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</Link>
                 <Link href="/physician" className="text-white/60 hover:text-white text-sm transition-colors">For Physicians</Link>
                 <Link href="/ops/signin" className="text-white/60 hover:text-white text-sm transition-colors">Operations Portal</Link>

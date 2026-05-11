@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 
 // Marketing
 import HomePage from "@/pages/home";
+import ProgramsPage from "@/pages/programs";
 import AboutPage from "@/pages/about";
 import BlogsPage from "@/pages/blogs";
 import FaqsPage from "@/pages/faqs";
@@ -44,6 +45,7 @@ function Router() {
     <Switch>
       {/* Public / Marketing */}
       <Route path="/" component={HomePage} />
+      <Route path="/programs" component={ProgramsPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/blogs" component={BlogsPage} />
       <Route path="/faqs" component={FaqsPage} />
