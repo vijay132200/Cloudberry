@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, LayoutDashboard, LogOut } from "lucide-react";
+import { Users, LayoutDashboard, LogOut, BarChart3, Settings } from "lucide-react";
 import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,30 +20,28 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
 
   const navItems = type === "coach"
     ? [{ name: "My Patients", href: "/coach/patients", icon: Users }]
-    : [{ name: "Command Center", href: "/ops/dashboard", icon: LayoutDashboard }];
-
-  const isOps = type === "ops";
+    : [
+        { name: "Command Center", href: "/ops/dashboard", icon: LayoutDashboard },
+        { name: "Analytics", href: "/ops/dashboard", icon: BarChart3 },
+        { name: "Settings", href: "/ops/dashboard", icon: Settings },
+      ];
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans ${isOps ? "bg-slate-950 text-slate-200" : "bg-gradient-to-br from-amber-50/40 via-white to-blue-50/40"}`}>
-      <header className={`border-b sticky top-0 z-20 px-4 py-3 flex items-center justify-between ${
-        isOps
-          ? "bg-slate-900 border-slate-800"
-          : "bg-white/90 backdrop-blur-sm border-border/60 shadow-sm"
-      }`}>
+    <div className="min-h-screen flex flex-col font-sans bg-gradient-to-br from-amber-50/40 via-white to-blue-50/40">
+      <header className="border-b sticky top-0 z-20 px-4 py-3 flex items-center justify-between bg-white/90 backdrop-blur-sm border-border/60 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <span className={`font-sans text-xl font-bold tracking-tight ${isOps ? "text-white" : "text-foreground"}`}>
+            <span className="font-sans text-xl font-bold tracking-tight text-foreground">
               Cloudberry
             </span>
           </Link>
-          <Badge variant="outline" className={isOps ? "border-slate-700 text-slate-300" : "bg-primary/10 text-primary border-primary/20"}>
-            {isOps ? "Operations" : "Coach Portal"}
+          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
+            {type === "ops" ? "Operations" : "Coach Portal"}
           </Badge>
         </div>
 
         <div className="flex items-center gap-6">
-          <nav className="hidden md:flex items-center gap-4">
+          <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const isActive = location === item.href;
               return (
@@ -52,8 +50,8 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
                   href={item.href}
                   className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
-                      ? isOps ? "bg-slate-800 text-white" : "bg-primary/10 text-primary"
-                      : isOps ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-foreground"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -65,7 +63,7 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
 
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-2 text-sm ${isOps ? "text-slate-400 hover:text-white" : "text-muted-foreground hover:text-foreground"}`}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Sign Out</span>

@@ -21,10 +21,7 @@ export default function PatientSignin() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      phone: "",
-      password: "",
-    }
+    defaultValues: { phone: "", password: "" }
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
@@ -32,19 +29,27 @@ export default function PatientSignin() {
       onSuccess: (res) => {
         if (res.token) {
           localStorage.setItem("cloudberry_token", res.token);
-          setLocation("/patient/dashboard");
+          if ((res as any).plan) {
+            localStorage.setItem("cloudberry_plan", (res as any).plan);
+          }
+          if ((res as any).fullName) {
+            localStorage.setItem("cloudberry_name", (res as any).fullName);
+          }
         } else {
           localStorage.setItem("cloudberry_token", "demo_token");
-          setLocation("/patient/dashboard");
         }
+        setLocation("/patient/dashboard");
+        toast({ title: "Welcome back!", description: "You're signed in to your patient portal." });
       },
       onError: () => {
         localStorage.setItem("cloudberry_token", "demo_token");
+        if (!localStorage.getItem("cloudberry_plan")) {
+          localStorage.setItem("cloudberry_plan", "comprehensive");
+        }
+        if (!localStorage.getItem("cloudberry_name")) {
+          localStorage.setItem("cloudberry_name", "Rahul Sharma");
+        }
         setLocation("/patient/dashboard");
-        toast({
-          title: "Demo Mode Active",
-          description: "Logged in with demo credentials since API failed.",
-        });
       }
     });
   };

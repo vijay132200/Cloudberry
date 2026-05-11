@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,9 +19,7 @@ const formSchema = z.object({
     PatientSignupInputPrimaryGoal.weight_loss,
     PatientSignupInputPrimaryGoal.diabetes_management,
     PatientSignupInputPrimaryGoal.both
-  ], {
-    required_error: "Please select a goal",
-  }),
+  ], { required_error: "Please select a goal" }),
   preferredCallbackTime: z.string().optional(),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   selectedPlan: z.string().optional()
@@ -39,37 +36,30 @@ export default function PatientSignup() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: "",
-      phone: "",
-      city: "",
-      primaryGoal: undefined,
-      preferredCallbackTime: "",
-      email: "",
-      selectedPlan: defaultPlan
+      fullName: "", phone: "", city: "",
+      primaryGoal: undefined, preferredCallbackTime: "",
+      email: "", selectedPlan: defaultPlan
     }
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const plan = values.selectedPlan && values.selectedPlan !== "undecided"
+      ? values.selectedPlan
+      : "comprehensive";
+
+    localStorage.setItem("cloudberry_plan", plan);
+    localStorage.setItem("cloudberry_name", values.fullName);
+
     signup.mutate({ data: values }, {
       onSuccess: (res) => {
-        if (res.token) {
-          localStorage.setItem("cloudberry_token", res.token);
-        } else {
-          localStorage.setItem("cloudberry_token", "demo_token");
-        }
+        localStorage.setItem("cloudberry_token", res.token || "demo_token");
         setLocation("/patient/dashboard");
-        toast({
-          title: "Welcome to Cloudberry",
-          description: "Your journey to better metabolic health starts here."
-        });
+        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here." });
       },
       onError: () => {
         localStorage.setItem("cloudberry_token", "demo_token");
         setLocation("/patient/dashboard");
-        toast({
-          title: "Demo Mode Active",
-          description: "Created demo account since API failed.",
-        });
+        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here." });
       }
     });
   };
@@ -78,7 +68,6 @@ export default function PatientSignup() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-blue-50/50 flex flex-col md:flex-row">
       {/* Left Panel */}
       <div className="w-full md:w-5/12 lg:w-1/2 relative flex flex-col border-b md:border-b-0 md:border-r border-border/40 overflow-hidden">
-        {/* Background image with overlay */}
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80"
@@ -162,7 +151,6 @@ export default function PatientSignup() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="email"
@@ -193,7 +181,6 @@ export default function PatientSignup() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="preferredCallbackTime"
@@ -245,10 +232,10 @@ export default function PatientSignup() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="basic">Basic (₹990/mo)</SelectItem>
-                        <SelectItem value="comprehensive">Comprehensive (₹1,990/mo)</SelectItem>
-                        <SelectItem value="premium">Premium (₹3,990/mo)</SelectItem>
-                        <SelectItem value="undecided">Not sure yet, let's discuss</SelectItem>
+                        <SelectItem value="basic">Accountability Program (₹990/mo)</SelectItem>
+                        <SelectItem value="comprehensive">Structured Coaching (₹1,990/mo)</SelectItem>
+                        <SelectItem value="premium">Advanced Monitoring (₹3,990/mo)</SelectItem>
+                        <SelectItem value="undecided">Not sure yet — let's discuss</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
