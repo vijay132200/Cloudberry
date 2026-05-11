@@ -3,20 +3,37 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Cloudberry Health API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: patients
+    description: Patient operations
+  - name: auth
+    description: Authentication operations
+  - name: checkins
+    description: Daily check-in operations
+  - name: appointments
+    description: Appointment operations
+  - name: tips
+    description: Curated tips
+  - name: metrics
+    description: Progress metrics
+  - name: leads
+    description: Lead/signup operations
+  - name: ops
+    description: Operations dashboard
+  - name: coaches
+    description: Coach portal operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +41,920 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/patient/signup:
+    post:
+      operationId: patientSignup
+      tags: [auth]
+      summary: Patient sign up
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatientSignupInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/patient/signin:
+    post:
+      operationId: patientSignin
+      tags: [auth]
+      summary: Patient sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatientSigninInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/coach/signin:
+    post:
+      operationId: coachSignin
+      tags: [auth]
+      summary: Coach/Nutritionist sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffSigninInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/ops/signin:
+    post:
+      operationId: opsSignin
+      tags: [auth]
+      summary: Operations team sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffSigninInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /leads:
+    post:
+      operationId: submitLead
+      tags: [leads]
+      summary: Submit a patient lead from the public marketing page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadInput"
+      responses:
+        "201":
+          description: Lead created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
+  /leads/physician:
+    post:
+      operationId: submitPhysicianLead
+      tags: [leads]
+      summary: Submit a physician partnership enquiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhysicianLeadInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhysicianLead"
+
+  /patients/me:
+    get:
+      operationId: getMyProfile
+      tags: [patients]
+      summary: Get logged-in patient profile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+
+  /patients/me/dashboard:
+    get:
+      operationId: getPatientDashboard
+      tags: [patients]
+      summary: Get patient dashboard summary (week, goals, progress)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientDashboard"
+
+  /checkins:
+    get:
+      operationId: listCheckins
+      tags: [checkins]
+      summary: List patient daily check-ins
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Checkin"
+    post:
+      operationId: submitCheckin
+      tags: [checkins]
+      summary: Submit a daily check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckinInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkin"
+
+  /metrics:
+    get:
+      operationId: listMetrics
+      tags: [metrics]
+      summary: Get patient progress metrics over time
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MetricEntry"
+    post:
+      operationId: addMetric
+      tags: [metrics]
+      summary: Log a weight or glucose metric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricEntry"
+
+  /tips:
+    get:
+      operationId: listTips
+      tags: [tips]
+      summary: Get curated tips for the patient
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tip"
+
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: Get upcoming appointments
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      operationId: bookAppointment
+      tags: [appointments]
+      summary: Book or request an appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+
+  /appointments/{id}/reschedule:
+    patch:
+      operationId: rescheduleAppointment
+      tags: [appointments]
+      summary: Reschedule an appointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RescheduleInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+
+  /coach/patients:
+    get:
+      operationId: listCoachPatients
+      tags: [coaches]
+      summary: Coach view of all their patients
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoachPatientRow"
+
+  /coach/patients/{id}:
+    get:
+      operationId: getCoachPatientDetail
+      tags: [coaches]
+      summary: Get full patient details for coach
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachPatientDetail"
+
+  /coach/patients/{id}/notes:
+    post:
+      operationId: addPatientNote
+      tags: [coaches]
+      summary: Add a note to patient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientNote"
+
+  /coach/patients/{id}/plan:
+    patch:
+      operationId: updatePatientPlan
+      tags: [coaches]
+      summary: Update patient nutrition/activity plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientPlan"
+
+  /ops/dashboard:
+    get:
+      operationId: getOpsDashboard
+      tags: [ops]
+      summary: Operations command center metrics
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpsDashboard"
+
+  /ops/patients:
+    get:
+      operationId: listOpsPatients
+      tags: [ops]
+      summary: Operations view of all patients with status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpsPatientRow"
+
+  /ops/patients/{id}/assign:
+    patch:
+      operationId: assignCoachToPatient
+      tags: [ops]
+      summary: Assign a coach to a patient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignCoachInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpsPatientRow"
+
+  /ops/patients/{id}/escalate:
+    patch:
+      operationId: escalatePatient
+      tags: [ops]
+      summary: Escalate a patient case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EscalationInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpsPatientRow"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    PatientSignupInput:
+      type: object
+      required: [fullName, phone, city, primaryGoal]
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        primaryGoal:
+          type: string
+          enum: [weight_loss, diabetes_management, both]
+        preferredCallbackTime:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        selectedPlan:
+          type: ["string", "null"]
+
+    PatientSigninInput:
+      type: object
+      required: [phone, password]
+      properties:
+        phone:
+          type: string
+        password:
+          type: string
+
+    StaffSigninInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, role]
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+        userId:
+          type: integer
+
+    LeadInput:
+      type: object
+      required: [fullName, phone, city, primaryGoal]
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        primaryGoal:
+          type: string
+        preferredCallbackTime:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+
+    Lead:
+      type: object
+      required: [id, fullName, phone, city, primaryGoal, createdAt]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        primaryGoal:
+          type: string
+        preferredCallbackTime:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PhysicianLeadInput:
+      type: object
+      required: [name, specialty, city, phone]
+      properties:
+        name:
+          type: string
+        specialty:
+          type: string
+        clinicOrHospital:
+          type: ["string", "null"]
+        city:
+          type: string
+        phone:
+          type: string
+        preferredCallbackTime:
+          type: ["string", "null"]
+
+    PhysicianLead:
+      type: object
+      required: [id, name, specialty, city, phone, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        specialty:
+          type: string
+        clinicOrHospital:
+          type: ["string", "null"]
+        city:
+          type: string
+        phone:
+          type: string
+        preferredCallbackTime:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    Patient:
+      type: object
+      required: [id, fullName, phone, city, primaryGoal, plan, weekNumber, createdAt]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: ["string", "null"]
+        city:
+          type: string
+        primaryGoal:
+          type: string
+        plan:
+          type: string
+        weekNumber:
+          type: integer
+        startingWeight:
+          type: ["number", "null"]
+        currentWeight:
+          type: ["number", "null"]
+        targetWeight:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+
+    PatientDashboard:
+      type: object
+      required: [patient, weekNumber, todayGoals, weightChange, glucoseScore, nutritionAdherence, activityAdherence, streak]
+      properties:
+        patient:
+          $ref: "#/components/schemas/Patient"
+        weekNumber:
+          type: integer
+        todayGoals:
+          type: array
+          items:
+            type: string
+        weightChange:
+          type: ["number", "null"]
+        glucoseScore:
+          type: ["number", "null"]
+        nutritionAdherence:
+          type: ["number", "null"]
+        activityAdherence:
+          type: ["number", "null"]
+        mood:
+          type: ["string", "null"]
+        streak:
+          type: integer
+        nextConsultation:
+          type: ["string", "null"]
+        medicationNote:
+          type: ["string", "null"]
+
+    CheckinInput:
+      type: object
+      required: [mealsFollowed, activityCompleted, energyLevel, mood]
+      properties:
+        mealsFollowed:
+          type: string
+          enum: [yes, partially, no]
+        activityCompleted:
+          type: boolean
+        energyLevel:
+          type: string
+          enum: [low, moderate, good]
+        mood:
+          type: string
+          enum: [stressed, neutral, positive]
+        glucoseReading:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+
+    Checkin:
+      type: object
+      required: [id, mealsFollowed, activityCompleted, energyLevel, mood, createdAt]
+      properties:
+        id:
+          type: integer
+        mealsFollowed:
+          type: string
+        activityCompleted:
+          type: boolean
+        energyLevel:
+          type: string
+        mood:
+          type: string
+        glucoseReading:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    MetricInput:
+      type: object
+      required: [type, value, date]
+      properties:
+        type:
+          type: string
+          enum: [weight, glucose_fasting, glucose_postmeal, steps]
+        value:
+          type: number
+        date:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    MetricEntry:
+      type: object
+      required: [id, type, value, date, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        value:
+          type: number
+        date:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    Tip:
+      type: object
+      required: [id, title, body, category]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+        category:
+          type: string
+        icon:
+          type: ["string", "null"]
+
+    AppointmentInput:
+      type: object
+      required: [careTeamMember, preferredDate]
+      properties:
+        careTeamMember:
+          type: string
+        preferredDate:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    RescheduleInput:
+      type: object
+      required: [newDate]
+      properties:
+        newDate:
+          type: string
+
+    Appointment:
+      type: object
+      required: [id, careTeamMember, role, scheduledAt, status]
+      properties:
+        id:
+          type: integer
+        careTeamMember:
+          type: string
+        role:
+          type: string
+        scheduledAt:
+          type: string
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+
+    CoachPatientRow:
+      type: object
+      required: [id, fullName, status, riskLevel, lastCheckinAt, adherencePct]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        plan:
+          type: string
+        status:
+          type: string
+          enum: [active, paused, completed]
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+        lastCheckinAt:
+          type: ["string", "null"]
+        nextSessionAt:
+          type: ["string", "null"]
+        adherencePct:
+          type: number
+        weekNumber:
+          type: integer
+
+    CoachPatientDetail:
+      type: object
+      required: [patient, checkins, metrics, notes, plan]
+      properties:
+        patient:
+          $ref: "#/components/schemas/Patient"
+        checkins:
+          type: array
+          items:
+            $ref: "#/components/schemas/Checkin"
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricEntry"
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatientNote"
+        plan:
+          $ref: "#/components/schemas/PatientPlan"
+
+    NoteInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        category:
+          type: ["string", "null"]
+
+    PatientNote:
+      type: object
+      required: [id, content, createdAt]
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        category:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PlanUpdate:
+      type: object
+      properties:
+        nutritionPlan:
+          type: ["string", "null"]
+        activityPlan:
+          type: ["string", "null"]
+        weeklyGoals:
+          type: ["string", "null"]
+
+    PatientPlan:
+      type: object
+      required: [id, patientId]
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        nutritionPlan:
+          type: ["string", "null"]
+        activityPlan:
+          type: ["string", "null"]
+        weeklyGoals:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+
+    OpsDashboard:
+      type: object
+      required: [activePatients, dailyAdherencePct, missedCheckins, highRiskCount, upcomingAppointments, escalationsPending]
+      properties:
+        activePatients:
+          type: integer
+        dailyAdherencePct:
+          type: number
+        missedCheckins:
+          type: integer
+        highRiskCount:
+          type: integer
+        upcomingAppointments:
+          type: integer
+        escalationsPending:
+          type: integer
+        totalLeads:
+          type: integer
+        conversionRate:
+          type: number
+
+    OpsPatientRow:
+      type: object
+      required: [id, fullName, status, riskLevel, adherencePct, weekNumber, plan]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        plan:
+          type: string
+        status:
+          type: string
+        riskLevel:
+          type: string
+        adherencePct:
+          type: number
+        weekNumber:
+          type: integer
+        lastCheckinAt:
+          type: ["string", "null"]
+        assignedCoach:
+          type: ["string", "null"]
+        escalated:
+          type: boolean
+
+    AssignCoachInput:
+      type: object
+      required: [coachId]
+      properties:
+        coachId:
+          type: integer
+
+    EscalationInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string

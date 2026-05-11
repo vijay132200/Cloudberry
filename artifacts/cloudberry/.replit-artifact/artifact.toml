@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Cloudberry Health"
+version = "1.0.0"
+id = "artifacts/cloudberry"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19024
+
+[services.development]
+run = "pnpm --filter @workspace/cloudberry run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cloudberry", "run", "build" ]
+publicDir = "artifacts/cloudberry/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19024"
+BASE_PATH = "/"

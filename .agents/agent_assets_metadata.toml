@@ -1,0 +1,62 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "sxjtu0lovt4ls0XuU7nqd"
+uri = "file://artifacts/cloudberry/public/images/hero-1-doctor.png"
+type = "image"
+title = "Doctor-Led Care"
+
+[[generated]]
+id = "kryANbVvi6HhxqxafUSSJ"
+uri = "file://artifacts/cloudberry/public/images/hero-2-support.png"
+type = "image"
+title = "Personalized Support"
+
+[[generated]]
+id = "4mfzKDpVAjYc3LCrzdKhB"
+uri = "file://artifacts/cloudberry/public/images/hero-3-nutrition.png"
+type = "image"
+title = "Nutrition Support"
+
+[[generated]]
+id = "xFXPG15Qv9SnYUDftpl7P"
+uri = "file://artifacts/cloudberry/public/images/hero-4-lifestyle.png"
+type = "image"
+title = "Lifestyle Changes"
+
+[[generated]]
+id = "uhVwE5oXeaCoEp0KNl7Qv"
+uri = "file://artifacts/cloudberry/public/images/hero-5-tracking.png"
+type = "image"
+title = "Tracking Diagnostics"
+
+[[generated]]
+id = "0U2ktuC9NGj6c8Ng_kckH"
+uri = "file://artifacts/cloudberry/public/images/team-dr-mehta.png"
+type = "image"
+title = "Dr Mehta Avatar"
+
+[[generated]]
+id = "1d92mDW5qjVOQrY118MMh"
+uri = "file://artifacts/cloudberry/public/images/team-priya.png"
+type = "image"
+title = "Priya Nutritionist Avatar"
+
+[[generated]]
+id = "DdAVAnWUe4niKrfuyHOKN"
+uri = "file://artifacts/cloudberry/public/images/team-karan.png"
+type = "image"
+title = "Karan Fitness Coach Avatar"
+
+[[generated]]
+id = "j5dj6eQKJF4whAGHl50DP"
+uri = "file://artifacts/cloudberry/public/images/team-coordinator.png"
+type = "image"
+title = "Care Coordinator Avatar"
+
+[[generated]]
+id = "wTowew4s1ImVd7AIxotPA"
+uri = "file://artifacts/cloudberry/public/images/blog-1.png"
+type = "image"
+title = "Blog 1 GLP-1"
