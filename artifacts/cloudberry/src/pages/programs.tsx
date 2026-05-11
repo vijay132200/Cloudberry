@@ -87,14 +87,14 @@ const whatIsIncluded = [
     title: "Doctor-Led Medical Oversight",
     desc: "A board-certified physician supervises your entire care journey. Every plan is reviewed and approved by your doctor.",
     plans: ["basic", "comprehensive", "premium"],
-    image: "https://images.unsplash.com/photo-1638202993928-7d1c7a29b47e?auto=format&fit=crop&w=500&q=80",
+    image: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=500&q=80",
   },
   {
     icon: <MessageCircle className="w-6 h-6 text-primary" />,
     title: "Daily WhatsApp Check-Ins",
     desc: "Your care coordinator reaches out every day to track your habits, mood, meals, and activity — keeping you accountable.",
     plans: ["basic", "comprehensive", "premium"],
-    image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=500&q=80",
+    image: "https://images.unsplash.com/photo-1611262588024-d12430b98920?auto=format&fit=crop&w=500&q=80",
   },
   {
     icon: <Salad className="w-6 h-6 text-primary" />,
@@ -115,14 +115,14 @@ const whatIsIncluded = [
     title: "Glucose Tracking Support",
     desc: "For patients managing diabetes or insulin resistance, we provide structured support for tracking and interpreting fasting glucose readings.",
     plans: ["premium"],
-    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=500&q=80",
+    image: "/img-glucose.jpg",
   },
   {
     icon: <Star className="w-6 h-6 text-primary" />,
     title: "Priority Support",
     desc: "Premium members get priority access to their care team with faster callbacks and dedicated attention.",
     plans: ["premium"],
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=500&q=80",
+    image: "/img-priority.jpg",
   },
 ];
 

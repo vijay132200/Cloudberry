@@ -44,29 +44,25 @@ const teamMembers = [
     role: "Doctor",
     desc: "Oversees medical plan and treatment decisions.",
     image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
-    name: "Dr. A. Mehta",
-    spec: "Metabolic Medicine",
+    imgPosition: "object-top",
   },
   {
     role: "Nutritionist",
     desc: "Creates personalized, sustainable nutrition plans.",
     image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=400&q=80",
-    name: "Priya S.",
-    spec: "Clinical Nutrition",
+    imgPosition: "object-top",
   },
   {
     role: "Fitness Coach",
     desc: "Designs practical movement routines for real life.",
-    image: "https://images.unsplash.com/photo-1524901548305-08eeddc35080?auto=format&fit=crop&w=400&q=80",
-    name: "Karan V.",
-    spec: "Lifestyle & Movement",
+    image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=400&q=80",
+    imgPosition: "object-top",
   },
   {
     role: "Care Coordinator",
     desc: "Ensures consistent follow-up and accountability.",
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
-    name: "Anita R.",
-    spec: "Patient Support",
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+    imgPosition: "object-top",
   },
 ];
 
@@ -125,19 +121,19 @@ const journeySteps = [
     week: "Week 0",
     title: "Assessment & Planning",
     desc: "Meet your care team to understand your health goals, medical history, lifestyle, and challenges. Together, we create a personalized plan aligned with your doctor's guidance.",
-    image: "https://images.unsplash.com/photo-1551190822-a9333d879b1f?auto=format&fit=crop&w=600&q=80",
+    image: "/img-assessment.jpg",
   },
   {
     week: "Week 1",
     title: "Start Your Program",
     desc: "Begin your nutrition plan, movement routine, and habit tracking. Receive structured support and daily accountability.",
-    image: "https://images.unsplash.com/photo-1593810451137-5dc55105dcd6?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
   },
   {
     week: "Week 2 onwards",
     title: "Continuous Fine-Tuning",
     desc: "Your care team regularly reviews progress and adjusts recommendations to help improve long-term consistency and outcomes.",
-    image: "https://images.unsplash.com/photo-1576678927484-cc907957088c?auto=format&fit=crop&w=600&q=80",
+    image: "/img-finetuning.jpg",
   },
 ];
 
@@ -360,13 +356,11 @@ export default function HomePage() {
                   <img
                     src={member.image}
                     alt={member.role}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className={`w-full h-full object-cover ${member.imgPosition} group-hover:scale-105 transition-transform duration-500`}
                   />
                 </div>
                 <div className="p-5">
                   <Badge variant="secondary" className="text-xs mb-2 bg-primary/10 text-primary border-0">{member.role}</Badge>
-                  <h3 className="font-bold text-base text-foreground">{member.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-2">{member.spec}</p>
                   <p className="text-sm text-muted-foreground">{member.desc}</p>
                 </div>
               </div>

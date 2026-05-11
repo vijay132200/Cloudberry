@@ -475,10 +475,10 @@ export default function PatientDashboard() {
               <CardContent>
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold shrink-0 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=80&q=80" alt="Dr. A. Mehta" className="w-full h-full object-cover" />
+                    <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=80&q=80" alt="Doctor" className="w-full h-full object-cover object-top" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-sm">Dr. A. Mehta</h4>
+                    <h4 className="font-semibold text-sm">Doctor</h4>
                     <p className="text-xs text-muted-foreground">Metabolic Care</p>
                     <div className="flex items-center gap-1 mt-1 text-xs font-medium text-primary">
                       <Clock className="w-3 h-3" />
@@ -506,11 +506,11 @@ export default function PatientDashboard() {
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 overflow-hidden shrink-0">
-                      <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=80&q=80" alt="Dr. A. Mehta" className="w-full h-full object-cover" />
+                      <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=80&q=80" alt="Doctor" className="w-full h-full object-cover object-top" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium">Dr. A. Mehta</h4>
-                      <p className="text-xs text-muted-foreground">Doctor</p>
+                      <h4 className="text-sm font-medium">Doctor</h4>
+                      <p className="text-xs text-muted-foreground">Metabolic Medicine</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -519,11 +519,11 @@ export default function PatientDashboard() {
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${!planIncludes(plan, "nutrition") ? "opacity-40 grayscale" : ""}`}>
-                      <img src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=80&q=80" alt="Priya S." className="w-full h-full object-cover" />
+                      <img src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=80&q=80" alt="Nutritionist" className="w-full h-full object-cover object-top" />
                     </div>
                     <div>
-                      <h4 className={`text-sm font-medium ${!planIncludes(plan, "nutrition") ? "text-muted-foreground" : ""}`}>Priya S.</h4>
-                      <p className="text-xs text-muted-foreground">Nutritionist</p>
+                      <h4 className={`text-sm font-medium ${!planIncludes(plan, "nutrition") ? "text-muted-foreground" : ""}`}>Nutritionist</h4>
+                      <p className="text-xs text-muted-foreground">Clinical Nutrition</p>
                     </div>
                   </div>
                   {planIncludes(plan, "nutrition") ? (
@@ -536,11 +536,11 @@ export default function PatientDashboard() {
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${!planIncludes(plan, "movement") ? "opacity-40 grayscale" : ""}`}>
-                      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" alt="Karan V." className="w-full h-full object-cover" />
+                      <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=80&q=80" alt="Fitness Coach" className="w-full h-full object-cover object-top" />
                     </div>
                     <div>
-                      <h4 className={`text-sm font-medium ${!planIncludes(plan, "movement") ? "text-muted-foreground" : ""}`}>Karan V.</h4>
-                      <p className="text-xs text-muted-foreground">Fitness Coach</p>
+                      <h4 className={`text-sm font-medium ${!planIncludes(plan, "movement") ? "text-muted-foreground" : ""}`}>Fitness Coach</h4>
+                      <p className="text-xs text-muted-foreground">Lifestyle & Movement</p>
                     </div>
                   </div>
                   {planIncludes(plan, "movement") ? (
@@ -553,11 +553,11 @@ export default function PatientDashboard() {
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
-                      <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=80&q=80" alt="Anita R." className="w-full h-full object-cover" />
+                      <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=80&q=80" alt="Care Coordinator" className="w-full h-full object-cover object-top" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium">Anita R.</h4>
-                      <p className="text-xs text-muted-foreground">Care Coordinator</p>
+                      <h4 className="text-sm font-medium">Care Coordinator</h4>
+                      <p className="text-xs text-muted-foreground">Patient Support</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
