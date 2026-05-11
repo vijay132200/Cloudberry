@@ -56,10 +56,9 @@ export default function PatientSignin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-serif text-xl italic font-bold">C</div>
-            <span className="font-serif text-2xl tracking-tight text-foreground font-bold">Cloudberry</span>
+            <span className="font-sans text-2xl font-bold tracking-tight text-foreground">Cloudberry</span>
           </Link>
-          <h1 className="text-2xl font-serif font-bold">Welcome Back</h1>
+          <h1 className="text-2xl font-bold">Welcome Back</h1>
           <p className="text-muted-foreground mt-2">Sign in to your patient portal</p>
         </div>
 

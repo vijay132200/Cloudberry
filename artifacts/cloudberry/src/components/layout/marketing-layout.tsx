@@ -2,10 +2,13 @@ import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowRight } from "lucide-react";
 
 export function MarketingLayout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [getStartedOpen, setGetStartedOpen] = useState(false);
   const [location] = useLocation();
 
   useEffect(() => {
@@ -35,15 +38,14 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background font-sans">
       <header
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          isScrolled ? "bg-white/90 backdrop-blur-md border-b shadow-sm py-3" : "bg-transparent py-5"
+          isScrolled ? "bg-white/95 backdrop-blur-md border-b shadow-sm py-3" : "bg-transparent py-5"
         }`}
       >
         <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 z-50">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-serif text-xl italic font-bold">C</div>
             <div className="flex flex-col">
-              <span className="font-serif text-2xl tracking-tight leading-none text-foreground font-bold">Cloudberry</span>
-              <span className="text-[10px] text-muted-foreground hidden md:block leading-tight mt-0.5">Doctor-Led Metabolic Care</span>
+              <span className="font-sans text-xl font-bold tracking-tight leading-none text-foreground">Cloudberry</span>
+              <span className="text-[10px] text-muted-foreground hidden md:block leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
             </div>
           </Link>
 
@@ -58,8 +60,8 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 {link.name}
               </Link>
             ))}
-            <Button asChild className="rounded-full shadow-sm" data-testid="btn-nav-get-started">
-              <Link href="/patient/signup">Get Started</Link>
+            <Button onClick={() => setGetStartedOpen(true)} className="rounded-full shadow-sm" data-testid="btn-nav-get-started">
+              Get Started
             </Button>
           </nav>
 
@@ -84,8 +86,8 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                   {link.name}
                 </Link>
               ))}
-              <Button asChild size="lg" className="mt-4 rounded-full" data-testid="btn-mobile-nav-get-started">
-                <Link href="/patient/signup">Get Started Today</Link>
+              <Button size="lg" className="mt-4 rounded-full" onClick={() => { setMobileMenuOpen(false); setGetStartedOpen(true); }} data-testid="btn-mobile-nav-get-started">
+                Get Started
               </Button>
             </nav>
           </div>
@@ -101,11 +103,10 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 lg:gap-12 items-start border-b border-white/10 pb-10">
             <div className="flex flex-col gap-4">
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center text-foreground font-serif text-xl italic font-bold">C</div>
-                <span className="font-serif text-2xl tracking-tight leading-none text-background font-bold">Cloudberry</span>
+                <span className="font-sans text-xl font-bold tracking-tight leading-none text-background">Cloudberry</span>
               </Link>
               <p className="text-white/60 text-sm max-w-xs">
-                Personalized, doctor-led metabolic care. Sustainable weight and diabetes management.
+                Doctor-led metabolic care for sustainable health improvement.
               </p>
             </div>
             
@@ -114,42 +115,65 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 <h4 className="font-semibold text-white/90">Platform</h4>
                 <Link href="/about" className="text-white/60 hover:text-white text-sm transition-colors">About Us</Link>
                 <Link href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs</Link>
-                <Link href="/physician" className="text-white/60 hover:text-white text-sm transition-colors">For Physicians</Link>
                 <Link href="/faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</Link>
+                <Link href="/physician" className="text-white/60 hover:text-white text-sm transition-colors">For Physicians</Link>
               </div>
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Legal</h4>
-                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Privacy Policy</Link>
-                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Terms of Service</Link>
                 <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Refund Policy</Link>
-                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Contact Us</Link>
+                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Privacy Policy</Link>
+                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Contact</Link>
               </div>
             </div>
 
             <div className="flex flex-col gap-4 lg:items-end">
               <h4 className="font-semibold text-white/90">Connect</h4>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors text-white">IN</a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors text-white">LI</a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors text-white">FB</a>
-              </div>
+              <p className="text-white/40 text-xs">Social links coming soon.</p>
             </div>
           </div>
           
           <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/40">
             <p className="max-w-2xl text-center md:text-left">
-              Cloudberry is a digital health platform providing evidence-based obesity and metabolic care. 
-              All medical decisions are made by licensed doctors. This service is not a substitute for emergency medical care.
+              Cloudberry is a digital health platform providing doctor-led metabolic care. All medical decisions are made by licensed physicians. This service is not a substitute for emergency medical care.
             </p>
             <p className="shrink-0">© Cloudberry Health 2026. All rights reserved.</p>
           </div>
         </div>
       </footer>
 
-      {/* Floating CTA */}
+      {/* Floating Get Started CTA - desktop */}
+      <Dialog open={getStartedOpen} onOpenChange={setGetStartedOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">How can we help you?</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 mt-4">
+            <Link href="/patient/signup" onClick={() => setGetStartedOpen(false)}>
+              <div className="border rounded-2xl p-6 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-lg">I'm a Patient</span>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+                <p className="text-sm text-muted-foreground">Start Your Journey → Book a free consultation with the Cloudberry team.</p>
+              </div>
+            </Link>
+            <Link href="/physician/signup" onClick={() => setGetStartedOpen(false)}>
+              <div className="border rounded-2xl p-6 hover:border-secondary hover:bg-secondary/5 transition-all cursor-pointer group">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-lg">I'm a Physician</span>
+                  <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-secondary transition-colors" />
+                </div>
+                <p className="text-sm text-muted-foreground">Explore Partnership → Learn how Cloudberry supports long-term patient adherence.</p>
+              </div>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Floating Mobile CTA */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-40 lg:hidden">
-        <Button asChild size="lg" className="w-full rounded-full shadow-lg text-md py-6">
-          <Link href="/patient/signup">Start Your Journey →</Link>
+        <Button size="lg" className="w-full rounded-full shadow-lg text-md py-6" onClick={() => setGetStartedOpen(true)}>
+          Get Started →
         </Button>
       </div>
     </div>

@@ -53,8 +53,7 @@ export default function OpsSignin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground font-serif text-xl italic font-bold">C</div>
-            <span className="font-serif text-2xl tracking-tight text-white font-bold">Cloudberry</span>
+            <span className="font-sans text-2xl font-bold tracking-tight text-white">Cloudberry</span>
           </Link>
           <div className="text-slate-400 font-mono text-xs tracking-widest mt-2 uppercase">Command Center</div>
         </div>
