@@ -62,7 +62,7 @@ export default function AboutPage() {
               </div>
               <div className="rounded-2xl overflow-hidden aspect-[4/3] shadow-md">
                 <img
-                  src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80"
+                  src="https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80"
                   alt="Active lifestyle"
                   className="w-full h-full object-cover"
                 />

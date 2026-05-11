@@ -536,7 +536,7 @@ export default function PatientDashboard() {
                 <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 ${!planIncludes(plan, "movement") ? "opacity-40 grayscale" : ""}`}>
-                      <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=80&q=80" alt="Karan V." className="w-full h-full object-cover" />
+                      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" alt="Karan V." className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <h4 className={`text-sm font-medium ${!planIncludes(plan, "movement") ? "text-muted-foreground" : ""}`}>Karan V.</h4>

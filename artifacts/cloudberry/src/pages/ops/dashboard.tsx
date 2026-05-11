@@ -110,7 +110,7 @@ const RECENT_ACTIVITY = [
 const COACHES = [
   { name: "Dr. A. Mehta", role: "Lead Physician", patients: 3, adherenceAvg: 67, img: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=200&q=80" },
   { name: "Priya S.", role: "Nutritionist", patients: 1, adherenceAvg: 92, img: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=200&q=80" },
-  { name: "Karan V.", role: "Fitness Coach", patients: 1, adherenceAvg: 60, img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=200&q=80" },
+  { name: "Karan V.", role: "Fitness Coach", patients: 1, adherenceAvg: 60, img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80" },
 ];
 
 type Patient = typeof DEMO_PATIENTS[0];

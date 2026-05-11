@@ -108,7 +108,7 @@ const whatIsIncluded = [
     title: "Movement Guidance",
     desc: "A fitness coach creates practical, achievable routines designed around your current fitness level and daily schedule.",
     plans: ["comprehensive", "premium"],
-    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=500&q=80",
+    image: "https://images.unsplash.com/photo-1524901548305-08eeddc35080?auto=format&fit=crop&w=500&q=80",
   },
   {
     icon: <Activity className="w-6 h-6 text-primary" />,

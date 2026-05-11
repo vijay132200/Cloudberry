@@ -17,7 +17,7 @@ const blogs = [
     category: "Metabolic Health",
     date: "Oct 05, 2025",
     readTime: "4 min read",
-    img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80",
+    img: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80",
     excerpt: "Why obesity is a complex biological disease, not a failure of character, and how understanding your metabolism changes the approach to treatment."
   },
   {
@@ -41,7 +41,7 @@ const blogs = [
     category: "Fitness",
     date: "Sep 02, 2025",
     readTime: "5 min read",
-    img: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=800&q=80",
+    img: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80",
     excerpt: "Why low-intensity, steady-state cardio is often more effective for mitochondrial health than high-intensity interval training."
   },
   {
@@ -49,7 +49,7 @@ const blogs = [
     category: "Mental Health",
     date: "Aug 20, 2025",
     readTime: "3 min read",
-    img: "https://images.unsplash.com/photo-1499728603263-13726abce5fd?auto=format&fit=crop&w=800&q=80",
+    img: "https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&w=800&q=80",
     excerpt: "Exploring the physiological link between chronic psychological stress and the body's reluctance to release stored fat."
   }
 ];
