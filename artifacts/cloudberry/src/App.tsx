@@ -7,8 +7,8 @@ import NotFound from "@/pages/not-found";
 
 // Marketing
 import HomePage from "@/pages/home";
-import AboutPage from "@/pages/about";
-import BlogsPage from "@/pages/blogs";
+import RefundPolicyPage from "@/pages/refund-policy";
+import PrivacyPolicyPage from "@/pages/privacy-policy";
 import PhysicianPage from "@/pages/physician/index";
 import PhysicianSignupPage from "@/pages/physician/signup";
 
@@ -43,8 +43,8 @@ function Router() {
     <Switch>
       {/* Public / Marketing */}
       <Route path="/" component={HomePage} />
-      <Route path="/about" component={AboutPage} />
-      <Route path="/blogs" component={BlogsPage} />
+      <Route path="/refund-policy" component={RefundPolicyPage} />
+      <Route path="/privacy-policy" component={PrivacyPolicyPage} />
       <Route path="/physician" component={PhysicianPage} />
       <Route path="/physician/signup" component={PhysicianSignupPage} />
 

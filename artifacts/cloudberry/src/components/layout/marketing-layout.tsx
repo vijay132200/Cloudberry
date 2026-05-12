@@ -39,9 +39,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
     { name: "Patient Portal", href: "/patient/signin" },
     { name: "Physician Portal", href: "/physician" },
     { name: "Operations Portal", href: "/ops/signin" },
-    { name: "Blogs", href: "/blogs" },
     { name: "FAQs", href: "/#faqs" },
-    { name: "About Us", href: "/about" },
   ];
 
   return (
@@ -133,7 +131,6 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
             <div className="grid grid-cols-2 gap-8">
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Platform</h4>
-                <Link href="/about" className="text-white/60 hover:text-white text-sm transition-colors">About Us</Link>
                 <a href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs</a>
                 <a href="/#faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</a>
                 <Link href="/physician" className="text-white/60 hover:text-white text-sm transition-colors">For Physicians</Link>
@@ -141,8 +138,8 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Legal</h4>
-                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Refund Policy</Link>
-                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Privacy Policy</Link>
+                <Link href="/refund-policy" className="text-white/60 hover:text-white text-sm transition-colors">Refund Policy</Link>
+                <Link href="/privacy-policy" className="text-white/60 hover:text-white text-sm transition-colors">Privacy Policy</Link>
               </div>
             </div>
           </div>

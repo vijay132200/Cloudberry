@@ -74,8 +74,8 @@ export default function PhysicianSignupPage() {
                   <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-5">
                     <CheckCircle2 className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Thank you, Doctor</h3>
-                  <p className="text-muted-foreground">We have received your details and will be in touch within 24 hours.</p>
+                  <h3 className="text-xl font-bold mb-2">Thank you for collaborating!</h3>
+                  <p className="text-muted-foreground">We have received your details and our partnership team will speak to you within the next 6 hours.</p>
                 </div>
               ) : (
                 <Form {...form}>
