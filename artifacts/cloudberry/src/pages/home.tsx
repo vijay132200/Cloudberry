@@ -5,64 +5,37 @@ import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, CheckCircle2, Activity, HeartPulse, Users, TrendingUp } from "lucide-react";
+import { ArrowRight, CheckCircle2, Activity, HeartPulse, Users, TrendingUp, Lock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 const carouselFrames = [
   {
     title: "Doctor-Led Care",
     overlay: "Medical care built around your long-term health goals.",
-    bg: "from-emerald-900/70 to-emerald-700/50",
-    image: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=900&q=80",
+    bg: "from-blue-900/65 to-blue-700/45",
+    image: "/carousel-doctor.png",
     tag: "👨‍⚕️ Physician-Supervised",
   },
   {
     title: "Personalized Nutrition",
     overlay: "Practical, culturally-fit nutrition guidance designed for real life.",
-    bg: "from-blue-900/70 to-blue-700/50",
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80",
+    bg: "from-green-900/65 to-green-700/45",
+    image: "/carousel-nutrition.png",
     tag: "🥗 Expert Nutritionist",
   },
   {
     title: "Daily Accountability",
     overlay: "Small daily actions that create sustainable, lasting health change.",
-    bg: "from-teal-900/70 to-teal-700/50",
-    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80",
-    tag: "🏃 Fitness Coaching",
+    bg: "from-teal-900/65 to-teal-700/45",
+    image: "/carousel-accountability.png",
+    tag: "📋 Daily Check-Ins",
   },
   {
     title: "Track Your Progress",
     overlay: "See measurable progress over time — not just generic advice.",
-    bg: "from-indigo-900/70 to-indigo-700/50",
-    image: "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80",
+    bg: "from-indigo-900/65 to-indigo-700/45",
+    image: "/carousel-progress.png",
     tag: "📊 Progress Tracking",
-  },
-];
-
-const teamMembers = [
-  {
-    role: "Doctor",
-    desc: "Oversees medical plan and treatment decisions.",
-    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
-    imgPosition: "object-top",
-  },
-  {
-    role: "Nutritionist",
-    desc: "Creates personalized, sustainable nutrition plans.",
-    image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&w=400&q=80",
-    imgPosition: "object-top",
-  },
-  {
-    role: "Fitness Coach",
-    desc: "Designs practical movement routines for real life.",
-    image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=400&q=80",
-    imgPosition: "object-top",
-  },
-  {
-    role: "Care Coordinator",
-    desc: "Ensures consistent follow-up and accountability.",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
-    imgPosition: "object-top",
   },
 ];
 
@@ -121,25 +94,37 @@ const journeySteps = [
     week: "Week 0",
     title: "Assessment & Planning",
     desc: "Meet your care team to understand your health goals, medical history, lifestyle, and challenges. Together, we create a personalized plan aligned with your doctor's guidance.",
-    image: "/img-assessment.jpg",
   },
   {
     week: "Week 1",
     title: "Start Your Program",
     desc: "Begin your nutrition plan, movement routine, and habit tracking. Receive structured support and daily accountability.",
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
   },
   {
     week: "Week 2 onwards",
     title: "Continuous Fine-Tuning",
     desc: "Your care team regularly reviews progress and adjusts recommendations to help improve long-term consistency and outcomes.",
-    image: "/img-finetuning.jpg",
   },
+];
+
+const allFeatures = [
+  { label: "Doctor oversight", basic: true, comp: true, prem: true },
+  { label: "Daily WhatsApp check-ins", basic: true, comp: true, prem: true },
+  { label: "Care coordinator", basic: true, comp: true, prem: true },
+  { label: "Monthly coaching call", basic: true, comp: true, prem: true },
+  { label: "Progress summaries", basic: true, comp: true, prem: true },
+  { label: "Personalized nutrition plan", basic: false, comp: true, prem: true },
+  { label: "Movement guidance", basic: false, comp: true, prem: true },
+  { label: "Bi-weekly coaching", basic: false, comp: true, prem: true },
+  { label: "Glucose tracking support", basic: false, comp: false, prem: true },
+  { label: "Advanced progress reviews", basic: false, comp: false, prem: true },
+  { label: "Priority support", basic: false, comp: false, prem: true },
 ];
 
 export default function HomePage() {
   const [activeFrame, setActiveFrame] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -147,6 +132,24 @@ export default function HomePage() {
     }, 3500);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
+
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleCarouselTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (diff > 0) {
+        setActiveFrame((prev) => (prev + 1) % carouselFrames.length);
+      } else {
+        setActiveFrame((prev) => (prev - 1 + carouselFrames.length) % carouselFrames.length);
+      }
+    }
+    touchStartX.current = null;
+  };
 
   return (
     <MarketingLayout>
@@ -191,27 +194,27 @@ export default function HomePage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative w-full max-w-lg mx-auto"
             >
-              <div className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-muted border shadow-2xl">
+              <div
+                className="relative aspect-[16/11] rounded-3xl overflow-hidden bg-muted border shadow-2xl cursor-grab active:cursor-grabbing"
+                onTouchStart={handleCarouselTouchStart}
+                onTouchEnd={handleCarouselTouchEnd}
+              >
                 {carouselFrames.map((frame, i) => (
                   <div
                     key={i}
                     className={`absolute inset-0 transition-opacity duration-700 ${i === activeFrame ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                   >
-                    {/* Background photo */}
                     <img
                       src={frame.image}
                       alt={frame.title}
                       className="absolute inset-0 w-full h-full object-cover"
                     />
-                    {/* Gradient overlay */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${frame.bg}`} />
-                    {/* Text content */}
                     <div className="absolute inset-0 flex flex-col items-start justify-end p-7 text-white">
                       <span className="text-xs font-semibold uppercase tracking-widest text-white/70 mb-2">{frame.tag}</span>
                       <h3 className="text-2xl font-bold leading-tight mb-2">{frame.title}</h3>
                       <p className="text-white/85 text-sm leading-relaxed">{frame.overlay}</p>
                     </div>
-                    {/* Bottom tag */}
                     <div className="absolute top-5 right-5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-2">
                       <p className="text-white font-semibold text-xs flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-green-300" />{frame.title}</p>
                     </div>
@@ -254,37 +257,43 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* WHY MOST PLANS DON'T LAST */}
+      {/* WHY MOST PLANS DON'T LAST — touch-swipeable carousel */}
       <section className="py-20 bg-gradient-to-b from-muted/60 to-blue-soft/20 border-y">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Why Most Weight & Diabetes Plans Don't Last</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Cloudberry is designed to solve the gaps traditional care often misses.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div
+            className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {whyCards.map((card, i) => (
-              <Card key={i} className="border-border shadow-sm hover:shadow-md transition-shadow bg-card flex flex-col">
-                <CardHeader className="pb-3">
-                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 rounded-full w-8 h-8 flex items-center justify-center mb-3">{card.num}</span>
-                  <CardTitle className="text-base font-semibold text-foreground leading-snug">{card.label}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4 flex-1">
-                  <div className="bg-muted/70 rounded-xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">The Problem</p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{card.problem}</p>
-                  </div>
-                  <div className="bg-primary/8 border border-primary/20 rounded-xl p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Cloudberry</p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{card.solution}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div key={i} className="snap-start shrink-0 w-[80vw] sm:w-[55vw] md:w-[40vw] lg:w-[calc(25%-1rem)] max-w-xs">
+                <Card className="border-border shadow-sm hover:shadow-md transition-shadow bg-card flex flex-col h-full">
+                  <CardHeader className="pb-3">
+                    <span className="text-xs font-mono font-bold text-primary bg-primary/10 rounded-full w-8 h-8 flex items-center justify-center mb-3">{card.num}</span>
+                    <CardTitle className="text-base font-semibold text-foreground leading-snug">{card.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4 flex-1">
+                    <div className="bg-muted/70 rounded-xl p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">The Problem</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{card.problem}</p>
+                    </div>
+                    <div className="bg-primary/8 border border-primary/20 rounded-xl p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Cloudberry</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{card.solution}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             ))}
           </div>
+          <p className="text-center text-xs text-muted-foreground mt-3 md:hidden">← Swipe to see more →</p>
         </div>
       </section>
 
-      {/* WHAT WE AIM TO HELP YOU IMPROVE */}
+      {/* WHAT WE AIM TO HELP YOU IMPROVE — touch-swipeable carousel */}
       <section className="py-24 bg-gradient-to-br from-foreground via-foreground to-foreground/90 text-background relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 md:px-6 relative z-10">
@@ -292,45 +301,46 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-3">What We Aim To Help You Improve</h2>
             <p className="text-background/70 text-lg max-w-xl mx-auto">Measurable outcomes that matter — tracked consistently over time.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+          <div
+            className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth max-w-5xl mx-auto"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             {impactBlocks.map((block, i) => (
-              <div key={i} className="bg-white/8 border border-white/15 rounded-2xl p-6 flex flex-col gap-3 backdrop-blur-sm hover:bg-white/12 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">{block.icon}</div>
-                <h3 className="font-semibold text-base text-background leading-snug">{block.title}</h3>
-                <p className="text-background/65 text-sm leading-relaxed">{block.desc}</p>
+              <div key={i} className="snap-start shrink-0 w-[75vw] sm:w-[50vw] md:w-[calc(25%-1rem)] lg:w-56">
+                <div className="bg-white/8 border border-white/15 rounded-2xl p-6 flex flex-col gap-3 backdrop-blur-sm hover:bg-white/12 transition-colors h-full">
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">{block.icon}</div>
+                  <h3 className="font-semibold text-base text-background leading-snug">{block.title}</h3>
+                  <p className="text-background/65 text-sm leading-relaxed">{block.desc}</p>
+                </div>
               </div>
             ))}
           </div>
+          <p className="text-center text-xs text-background/40 mt-3 md:hidden">← Swipe to see more →</p>
         </div>
       </section>
 
-      {/* YOUR JOURNEY WITH CLOUDBERRY */}
+      {/* YOUR JOURNEY WITH CLOUDBERRY — no images */}
       <section className="py-24 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Your Journey With Cloudberry</h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">A structured, supportive path from consultation to lasting results.</p>
           </div>
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-2xl mx-auto space-y-0">
             {journeySteps.map((step, i) => (
-              <div key={i} className="flex flex-col md:flex-row gap-6 items-start group">
-                <div className="md:w-56 shrink-0 rounded-2xl overflow-hidden aspect-[4/3] shadow-md">
-                  <img src={step.image} alt={step.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div key={i} className="flex gap-5 items-start group">
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-mono font-bold text-sm border border-primary/30 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors shrink-0 z-10 text-primary">
+                    {i + 1}
+                  </div>
+                  {i < journeySteps.length - 1 && <div className="w-px flex-1 bg-border mt-2 group-hover:bg-primary/30 transition-colors" style={{ minHeight: '2.5rem' }} />}
                 </div>
-                <div className="flex gap-5">
-                  <div className="flex flex-col items-center mt-1">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-mono font-bold text-sm border group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors shrink-0 z-10">
-                      {i + 1}
-                    </div>
-                    {i < journeySteps.length - 1 && <div className="w-px flex-1 bg-border mt-2 group-hover:bg-primary/30 transition-colors" style={{ minHeight: '2rem' }} />}
+                <div className="pb-10 pt-1">
+                  <div className="flex items-baseline gap-3 mb-2 flex-wrap">
+                    <h3 className="text-xl font-bold text-foreground">{step.title}</h3>
+                    <Badge variant="secondary" className="font-mono text-xs bg-blue-soft text-blue-soft-foreground border-0">{step.week}</Badge>
                   </div>
-                  <div className="pb-10 pt-1">
-                    <div className="flex items-baseline gap-3 mb-2 flex-wrap">
-                      <h3 className="text-xl font-bold text-foreground">{step.title}</h3>
-                      <Badge variant="secondary" className="font-mono text-xs bg-blue-soft text-blue-soft-foreground border-0">{step.week}</Badge>
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed">{step.desc}</p>
-                  </div>
+                  <p className="text-muted-foreground leading-relaxed">{step.desc}</p>
                 </div>
               </div>
             ))}
@@ -338,54 +348,41 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* YOUR TEAM */}
-      <section className="py-24 bg-gradient-to-b from-muted/30 to-blue-soft/10 border-y">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">A Coordinated Care Team</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Cloudberry combines doctors, nutritionists, fitness coaches, and care coordinators to support patients through personalized, structured care.
-            </p>
-            <p className="text-sm text-primary mt-4 font-medium">Founding clinical team details coming soon.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {teamMembers.map((member, i) => (
-              <div key={i} className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img
-                    src={member.image}
-                    alt={member.role}
-                    className={`w-full h-full object-cover ${member.imgPosition} group-hover:scale-105 transition-transform duration-500`}
-                  />
-                </div>
-                <div className="p-5">
-                  <Badge variant="secondary" className="text-xs mb-2 bg-primary/10 text-primary border-0">{member.role}</Badge>
-                  <p className="text-sm text-muted-foreground">{member.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING TEASER */}
-      <section className="py-20 bg-background">
+      {/* PROGRAMS & PRICING */}
+      <section id="pricing" className="py-20 bg-gradient-to-b from-muted/30 to-blue-soft/20 border-y scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Flexible Programs Designed Around Your Needs</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Choose the level of support that fits your needs. All plans include accountability, support, and measurable outcomes.
+              Choose the level of support that fits your needs. All plans include daily accountability, doctor oversight, and measurable outcomes.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
             {[
-              { name: "Accountability Program", price: "₹990", desc: "Lightweight accountability and structured follow-up.", features: ["Daily WhatsApp check-ins", "Personalized reminders", "Monthly coaching call", "Educational resources"], popular: false },
-              { name: "Structured Coaching", price: "₹1,990", desc: "Personalized lifestyle support with nutrition and movement.", features: ["Everything in Basic", "Personalized nutrition plan", "Movement guidance", "Bi-weekly coaching calls"], popular: true },
-              { name: "Advanced Monitoring", price: "₹3,990", desc: "Closer monitoring and higher-touch support for complex needs.", features: ["Everything in Comprehensive", "Glucose tracking support", "Higher-frequency follow-ups", "Priority support"], popular: false },
-            ].map((plan, i) => (
-              <Card key={i} className={`flex flex-col relative ${plan.popular ? "border-primary shadow-lg" : "border-border shadow-sm"}`}>
+              {
+                name: "Accountability Program",
+                price: "₹990",
+                desc: "Lightweight accountability and structured follow-up.",
+                key: "basic",
+                popular: false,
+              },
+              {
+                name: "Structured Coaching",
+                price: "₹1,990",
+                desc: "Personalized lifestyle support with nutrition and movement.",
+                key: "comp",
+                popular: true,
+              },
+              {
+                name: "Advanced Monitoring",
+                price: "₹3,990",
+                desc: "Closer monitoring and higher-touch support for complex needs.",
+                key: "prem",
+                popular: false,
+              },
+            ].map((plan, pi) => (
+              <Card key={pi} className={`flex flex-col relative ${plan.popular ? "border-primary shadow-xl" : "border-border shadow-sm"}`}>
                 {plan.popular && (
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Most Popular</div>
                 )}
@@ -396,33 +393,33 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent className="pt-5 flex-1">
                   <ul className="space-y-2">
-                    {plan.features.map((f, j) => (
-                      <li key={j} className="flex items-start gap-2 text-sm text-foreground/80">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
+                    {allFeatures.map((feat, j) => {
+                      const included = plan.key === "basic" ? feat.basic : plan.key === "comp" ? feat.comp : feat.prem;
+                      return (
+                        <li key={j} className={`flex items-start gap-2 text-sm ${included ? "text-foreground/80" : "text-muted-foreground/45"}`}>
+                          {included
+                            ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                            : <Lock className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground/30" />
+                          }
+                          <span>{feat.label}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </CardContent>
                 <CardFooter>
                   <Button asChild variant={plan.popular ? "default" : "outline"} className="w-full rounded-full">
-                    <Link href={`/patient/signup?plan=${i === 0 ? "basic" : i === 1 ? "comprehensive" : "premium"}`}>Get Started</Link>
+                    <Link href={`/patient/signup?plan=${plan.key === "comp" ? "comprehensive" : plan.key}`}>Get Started</Link>
                   </Button>
                 </CardFooter>
               </Card>
             ))}
           </div>
-
-          <div className="text-center">
-            <Button asChild variant="outline" size="lg" className="rounded-full px-8">
-              <Link href="/programs">View Full Programs & Pricing <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-          </div>
         </div>
       </section>
 
       {/* FAQs */}
-      <section className="py-20 bg-gradient-to-b from-muted/40 to-warm-neutral/20 border-t">
+      <section id="faqs" className="py-20 bg-gradient-to-b from-muted/40 to-warm-neutral/20 border-t scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Frequently Asked Questions</h2>
@@ -443,11 +440,6 @@ export default function HomePage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <div className="mt-10 text-center">
-            <Button asChild variant="outline" className="rounded-full" size="lg">
-              <Link href="/faqs">View All FAQs</Link>
-            </Button>
-          </div>
         </div>
       </section>
 

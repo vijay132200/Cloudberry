@@ -35,12 +35,12 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Programs & Pricing", href: "/programs" },
+    { name: "Programs", href: "/#pricing" },
     { name: "Patient Portal", href: "/patient/signin" },
     { name: "Physician Portal", href: "/physician" },
     { name: "Operations Portal", href: "/ops/signin" },
     { name: "Blogs", href: "/blogs" },
-    { name: "FAQs", href: "/faqs" },
+    { name: "FAQs", href: "/#faqs" },
     { name: "About Us", href: "/about" },
   ];
 
@@ -55,14 +55,14 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-2 z-50 relative">
             <div className="flex flex-col">
               <span className="font-sans text-xl font-bold tracking-tight leading-none text-foreground">Cloudberry</span>
-              <span className="text-[10px] text-muted-foreground hidden md:block leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
+              <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
             </div>
           </Link>
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-5">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.name}
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${
@@ -72,7 +72,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 {link.name}
-              </Link>
+              </a>
             ))}
             <Button onClick={() => setGetStartedOpen(true)} className="rounded-full shadow-sm" data-testid="btn-nav-get-started">
               Get Started
@@ -90,7 +90,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Mobile Nav — rendered outside header to avoid stacking context issues */}
+      {/* Mobile Nav */}
       <div
         className={`fixed inset-0 z-[9998] flex flex-col pt-24 px-6 transition-transform duration-300 ease-in-out lg:hidden ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
@@ -99,14 +99,14 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
       >
         <nav className="flex flex-col gap-6 text-lg">
           {navLinks.map((link) => (
-            <Link
+            <a
               key={link.name}
               href={link.href}
               onClick={() => setMobileMenuOpen(false)}
               className={`font-medium border-b pb-3 border-border/40 ${link.name === "Operations Portal" ? "text-slate-500" : "text-foreground"}`}
             >
               {link.name}
-            </Link>
+            </a>
           ))}
           <Button size="lg" className="mt-4 rounded-full" onClick={() => { setMobileMenuOpen(false); setGetStartedOpen(true); }} data-testid="btn-mobile-nav-get-started">
             Get Started
@@ -120,7 +120,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
       <footer className="bg-foreground text-background py-12 md:py-16 mt-auto">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 lg:gap-12 items-start border-b border-white/10 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 lg:gap-12 items-start border-b border-white/10 pb-10">
             <div className="flex flex-col gap-4">
               <Link href="/" className="flex items-center gap-2">
                 <span className="font-sans text-xl font-bold tracking-tight leading-none text-background">Cloudberry</span>
@@ -130,12 +130,12 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 md:col-span-2 lg:col-span-1 justify-between md:justify-around">
+            <div className="grid grid-cols-2 gap-8">
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Platform</h4>
                 <Link href="/about" className="text-white/60 hover:text-white text-sm transition-colors">About Us</Link>
-                <Link href="/programs" className="text-white/60 hover:text-white text-sm transition-colors">Programs</Link>
-                <Link href="/faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</Link>
+                <a href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs</a>
+                <a href="/#faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</a>
                 <Link href="/physician" className="text-white/60 hover:text-white text-sm transition-colors">For Physicians</Link>
                 <Link href="/ops/signin" className="text-white/60 hover:text-white text-sm transition-colors">Operations Portal</Link>
               </div>
@@ -143,13 +143,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 <h4 className="font-semibold text-white/90">Legal</h4>
                 <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Refund Policy</Link>
                 <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Privacy Policy</Link>
-                <Link href="#" className="text-white/60 hover:text-white text-sm transition-colors">Contact</Link>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-4 lg:items-end">
-              <h4 className="font-semibold text-white/90">Connect</h4>
-              <p className="text-white/40 text-xs">Social links coming soon.</p>
             </div>
           </div>
 

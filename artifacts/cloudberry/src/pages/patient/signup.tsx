@@ -65,60 +65,35 @@ export default function PatientSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-white to-blue-50/50 flex flex-col md:flex-row">
-      {/* Left Panel */}
-      <div className="w-full md:w-5/12 lg:w-1/2 relative flex flex-col border-b md:border-b-0 md:border-r border-border/40 overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80"
-            alt="Doctor consultation"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/80 via-primary/60 to-blue-700/70" />
-        </div>
-
-        <div className="relative z-10 p-8 md:p-12 lg:p-16 flex flex-col h-full min-h-[340px] md:min-h-screen">
-          <Link href="/" className="inline-flex items-center gap-2 mb-10">
-            <span className="font-sans text-2xl font-bold tracking-tight text-white">Cloudberry</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/60 via-white to-green-50/40 flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-8">
+          <Link href="/">
+            <span className="font-sans text-2xl font-bold tracking-tight text-primary">Cloudberry</span>
           </Link>
-
-          <div className="flex-grow flex flex-col justify-center">
-            <h1 className="text-3xl lg:text-4xl font-bold mb-5 leading-tight text-white">
-              Doctor-Led Care for Sustainable Weight & Diabetes Management
-            </h1>
-            <p className="text-white/80 text-base mb-10">
-              Join the platform that treats metabolic health holistically through clinical oversight and daily support.
-            </p>
-
-            <div className="space-y-5">
-              {[
-                { title: "Personalized Plans", desc: "Protocols tailored to your unique biology, not generic diets." },
-                { title: "Continuous Support", desc: "Daily accountability and habit building, not just monthly visits." },
-                { title: "Coordinated Care Team", desc: "Doctors, nutritionists, and fitness coaches working together for you." },
-              ].map((item) => (
-                <div key={item.title} className="flex items-start gap-4">
-                  <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
-                    <CheckCircle2 className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white text-base">{item.title}</h3>
-                    <p className="text-white/70 text-sm mt-0.5">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <p className="text-sm text-muted-foreground mt-1">Doctor-Led Care for Long-Term Metabolic Health</p>
         </div>
-      </div>
 
-      {/* Right Panel - Form */}
-      <div className="w-full md:w-7/12 lg:w-1/2 p-8 md:p-12 lg:p-16 overflow-y-auto">
-        <div className="max-w-md mx-auto">
+        <div className="bg-white rounded-3xl border border-border/50 shadow-lg p-8 md:p-10">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold text-foreground">Start Your Journey</h2>
             <Link href="/patient/signin" className="text-sm text-primary font-semibold hover:underline">
               Log in instead
             </Link>
+          </div>
+
+          <div className="flex gap-3 mb-6">
+            {[
+              { title: "Personalized Plans", desc: "Tailored to your biology." },
+              { title: "Daily Support", desc: "Accountability every day." },
+              { title: "Doctor-Led", desc: "Clinical oversight throughout." },
+            ].map((item) => (
+              <div key={item.title} className="flex-1 bg-primary/5 rounded-xl p-3 text-center">
+                <CheckCircle2 className="h-4 w-4 text-primary mx-auto mb-1" />
+                <p className="text-xs font-semibold text-foreground">{item.title}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</p>
+              </div>
+            ))}
           </div>
 
           <Form {...form}>
@@ -245,7 +220,7 @@ export default function PatientSignup() {
 
               <Button
                 type="submit"
-                className="w-full mt-6 rounded-full h-12 text-base bg-primary hover:bg-primary/90 shadow-sm"
+                className="w-full mt-6 rounded-full h-12 text-base shadow-sm"
                 disabled={signup.isPending}
                 data-testid="btn-signup-submit"
               >
