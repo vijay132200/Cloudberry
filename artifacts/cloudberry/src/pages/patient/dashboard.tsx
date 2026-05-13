@@ -2,6 +2,7 @@ import { PatientLayout } from "@/components/layout/patient-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSubmitCheckin } from "@workspace/api-client-react";
 import { CheckinInputEnergyLevel, CheckinInputMealsFollowed } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
@@ -384,6 +385,11 @@ function ComprehensiveCheckinForm({ isPremium, onDone }: { isPremium: boolean; o
 function BasicDashboardSections() {
   const consecutiveDays = 5;
   const consistencyScore = 74;
+  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+  const currentWeight = weightData[weightData.length - 1].weight;
+  const todayEnergy = energyData[energyData.length - 1].level;
+  const todayEnergyLabel = todayEnergy === 3 ? "Good" : todayEnergy === 2 ? "Average" : "Low";
+  const todayEnergyColor = todayEnergy === 3 ? "text-green-600" : todayEnergy === 2 ? "text-amber-600" : "text-red-500";
 
   return (
     <div className="space-y-5">
@@ -407,50 +413,93 @@ function BasicDashboardSections() {
         </CardContent>
       </Card>
 
-      {/* Section 2 — Progress (3 cards only) */}
+      {/* Section 2 — Progress (current state only; tap each card to see trend) */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Section 2 — Progress</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Card 1 — Weight */}
-          <Card className="shadow-sm border-border sm:col-span-1">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-primary" /> Weight
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-2 pb-4">
-              <WeightLineChart />
-              <p className="text-center text-xs text-muted-foreground mt-1">−2.7 kg since start</p>
+        <div className="grid grid-cols-3 gap-3">
+
+          {/* Card 1 — Weight (current value) */}
+          <Card
+            className="shadow-sm border-border cursor-pointer hover:border-primary/50 hover:shadow-md transition-all active:scale-[0.98]"
+            onClick={() => setExpandedMetric("weight")}
+          >
+            <CardContent className="p-4 flex flex-col items-center text-center gap-1.5">
+              <TrendingDown className="w-5 h-5 text-primary" />
+              <p className="text-2xl font-extrabold text-foreground leading-none">
+                {currentWeight}<span className="text-sm font-normal text-muted-foreground"> kg</span>
+              </p>
+              <p className="text-[11px] font-semibold text-secondary">↓ 2.7 kg lost</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Tap for trend</p>
             </CardContent>
           </Card>
 
-          {/* Card 2 — Consistency Score */}
-          <Card className="shadow-sm border-border flex flex-col items-center justify-center py-6">
-            <ConsistencyCircle score={consistencyScore} />
-            <p className="text-xs text-muted-foreground mt-2">Based on daily responses</p>
+          {/* Card 2 — Consistency (current %) */}
+          <Card
+            className="shadow-sm border-border cursor-pointer hover:border-primary/50 hover:shadow-md transition-all active:scale-[0.98]"
+            onClick={() => setExpandedMetric("consistency")}
+          >
+            <CardContent className="p-4 flex flex-col items-center text-center gap-1.5">
+              <CheckCircle2 className="w-5 h-5 text-primary" />
+              <p className="text-2xl font-extrabold text-primary leading-none">{consistencyScore}%</p>
+              <p className="text-[11px] text-muted-foreground">consistency</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Tap for trend</p>
+            </CardContent>
           </Card>
 
-          {/* Card 3 — Energy Trend */}
-          <Card className="shadow-sm border-border">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Activity className="w-4 h-4 text-secondary" /> Energy Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-2 pb-3">
-              <EnergyTrendChart />
-              <div className="flex justify-center gap-4 mt-2">
-                {[{ color: "#22c55e", label: "High" }, { color: "#eab308", label: "Mid" }, { color: "#ef4444", label: "Low" }].map(l => (
-                  <div key={l.label} className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: l.color }} />
-                    <span className="text-[10px] text-muted-foreground">{l.label}</span>
-                  </div>
-                ))}
-              </div>
+          {/* Card 3 — Energy (today's value) */}
+          <Card
+            className="shadow-sm border-border cursor-pointer hover:border-primary/50 hover:shadow-md transition-all active:scale-[0.98]"
+            onClick={() => setExpandedMetric("energy")}
+          >
+            <CardContent className="p-4 flex flex-col items-center text-center gap-1.5">
+              <Activity className="w-5 h-5 text-secondary" />
+              <p className={`text-2xl font-extrabold leading-none ${todayEnergyColor}`}>{todayEnergyLabel}</p>
+              <p className="text-[11px] text-muted-foreground">energy today</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Tap for trend</p>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Metric history dialog */}
+      <Dialog open={expandedMetric !== null} onOpenChange={() => setExpandedMetric(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {expandedMetric === "weight" && "Weight Trend — Last 21 Days"}
+              {expandedMetric === "consistency" && "Consistency Score — This Week"}
+              {expandedMetric === "energy" && "Energy Trend — This Week"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="pt-2">
+            {expandedMetric === "weight" && (
+              <>
+                <WeightLineChart />
+                <p className="text-center text-xs text-muted-foreground mt-2">Total lost: −2.7 kg since start</p>
+              </>
+            )}
+            {expandedMetric === "consistency" && (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <ConsistencyCircle score={consistencyScore} />
+                <p className="text-sm text-muted-foreground text-center">Based on your daily check-in responses this week.</p>
+              </div>
+            )}
+            {expandedMetric === "energy" && (
+              <>
+                <EnergyTrendChart />
+                <div className="flex justify-center gap-5 mt-3">
+                  {[{ color: "#22c55e", label: "High" }, { color: "#eab308", label: "Mid" }, { color: "#ef4444", label: "Low" }].map(l => (
+                    <div key={l.label} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: l.color }} />
+                      <span className="text-xs text-muted-foreground">{l.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Section 3 — Weekly Insight (Most Important) */}
       <Card className="border-amber-200 bg-amber-50/60 shadow-sm">
@@ -801,30 +850,26 @@ export default function PatientDashboard() {
       <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
 
         {/* Welcome */}
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              Good {getGreeting()}, {firstName}!
-              <span className="block text-base text-muted-foreground font-normal mt-1">You're on Week 3 of your journey.</span>
-            </h1>
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground flex flex-wrap items-baseline gap-3">
+                Good {getGreeting()}, {firstName}!
+                <span className="text-2xl md:text-3xl font-bold text-primary">🔥 12 Day Streak</span>
+              </h1>
+              <span className="text-base text-muted-foreground font-normal mt-1 block">You're on Week 3 of your journey.</span>
+            </div>
             <Badge variant="outline" className={`text-xs px-3 py-1 font-medium shrink-0 border ${planColor[plan]}`}>
               {planLabel[plan]}
             </Badge>
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-blue-soft text-blue-soft-foreground border-0 text-xs">
-              💊 Take Metformin 500mg after dinner
-            </Badge>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs">
-              🔥 12 Day Streak
-            </Badge>
-            {plan === "premium" && (
+          {plan === "premium" && (
+            <div>
               <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
                 ⭐ Priority Support Active
               </Badge>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Upgrade banner for basic */}

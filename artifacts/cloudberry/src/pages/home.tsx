@@ -358,61 +358,101 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
             {[
               {
+                label: "BASIC",
                 name: "Accountability Program",
                 price: "₹990",
-                desc: "Lightweight accountability and structured follow-up.",
-                key: "basic",
+                planKey: "basic",
                 popular: false,
+                bestFor: "Patients wanting lightweight accountability support.",
+                everythingIn: null,
+                includes: [
+                  "Daily WhatsApp check-ins",
+                  "Personalized reminders",
+                  "Monthly coaching call",
+                  "Educational resources",
+                ],
               },
               {
+                label: "COMPREHENSIVE",
                 name: "Structured Coaching",
                 price: "₹1,990",
-                desc: "Personalized lifestyle support with nutrition and movement.",
-                key: "comp",
+                planKey: "comprehensive",
                 popular: true,
+                bestFor: "Patients wanting personalized nutrition and movement guidance.",
+                everythingIn: "Everything in Basic +",
+                includes: [
+                  "Personalized nutrition plan",
+                  "Personalized activity guidance",
+                  "Bi-weekly coaching calls",
+                ],
               },
               {
+                label: "PREMIUM",
                 name: "Advanced Monitoring",
                 price: "₹3,990",
-                desc: "Closer monitoring and higher-touch support for complex needs.",
-                key: "prem",
+                planKey: "premium",
                 popular: false,
+                bestFor: "Patients needing closer monitoring and higher-touch support.",
+                everythingIn: "Everything in Comprehensive +",
+                includes: [
+                  "Glucose tracking support",
+                  "Higher-frequency follow-ups",
+                  "Priority support",
+                ],
               },
             ].map((plan, pi) => (
-              <Card key={pi} className={`flex flex-col relative ${plan.popular ? "border-primary shadow-xl" : "border-border shadow-sm"}`}>
-                {plan.popular && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Most Popular</div>
-                )}
-                <CardHeader className="text-center pb-4 border-b">
-                  <CardTitle className="text-lg font-bold">{plan.name}</CardTitle>
-                  <CardDescription className="text-sm mb-2">{plan.desc}</CardDescription>
-                  <div className="text-3xl font-bold text-foreground">{plan.price}<span className="text-base text-muted-foreground font-normal">/month</span></div>
-                </CardHeader>
-                <CardContent className="pt-5 flex-1">
+              <div key={pi} className={`bg-white rounded-2xl flex flex-col gap-5 p-6 relative ${
+                plan.popular
+                  ? "border-2 border-primary shadow-xl ring-4 ring-primary/10"
+                  : "border border-border shadow-sm"
+              }`}>
+                <div>
+                  <span className={`inline-block text-[10px] font-extrabold tracking-widest px-3 py-1 rounded-full ${
+                    plan.popular
+                      ? "bg-primary text-white"
+                      : "border border-border/80 text-foreground/60"
+                  }`}>
+                    {plan.label}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-2xl font-bold text-foreground leading-tight">{plan.name}</h3>
+                  <div className="mt-2 flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-foreground">{plan.price}</span>
+                    <span className="text-base text-muted-foreground font-normal">/month</span>
+                  </div>
+                </div>
+
+                <hr className="border-border" />
+
+                <div>
+                  <p className="text-[10px] font-extrabold tracking-widest uppercase text-muted-foreground mb-1">Best For:</p>
+                  <p className="text-sm text-foreground/70 leading-relaxed">{plan.bestFor}</p>
+                </div>
+
+                <div className="flex-1">
+                  <p className="text-[10px] font-extrabold tracking-widest uppercase text-muted-foreground mb-2">Includes:</p>
+                  {plan.everythingIn && (
+                    <p className="text-sm font-semibold text-primary mb-2">{plan.everythingIn}</p>
+                  )}
                   <ul className="space-y-2">
-                    {allFeatures.map((feat, j) => {
-                      const included = plan.key === "basic" ? feat.basic : plan.key === "comp" ? feat.comp : feat.prem;
-                      return (
-                        <li key={j} className={`flex items-start gap-2 text-sm ${included ? "text-foreground/80" : "text-muted-foreground/45"}`}>
-                          {included
-                            ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                            : <Lock className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground/30" />
-                          }
-                          <span>{feat.label}</span>
-                        </li>
-                      );
-                    })}
+                    {plan.includes.map((feat, j) => (
+                      <li key={j} className="flex items-start gap-2 text-sm text-foreground/80">
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        {feat}
+                      </li>
+                    ))}
                   </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button asChild variant={plan.popular ? "default" : "outline"} className="w-full rounded-full">
-                    <Link href={`/patient/signup?plan=${plan.key === "comp" ? "comprehensive" : plan.key}`}>Get Started</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
+                </div>
+
+                <Button asChild variant={plan.popular ? "default" : "outline"} className="w-full rounded-full mt-auto">
+                  <Link href={`/patient/signup?plan=${plan.planKey}`}>Get Started</Link>
+                </Button>
+              </div>
             ))}
           </div>
         </div>

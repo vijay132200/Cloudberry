@@ -39,7 +39,7 @@ export default function PatientSignin() {
           localStorage.setItem("cloudberry_token", "demo_token");
         }
         setLocation("/patient/dashboard");
-        toast({ title: "Welcome back!", description: "You're signed in to your patient portal." });
+        toast({ title: "Welcome back!", description: "You're signed in to your patient portal.", duration: 3000 });
       },
       onError: () => {
         localStorage.setItem("cloudberry_token", "demo_token");

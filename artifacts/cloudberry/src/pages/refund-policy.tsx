@@ -30,44 +30,12 @@ export default function RefundPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-foreground mb-3">Onboarding and Consultation Fees</h2>
-              <p>
-                Free initial consultations are non-refundable as they involve time and resources from our clinical team. If a paid onboarding or assessment fee was charged as part of your enrollment, this fee is non-refundable once the onboarding session has taken place.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold text-foreground mb-3">Non-Refundable Circumstances</h2>
-              <p>Refunds will not be issued in the following circumstances:</p>
-              <ul className="list-disc pl-6 mt-2 space-y-2">
-                <li>The subscription period has already been fully consumed.</li>
-                <li>Cancellation is requested after more than 28 days of the current billing cycle without prior written notice.</li>
-                <li>The account has been suspended or terminated due to a violation of our Terms of Service.</li>
-                <li>The refund request is made more than 60 days after the original charge date.</li>
-              </ul>
-            </section>
-
-            <section>
               <h2 className="text-xl font-bold text-foreground mb-3">How to Request a Refund</h2>
               <p>
-                To initiate a cancellation or refund request, please contact us via WhatsApp or phone during business hours. Provide your registered name, mobile number, and a brief reason for the refund. Our team will review your request and respond within 2 business days.
+                To initiate a cancellation or refund request, please contact us via WhatsApp or phone during business hours. Provide your registered name, mobile number, and a brief reason for the refund. Our team will review your request and respond within 24 hours.
               </p>
               <p className="mt-3">
                 Approved refunds are processed within 5–7 business days and returned to the original payment method.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold text-foreground mb-3">Plan Changes and Downgrades</h2>
-              <p>
-                If you choose to downgrade your plan mid-cycle, the difference in cost will be applied as a credit toward your next billing period rather than issued as a cash refund. Upgrades take effect immediately and are billed on a pro-rated basis for the remainder of the current cycle.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold text-foreground mb-3">Service Disruptions</h2>
-              <p>
-                In the rare event that Cloudberry is unable to deliver the services included in your plan due to a failure on our part (such as an extended service outage or inability to assign a care team), you may be eligible for a full or partial refund for the affected period. Such cases are reviewed individually by our team.
               </p>
             </section>
 

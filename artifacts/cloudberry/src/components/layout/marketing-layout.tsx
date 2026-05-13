@@ -134,6 +134,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 <a href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs</a>
                 <a href="/#faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</a>
                 <Link href="/physician" className="text-white/60 hover:text-white text-sm transition-colors">For Physicians</Link>
+                <Link href="/patient/signin" className="inline-flex items-center gap-1.5 bg-primary/80 hover:bg-primary text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Patient Portal →</Link>
                 <Link href="/ops/signin" className="text-white/60 hover:text-white text-sm transition-colors">Operations Portal</Link>
               </div>
               <div className="flex flex-col gap-3">

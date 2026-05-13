@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, ClipboardList, LifeBuoy, Settings, LogOut } from "lucide-react";
+import { Home, Settings, LogOut } from "lucide-react";
 import { useEffect } from "react";
 
 export function PatientLayout({ children }: { children: React.ReactNode }) {
@@ -14,8 +14,6 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { name: "Home", href: "/patient/dashboard", icon: Home },
-    { name: "Records", href: "/patient/records", icon: ClipboardList },
-    { name: "Support", href: "/patient/support", icon: LifeBuoy },
     { name: "Settings", href: "/patient/settings", icon: Settings },
   ];
 

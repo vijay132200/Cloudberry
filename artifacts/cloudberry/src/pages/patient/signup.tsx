@@ -54,12 +54,12 @@ export default function PatientSignup() {
       onSuccess: (res) => {
         localStorage.setItem("cloudberry_token", res.token || "demo_token");
         setLocation("/patient/dashboard");
-        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here." });
+        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here.", duration: 3000 });
       },
       onError: () => {
         localStorage.setItem("cloudberry_token", "demo_token");
         setLocation("/patient/dashboard");
-        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here." });
+        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here.", duration: 3000 });
       }
     });
   };
