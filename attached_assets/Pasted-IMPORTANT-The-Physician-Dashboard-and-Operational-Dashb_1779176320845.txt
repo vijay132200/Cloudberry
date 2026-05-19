@@ -1,0 +1,213 @@
+IMPORTANT:
+The Physician Dashboard and Operational Dashboard MUST visually and functionally match the attached screenshots exactly in layout hierarchy, responsiveness, spacing philosophy, card system, sidebar structure, analytics structure, chart placement, and enterprise SaaS behavior.
+
+DO NOT redesign the UI from scratch.
+EXTEND and REPLICATE the same professional dashboard architecture.
+
+PHYSICIAN DASHBOARD REQUIREMENTS:
+Create a physician dashboard matching the provided screenshot structure:
+
+* Left vertical sidebar
+* Top analytics cards
+* Patient outcomes overview
+* Weight/HbA1c/Fasting glucose tabs
+* Program distribution donut chart
+* Appointment panel
+* Alerts panel
+* Recent patient activity table
+* Quick action cards
+
+OPERATIONAL DASHBOARD REQUIREMENTS:
+Create an operational dashboard matching the provided screenshot:
+
+* Active patients metrics
+* New registrations
+* Check-ins completed
+* High priority alerts
+* Adherence metrics
+* Program distribution chart
+* Registrations table
+* Alerts summary
+* Patients database
+* Care team assignments
+* Physician database
+* KPI monitoring
+
+CRITICAL:
+ALL dashboard data MUST come dynamically from the PostgreSQL database.
+NO hardcoded frontend-only mock data.
+
+REAL-TIME DATABASE LOGIC:
+Every patient interaction must affect analytics automatically:
+
+* Daily check-ins
+* Glucose entries
+* Weight updates
+* Meal logs
+* Activity logs
+* Appointments
+* Adherence tracking
+* Messaging activity
+
+These entries must:
+
+1. Save in database
+2. Trigger analytics recalculation
+3. Update physician dashboard
+4. Update operations dashboard
+5. Update patient dashboard progress
+
+EXAMPLES:
+
+* Missed check-ins should trigger alerts
+* Poor adherence should update physician alerts
+* Weight progress should update charts
+* High glucose should generate operational warnings
+* Dashboard KPIs should recalculate automatically
+
+PATIENT PLAN STRUCTURE:
+Implement 3 plans:
+
+1. Basic Plan
+2. Comprehensive Plan
+3. Premium Plan
+
+Each plan should dynamically unlock features.
+
+BASIC PLAN:
+
+* Dashboard
+* Daily check-ins
+* Progress overview
+* Appointments
+* Basic reports
+
+COMPREHENSIVE PLAN:
+Includes Basic +
+
+* Dietician onboarding
+* Personalized playbook
+* Enhanced analytics
+* Automated care follow-ups
+* Better tracking systems
+
+PREMIUM PLAN:
+Includes Comprehensive +
+
+* Meal upload
+* CGM/glucose upload
+* Advanced monitoring
+* Fitness coach integration
+* Deep analytics
+* AI-assisted pattern tracking
+
+ONBOARDING FLOW:
+STEP 1:
+Patient registration/login
+
+STEP 2:
+Patient onboarding questionnaire:
+
+* Medical history
+* Glucose history
+* Medication history
+* Sleep patterns
+* Stress
+* Nutrition habits
+* Activity levels
+* Goals
+* File uploads
+* Lab report uploads
+
+STEP 3:
+Admin/physician review status:
+
+* Pending
+* Under Review
+* Approved
+* Active
+
+Until approval:
+Dashboard access should remain restricted.
+
+STEP 4:
+Role-based dashboard activation.
+
+PATIENT DASHBOARD REQUIREMENTS:
+All dashboards must include:
+
+* Left frozen sidebar
+* Dashboard overview
+* Daily check-ins
+* Appointments
+* Resources
+* Reports
+* Support
+* Settings
+
+DASHBOARD INTELLIGENCE:
+Use actual patient data to generate:
+
+* Weekly goals
+* Monthly focus
+* Recommendations
+* Progress indicators
+* Adherence scoring
+* Alert systems
+
+DAILY CHECK-IN AUTOMATION:
+Basic Plan:
+
+* Structured check-ins from care coordinator
+
+Comprehensive Plan:
+
+* Automated follow-up prompts
+
+Premium Plan:
+
+* Meal uploads
+* Post-meal glucose uploads
+* Advanced tracking
+
+MONTHLY REPORTS:
+Generate structured monthly reports automatically:
+
+* Adherence
+* Weight progress
+* Glucose trends
+* Goal completion
+* Physician observations
+* Care recommendations
+
+Send reports to:
+
+* Patient dashboard
+* Physician dashboard
+* Operational dashboard
+
+TECHNICAL REQUIREMENTS:
+
+* Real PostgreSQL persistence
+* Shared APIs
+* REST architecture
+* Secure authentication
+* Role-based access control
+* Session persistence
+* Protected routes
+* API validation
+* Form validation
+* Error handling
+* Loading states
+* Production-safe architecture
+
+DO NOT:
+
+* Use placeholder analytics
+* Use static charts
+* Use fake progress systems
+* Hardcode metrics
+* Rebuild already working UI
+* Break existing theme consistency
+
+Keep implementation optimized for minimum AI credits while maintaining enterprise-level quality.

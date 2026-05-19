@@ -9,7 +9,8 @@ import { motion } from "framer-motion";
 const plans = [
   {
     key: "basic",
-    name: "Accountability Program",
+    name: "Basic Plan",
+    subtitle: "Accountability Program",
     price: "₹990",
     period: "/month",
     tagline: "For patients who need structure, reminders, and consistent follow-up.",
@@ -29,11 +30,12 @@ const plans = [
       { label: "Advanced progress reviews", included: false },
       { label: "Priority support", included: false },
     ],
-    cta: "Start Accountability Program",
+    cta: "Get Started — Basic Plan",
   },
   {
     key: "comprehensive",
-    name: "Structured Coaching Program",
+    name: "Comprehensive Plan",
+    subtitle: "Structured Coaching",
     price: "₹1,990",
     period: "/month",
     tagline: "For patients who want personalized lifestyle guidance with ongoing coaching support.",
@@ -53,11 +55,12 @@ const plans = [
       { label: "Advanced progress reviews", included: false },
       { label: "Priority support", included: false },
     ],
-    cta: "Start Structured Coaching",
+    cta: "Get Started — Comprehensive Plan",
   },
   {
     key: "premium",
-    name: "Advanced Monitoring Program",
+    name: "Premium Plan",
+    subtitle: "Advanced Monitoring",
     price: "₹3,990",
     period: "/month",
     tagline: "For patients with complex needs who require closer monitoring and the highest level of support.",
@@ -77,7 +80,7 @@ const plans = [
       { label: "Advanced progress reviews", included: true },
       { label: "Priority support", included: true },
     ],
-    cta: "Start Advanced Monitoring",
+    cta: "Get Started — Premium Plan",
   },
 ];
 

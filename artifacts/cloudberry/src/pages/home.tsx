@@ -4,8 +4,8 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, CheckCircle2, Activity, HeartPulse, Users, TrendingUp, Lock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, CheckCircle2, Activity, HeartPulse, Users, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 const carouselFrames = [
@@ -41,27 +41,27 @@ const carouselFrames = [
 
 const whyCards = [
   {
-    problem: "Most patients receive broad lifestyle advice that's difficult to apply consistently.",
-    solution: "We create personalized plans designed around your routine, food preferences, and health needs.",
-    label: "Generic Advice Fails",
+    problem: "Most dieticians go ahead with typical, generic treatments and advice without understanding the depth of the situation — moving according to a basic reaction-plan approach.",
+    solution: "We take the time to understand your body, your life, and your patterns before we even start building your plan.",
+    label: "One Size Doesn't Fit All",
     num: "01",
   },
   {
-    problem: "Patients often start strongly, then lose consistency after a few weeks.",
-    solution: "Continuous follow-up and accountability help patients stay on track.",
-    label: "Motivation Drops Over Time",
+    problem: "Inconsistency is what kills progress. You start strong, then life happens — and without someone holding you to it, the momentum dies.",
+    solution: "Our care coordinators follow up daily. We beat inconsistency before it beats you.",
+    label: "Consistency Is the Hard Part",
     num: "02",
   },
   {
-    problem: "Medical care, nutrition, fitness, and follow-up rarely work together.",
-    solution: "Doctors, coaches, and care coordinators work together around your goals.",
-    label: "Care Is Fragmented",
+    problem: "Your doctor, your dietician, and your gym trainer don't talk to each other — your care is scattered, and no one has the full picture.",
+    solution: "Think of us as your friendly, owned-up commentator — monitoring you no matter where you are, keeping everything connected.",
+    label: "You Need Someone in Your Corner",
     num: "03",
   },
   {
-    problem: "Patients struggle to know whether they are improving.",
-    solution: "Simple tracking helps patients clearly see their progress over time.",
-    label: "Progress Is Hard To Measure",
+    problem: "Your in-checks will be tackled by your doctor and our merit-holder, worldly-experienced dieticians and caregivers who have seen what actually works.",
+    solution: "We track the numbers that actually matter and make sure you can see your own progress clearly — no guesswork.",
+    label: "Progress You Can Actually See",
     num: "04",
   },
 ];
@@ -107,20 +107,6 @@ const journeySteps = [
   },
 ];
 
-const allFeatures = [
-  { label: "Doctor oversight", basic: true, comp: true, prem: true },
-  { label: "Daily WhatsApp check-ins", basic: true, comp: true, prem: true },
-  { label: "Care coordinator", basic: true, comp: true, prem: true },
-  { label: "Monthly coaching call", basic: true, comp: true, prem: true },
-  { label: "Progress summaries", basic: true, comp: true, prem: true },
-  { label: "Personalized nutrition plan", basic: false, comp: true, prem: true },
-  { label: "Movement guidance", basic: false, comp: true, prem: true },
-  { label: "Bi-weekly coaching", basic: false, comp: true, prem: true },
-  { label: "Glucose tracking support", basic: false, comp: false, prem: true },
-  { label: "Advanced progress reviews", basic: false, comp: false, prem: true },
-  { label: "Priority support", basic: false, comp: false, prem: true },
-];
-
 export default function HomePage() {
   const [activeFrame, setActiveFrame] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -154,40 +140,40 @@ export default function HomePage() {
   return (
     <MarketingLayout>
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden bg-background pt-8 pb-20 md:pt-16 md:pb-28">
+      <section className="relative overflow-hidden bg-background pt-6 pb-14 md:pt-10 md:pb-20">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-blue-soft/30 to-warm-neutral/40 pointer-events-none" />
 
         <div className="container mx-auto px-4 md:px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-10 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-10 items-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="flex flex-col gap-6 max-w-xl"
+              className="flex flex-col gap-5 max-w-xl"
             >
               <h1 className="text-4xl md:text-5xl lg:text-[3.2rem] font-bold leading-[1.1] text-foreground tracking-tight">
-                Personalized, doctor-led care for sustainable weight and diabetes management.
+                Personalized, doctor-led care for sustainable metabolic health.
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Cloudberry combines medical guidance, nutrition, movement, and continuous coaching to help patients improve glucose control, build healthier habits, and achieve sustainable long-term results.
+                Cloudberry combines medical guidance, nutrition, movement, and continuous coaching to help patients build healthier habits and achieve sustainable long-term results.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                <div className="flex flex-col gap-2">
-                  <Button asChild size="lg" className="rounded-full px-8 text-base h-14 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row gap-4 mt-1">
+                <div className="flex flex-col gap-1.5">
+                  <Button asChild size="lg" className="rounded-full px-8 text-base h-13 w-full sm:w-auto">
                     <Link href="/patient/signup">Get Started <ArrowRight className="ml-2 h-5 w-5" /></Link>
                   </Button>
                   <p className="text-xs text-muted-foreground text-center sm:text-left">Book a free 20-minute consultation to explore whether Cloudberry is right for you.</p>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-base h-14 w-full sm:w-auto border-primary/30 hover:bg-primary/5 text-primary">
-                    <Link href="/physician">For Physicians <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <div className="flex flex-col gap-1.5">
+                  <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-base h-13 w-full sm:w-auto border-primary/30 hover:bg-primary/5 text-primary">
+                    <Link href="/physician">Physician's Portal <ArrowRight className="ml-2 h-5 w-5" /></Link>
                   </Button>
                   <p className="text-xs text-muted-foreground text-center sm:text-left">Explore collaboration opportunities with Cloudberry Care.</p>
                 </div>
               </div>
             </motion.div>
 
-            {/* Carousel with images */}
+            {/* Carousel */}
             <motion.div
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -221,7 +207,6 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-              {/* Dots */}
               <div className="flex justify-center gap-2 mt-4">
                 {carouselFrames.map((_, i) => (
                   <button
@@ -239,7 +224,7 @@ export default function HomePage() {
       </section>
 
       {/* SOCIAL PROOF STRIP */}
-      <section className="py-10 bg-muted/40 border-y">
+      <section className="py-8 bg-muted/40 border-y">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 text-center">
             {[
@@ -257,12 +242,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* WHY MOST PLANS DON'T LAST — touch-swipeable carousel */}
-      <section className="py-20 bg-gradient-to-b from-muted/60 to-blue-soft/20 border-y">
+      {/* WHY MOST PLANS DON'T LAST */}
+      <section className="py-14 bg-gradient-to-b from-muted/60 to-blue-soft/20 border-y">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Why Most Weight & Diabetes Plans Don't Last</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Cloudberry is designed to solve the gaps traditional care often misses.</p>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Why Most Plans Fall Apart</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Real talk — and what we do differently.</p>
           </div>
           <div
             className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth"
@@ -277,7 +262,7 @@ export default function HomePage() {
                   </CardHeader>
                   <CardContent className="flex flex-col gap-4 flex-1">
                     <div className="bg-muted/70 rounded-xl p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">The Problem</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">The Reality</p>
                       <p className="text-sm text-foreground/80 leading-relaxed">{card.problem}</p>
                     </div>
                     <div className="bg-primary/8 border border-primary/20 rounded-xl p-4">
@@ -293,11 +278,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* WHAT WE AIM TO HELP YOU IMPROVE — touch-swipeable carousel */}
-      <section className="py-24 bg-gradient-to-br from-foreground via-foreground to-foreground/90 text-background relative overflow-hidden">
+      {/* WHAT WE AIM TO HELP YOU IMPROVE */}
+      <section className="py-16 bg-gradient-to-br from-foreground via-foreground to-foreground/90 text-background relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 md:px-6 relative z-10">
-          <div className="text-center mb-14">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">What We Aim To Help You Improve</h2>
             <p className="text-background/70 text-lg max-w-xl mx-auto">Measurable outcomes that matter — tracked consistently over time.</p>
           </div>
@@ -319,10 +304,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* YOUR JOURNEY WITH CLOUDBERRY — no images */}
-      <section className="py-24 bg-background">
+      {/* YOUR JOURNEY WITH CLOUDBERRY */}
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Your Journey With Cloudberry</h2>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto">A structured, supportive path from consultation to lasting results.</p>
           </div>
@@ -335,7 +320,7 @@ export default function HomePage() {
                   </div>
                   {i < journeySteps.length - 1 && <div className="w-px flex-1 bg-border mt-2 group-hover:bg-primary/30 transition-colors" style={{ minHeight: '2.5rem' }} />}
                 </div>
-                <div className="pb-10 pt-1">
+                <div className="pb-8 pt-1">
                   <div className="flex items-baseline gap-3 mb-2 flex-wrap">
                     <h3 className="text-xl font-bold text-foreground">{step.title}</h3>
                     <Badge variant="secondary" className="font-mono text-xs bg-blue-soft text-blue-soft-foreground border-0">{step.week}</Badge>
@@ -349,10 +334,10 @@ export default function HomePage() {
       </section>
 
       {/* PROGRAMS & PRICING */}
-      <section id="pricing" className="py-20 bg-gradient-to-b from-muted/30 to-blue-soft/20 border-y scroll-mt-20">
+      <section id="pricing" className="py-14 bg-gradient-to-b from-muted/30 to-blue-soft/20 border-y scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Flexible Programs Designed Around Your Needs</h2>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Programs & Pricing</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Choose the level of support that fits your needs. All plans include daily accountability, doctor oversight, and measurable outcomes.
             </p>
@@ -362,7 +347,8 @@ export default function HomePage() {
             {[
               {
                 label: "BASIC",
-                name: "Accountability Program",
+                name: "Basic Plan",
+                subtitle: "Accountability Program",
                 price: "₹990",
                 planKey: "basic",
                 popular: false,
@@ -377,7 +363,8 @@ export default function HomePage() {
               },
               {
                 label: "COMPREHENSIVE",
-                name: "Structured Coaching",
+                name: "Comprehensive Plan",
+                subtitle: "Structured Coaching",
                 price: "₹1,990",
                 planKey: "comprehensive",
                 popular: true,
@@ -391,7 +378,8 @@ export default function HomePage() {
               },
               {
                 label: "PREMIUM",
-                name: "Advanced Monitoring",
+                name: "Premium Plan",
+                subtitle: "Advanced Monitoring",
                 price: "₹3,990",
                 planKey: "premium",
                 popular: false,
@@ -404,7 +392,7 @@ export default function HomePage() {
                 ],
               },
             ].map((plan, pi) => (
-              <div key={pi} className={`bg-white rounded-2xl flex flex-col gap-5 p-6 relative ${
+              <div key={pi} className={`bg-white rounded-2xl flex flex-col gap-4 p-6 relative ${
                 plan.popular
                   ? "border-2 border-primary shadow-xl ring-4 ring-primary/10"
                   : "border border-border shadow-sm"
@@ -421,6 +409,7 @@ export default function HomePage() {
 
                 <div>
                   <h3 className="text-2xl font-bold text-foreground leading-tight">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">{plan.subtitle}</p>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-4xl font-extrabold text-foreground">{plan.price}</span>
                     <span className="text-base text-muted-foreground font-normal">/month</span>
@@ -459,9 +448,9 @@ export default function HomePage() {
       </section>
 
       {/* FAQs */}
-      <section id="faqs" className="py-20 bg-gradient-to-b from-muted/40 to-warm-neutral/20 border-t scroll-mt-20">
+      <section id="faqs" className="py-14 bg-gradient-to-b from-muted/40 to-warm-neutral/20 border-t scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Frequently Asked Questions</h2>
           </div>
           <Accordion type="single" collapsible className="w-full space-y-3">
@@ -480,6 +469,26 @@ export default function HomePage() {
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
+
+      {/* CONNECT WITH US CTA SECTION */}
+      <section className="py-14 bg-gradient-to-br from-primary/5 via-blue-soft/30 to-warm-neutral/40 border-t">
+        <div className="container mx-auto px-4 md:px-6 max-w-4xl">
+          <div className="bg-white rounded-3xl shadow-lg border border-border/60 p-8 md:p-12 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Ready to take the first step?</h2>
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
+              Talk to our team. Whether you have questions or want to get started, we're here for you.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild size="lg" className="rounded-full px-8 text-base">
+                <Link href="/connect">Connect with us <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-base border-primary/30 text-primary hover:bg-primary/5">
+                <Link href="/patient/signup">Start Your Journey</Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -11,6 +11,11 @@ import RefundPolicyPage from "@/pages/refund-policy";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import PhysicianPage from "@/pages/physician/index";
 import PhysicianSignupPage from "@/pages/physician/signup";
+import AboutPage from "@/pages/about";
+import BlogsPage from "@/pages/blogs";
+import ProgramsPage from "@/pages/programs";
+import FaqsPage from "@/pages/faqs";
+import ConnectPage from "@/pages/connect";
 
 // Auth
 import PatientSignin from "@/pages/patient/signin";
@@ -43,6 +48,11 @@ function Router() {
     <Switch>
       {/* Public / Marketing */}
       <Route path="/" component={HomePage} />
+      <Route path="/about" component={AboutPage} />
+      <Route path="/blogs" component={BlogsPage} />
+      <Route path="/programs" component={ProgramsPage} />
+      <Route path="/faqs" component={FaqsPage} />
+      <Route path="/connect" component={ConnectPage} />
       <Route path="/refund-policy" component={RefundPolicyPage} />
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />
       <Route path="/physician" component={PhysicianPage} />
