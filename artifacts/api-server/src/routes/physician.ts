@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, staffTable, patientsTable, checkinsTable, metricsTable, appointmentsTable, patientNotesTable, patientPlansTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or } from "drizzle-orm";
 
 const router = Router();
 
@@ -43,7 +43,12 @@ router.get("/patients", async (req, res) => {
       targetWeight: patientsTable.targetWeight, status: patientsTable.status,
       riskLevel: patientsTable.riskLevel, assignedCoachId: patientsTable.assignedCoachId,
       createdAt: patientsTable.createdAt,
-    }).from(patientsTable).where(eq(patientsTable.assignedCoachId, auth.staffId));
+    }).from(patientsTable).where(
+      or(
+        eq(patientsTable.assignedPhysicianId, auth.staffId),
+        eq(patientsTable.assignedCoachId, auth.staffId)
+      )!
+    );
 
     const result = await Promise.all(allPatients.map(async (p) => {
       const [user] = await db.select().from(usersTable).where(eq(usersTable.id, p.userId)).limit(1);

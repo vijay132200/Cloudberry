@@ -58,19 +58,21 @@ async function seed() {
   }
 
   const physicians = [staffIds["dr.mehta@cloudberry.health"], staffIds["dr.raj@cloudberry.health"], staffIds["dr.priya@cloudberry.health"]];
+  const dieticians = [staffIds["priya.diet@cloudberry.health"], staffIds["kavya.diet@cloudberry.health"], staffIds["rohan.diet@cloudberry.health"]];
+  const caretakers = [staffIds["ranjit.care@cloudberry.health"], staffIds["sunita.care@cloudberry.health"], staffIds["mahesh.care@cloudberry.health"]];
 
   // ── PATIENTS ────────────────────────────────────────────────────────────
   console.log("\nSeeding patients...");
 
   const patientRows = [
-    { fullName: "Rahul Sharma", phone: "9876543210", email: "rahul.sharma@email.com", city: "Mumbai", plan: "comprehensive", primaryGoal: "weight_loss", startingWeight: 98, currentWeight: 91, targetWeight: 78, weekNumber: 8, riskLevel: "low", physicianIdx: 0 },
-    { fullName: "Ananya Patel", phone: "9765432109", email: "ananya.patel@email.com", city: "Ahmedabad", plan: "premium", primaryGoal: "diabetes_reversal", startingWeight: 82, currentWeight: 79, targetWeight: 68, weekNumber: 12, riskLevel: "high", physicianIdx: 1 },
-    { fullName: "Vikram Singh", phone: "9654321098", email: "vikram.singh@email.com", city: "Delhi", plan: "basic", primaryGoal: "weight_loss", startingWeight: 105, currentWeight: 102, targetWeight: 85, weekNumber: 3, riskLevel: "medium", physicianIdx: 2 },
-    { fullName: "Meera Iyer", phone: "9543210987", email: "meera.iyer@email.com", city: "Chennai", plan: "premium", primaryGoal: "pcos_management", startingWeight: 76, currentWeight: 73, targetWeight: 62, weekNumber: 6, riskLevel: "medium", physicianIdx: 0 },
-    { fullName: "Karan Malhotra", phone: "9432109876", email: "karan.malhotra@email.com", city: "Bengaluru", plan: "comprehensive", primaryGoal: "cholesterol_control", startingWeight: 89, currentWeight: 86, targetWeight: 75, weekNumber: 5, riskLevel: "low", physicianIdx: 1 },
-    { fullName: "Divya Reddy", phone: "9321098765", email: "divya.reddy@email.com", city: "Hyderabad", plan: "basic", primaryGoal: "weight_loss", startingWeight: 78, currentWeight: 77, targetWeight: 65, weekNumber: 2, riskLevel: "low", physicianIdx: 2 },
-    { fullName: "Arjun Nair", phone: "9210987654", email: "arjun.nair@email.com", city: "Kochi", plan: "comprehensive", primaryGoal: "diabetes_reversal", startingWeight: 91, currentWeight: 88, targetWeight: 76, weekNumber: 10, riskLevel: "high", physicianIdx: 0 },
-    { fullName: "Preethi Menon", phone: "9109876543", email: "preethi.menon@email.com", city: "Pune", plan: "premium", primaryGoal: "pcos_management", startingWeight: 72, currentWeight: 69, targetWeight: 58, weekNumber: 7, riskLevel: "medium", physicianIdx: 1 },
+    { fullName: "Rahul Sharma", phone: "9876543210", email: "rahul.sharma@email.com", city: "Mumbai", plan: "comprehensive", primaryGoal: "weight_loss", startingWeight: 98, currentWeight: 91, targetWeight: 78, weekNumber: 8, riskLevel: "low", physicianIdx: 0, dieticianIdx: 0, caretakerIdx: 0 },
+    { fullName: "Ananya Patel", phone: "9765432109", email: "ananya.patel@email.com", city: "Ahmedabad", plan: "premium", primaryGoal: "diabetes_reversal", startingWeight: 82, currentWeight: 79, targetWeight: 68, weekNumber: 12, riskLevel: "high", physicianIdx: 1, dieticianIdx: 2, caretakerIdx: 1 },
+    { fullName: "Vikram Singh", phone: "9654321098", email: "vikram.singh@email.com", city: "Delhi", plan: "basic", primaryGoal: "weight_loss", startingWeight: 105, currentWeight: 102, targetWeight: 85, weekNumber: 3, riskLevel: "medium", physicianIdx: 2, dieticianIdx: 1, caretakerIdx: 2 },
+    { fullName: "Meera Iyer", phone: "9543210987", email: "meera.iyer@email.com", city: "Chennai", plan: "premium", primaryGoal: "pcos_management", startingWeight: 76, currentWeight: 73, targetWeight: 62, weekNumber: 6, riskLevel: "medium", physicianIdx: 0, dieticianIdx: 2, caretakerIdx: 0 },
+    { fullName: "Karan Malhotra", phone: "9432109876", email: "karan.malhotra@email.com", city: "Bengaluru", plan: "comprehensive", primaryGoal: "cholesterol_control", startingWeight: 89, currentWeight: 86, targetWeight: 75, weekNumber: 5, riskLevel: "low", physicianIdx: 1, dieticianIdx: 0, caretakerIdx: 1 },
+    { fullName: "Divya Reddy", phone: "9321098765", email: "divya.reddy@email.com", city: "Hyderabad", plan: "basic", primaryGoal: "weight_loss", startingWeight: 78, currentWeight: 77, targetWeight: 65, weekNumber: 2, riskLevel: "low", physicianIdx: 2, dieticianIdx: 1, caretakerIdx: 2 },
+    { fullName: "Arjun Nair", phone: "9210987654", email: "arjun.nair@email.com", city: "Kochi", plan: "comprehensive", primaryGoal: "diabetes_reversal", startingWeight: 91, currentWeight: 88, targetWeight: 76, weekNumber: 10, riskLevel: "high", physicianIdx: 0, dieticianIdx: 0, caretakerIdx: 0 },
+    { fullName: "Preethi Menon", phone: "9109876543", email: "preethi.menon@email.com", city: "Pune", plan: "premium", primaryGoal: "pcos_management", startingWeight: 72, currentWeight: 69, targetWeight: 58, weekNumber: 7, riskLevel: "medium", physicianIdx: 1, dieticianIdx: 2, caretakerIdx: 1 },
   ];
 
   for (const p of patientRows) {
@@ -80,11 +82,17 @@ async function seed() {
     }).returning();
 
     const physicianId = physicians[p.physicianIdx];
+    const dieticianId = dieticians[p.dieticianIdx];
+    const caretakerId = caretakers[p.caretakerIdx];
     const [patient] = await db.insert(patientsTable).values({
       userId: user.id, primaryGoal: p.primaryGoal, plan: p.plan,
       weekNumber: p.weekNumber, startingWeight: p.startingWeight,
       currentWeight: p.currentWeight, targetWeight: p.targetWeight,
-      assignedCoachId: physicianId, status: "active", riskLevel: p.riskLevel,
+      assignedCoachId: physicianId,
+      assignedPhysicianId: physicianId,
+      assignedDieticianId: dieticianId,
+      assignedCaretakerId: caretakerId,
+      status: "active", riskLevel: p.riskLevel,
     }).returning();
 
     await db.insert(patientPlansTable).values({
