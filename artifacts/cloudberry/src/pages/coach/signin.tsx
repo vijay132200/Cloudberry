@@ -29,21 +29,14 @@ export default function CoachSignin() {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     signin.mutate({ data: values }, {
-      onSuccess: (res) => {
-        if (res.token) {
-          localStorage.setItem("cloudberry_token", res.token);
-        } else {
-          localStorage.setItem("cloudberry_token", "demo_token");
-        }
+      onSuccess: (res: any) => {
+        if (res.token) localStorage.setItem("cloudberry_token", res.token);
+        if (res.fullName) localStorage.setItem("cloudberry_name", res.fullName);
         setLocation("/coach/patients");
+        toast({ title: "Welcome back, Doctor.", description: "Signed in to Physician Portal.", duration: 3000 });
       },
       onError: () => {
-        localStorage.setItem("cloudberry_token", "demo_token");
-        setLocation("/coach/patients");
-        toast({
-          title: "Demo Mode Active",
-          description: "Logged in to coach portal with demo credentials.",
-        });
+        toast({ title: "Invalid credentials", description: "Check your email and password.", variant: "destructive", duration: 3000 });
       }
     });
   };
@@ -115,6 +108,12 @@ export default function CoachSignin() {
                 >
                   {signin.isPending ? "Authenticating..." : "Access Portal"}
                 </Button>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mt-2">
+                  <p className="text-xs text-blue-700 font-medium">Demo credentials</p>
+                  <p className="text-xs text-blue-600 mt-0.5">Email: physician@cloudberry.health</p>
+                  <p className="text-xs text-blue-600">Password: demo123</p>
+                </div>
               </form>
             </Form>
           </CardContent>

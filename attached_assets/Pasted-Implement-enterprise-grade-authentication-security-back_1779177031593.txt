@@ -1,0 +1,178 @@
+Implement enterprise-grade authentication, security, backend protection, API connectivity, and database safety across the entire Cloudberry platform.
+
+CRITICAL:
+This platform handles healthcare-related patient information.
+Security architecture must be production-grade.
+
+AUTHENTICATION REQUIREMENTS:
+Implement:
+
+* Secure Login
+* Secure Registration
+* Logout
+* Forgot Password
+* Reset Password
+* Session persistence
+* Token validation
+* Refresh token handling
+* Role-based access
+* Protected routing
+
+ROLES:
+
+* Patient
+* Physician
+* Operations Admin
+* Care Coordinator
+* Dietician
+* Fitness Coach
+
+Each role must:
+
+* Have separate dashboard permissions
+* Separate API access levels
+* Separate navigation access
+* Secure backend authorization
+
+LOGIN FLOW:
+Header login button should:
+
+1. Open role-selection modal
+2. Allow:
+
+   * Patient Login
+   * Physician Login
+   * Operations Portal Login
+3. Redirect to secure login screen
+4. Authenticate user
+5. Redirect to corresponding dashboard
+
+SESSION SECURITY:
+Implement:
+
+* JWT or secure session auth
+* HttpOnly cookies if applicable
+* Password hashing (bcrypt)
+* Token expiration
+* Session timeout
+* CSRF protection
+* XSS prevention
+* Rate limiting
+* Secure middleware
+
+PASSWORD SECURITY:
+
+* Strong password validation
+* Password hashing
+* Secure reset flow
+* Prevent password exposure
+* Prevent plaintext storage
+
+DATABASE SECURITY:
+Protect:
+
+* Patient medical data
+* Uploaded documents
+* Messages
+* Analytics
+* Reports
+
+Implement:
+
+* Encrypted sensitive fields where appropriate
+* Database validation
+* Input sanitization
+* ORM-safe queries
+* SQL injection prevention
+* Access restrictions
+* Audit logging
+
+API INTEGRATION:
+Ensure:
+Frontend ↔ Backend ↔ Database
+is fully connected and functional.
+
+Every:
+
+* Form
+* Dashboard
+* Chart
+* Check-in
+* Login
+* Message
+* Report
+* Upload
+  must connect to real APIs and persist data correctly.
+
+API REQUIREMENTS:
+
+* RESTful structure
+* Validation middleware
+* Proper status codes
+* Error handling
+* Retry-safe operations
+* Secure authentication middleware
+* Centralized API architecture
+
+DATA SAFETY:
+Implement:
+
+* Secure file uploads
+* Validation for uploaded reports
+* Protected medical documents
+* Access-based retrieval
+* Backend-side validation
+* Secure cloud/local storage logic
+
+TERMS & CONDITIONS:
+Create:
+
+* Terms & Conditions page
+* Privacy Policy page
+* HIPAA-inspired healthcare privacy handling structure
+* Consent checkbox during registration
+* Cookie/privacy notification if required
+
+LEGAL FLOW:
+Before registration:
+
+* User must accept Terms & Conditions
+* User must accept Privacy Policy
+
+Store consent timestamps in database.
+
+ADMIN SECURITY:
+Operations/Admin users must:
+
+* Access audit logs
+* View login activity
+* Monitor suspicious behavior
+* Manage permissions
+
+SYSTEM HARDENING:
+Implement:
+
+* Route guards
+* Backend auth middleware
+* Environment variable protection
+* Secure API URLs
+* Hidden secrets
+* Production-safe deployment configuration
+
+TEST EVERYTHING:
+
+* Login flows
+* Logout
+* Password reset
+* Dashboard access
+* API protection
+* Unauthorized route blocking
+* Database writes
+* Session expiration
+* File upload safety
+
+IMPORTANT:
+Do NOT break existing UI theme.
+Do NOT rebuild already working pages unnecessarily.
+Optimize implementation for minimal credit consumption.
+Focus on extending existing infrastructure professionally.

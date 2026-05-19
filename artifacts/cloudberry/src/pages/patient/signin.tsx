@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 
 const formSchema = z.object({
-  phone: z.string().min(10, "Valid phone number required"),
+  phone: z.string().min(5, "Email or phone required"),
   password: z.string().min(6, "Password is required"),
 });
 
@@ -26,30 +26,17 @@ export default function PatientSignin() {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     signin.mutate({ data: values }, {
-      onSuccess: (res) => {
+      onSuccess: (res: any) => {
         if (res.token) {
           localStorage.setItem("cloudberry_token", res.token);
-          if ((res as any).plan) {
-            localStorage.setItem("cloudberry_plan", (res as any).plan);
-          }
-          if ((res as any).fullName) {
-            localStorage.setItem("cloudberry_name", (res as any).fullName);
-          }
-        } else {
-          localStorage.setItem("cloudberry_token", "demo_token");
+          if (res.plan) localStorage.setItem("cloudberry_plan", res.plan);
+          if (res.fullName) localStorage.setItem("cloudberry_name", res.fullName);
         }
         setLocation("/patient/dashboard");
         toast({ title: "Welcome back!", description: "You're signed in to your patient portal.", duration: 3000 });
       },
       onError: () => {
-        localStorage.setItem("cloudberry_token", "demo_token");
-        if (!localStorage.getItem("cloudberry_plan")) {
-          localStorage.setItem("cloudberry_plan", "comprehensive");
-        }
-        if (!localStorage.getItem("cloudberry_name")) {
-          localStorage.setItem("cloudberry_name", "Rahul Sharma");
-        }
-        setLocation("/patient/dashboard");
+        toast({ title: "Unable to sign in", description: "Please check your credentials.", variant: "destructive", duration: 3000 });
       }
     });
   };
@@ -75,13 +62,14 @@ export default function PatientSignin() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-foreground font-medium">Phone Number</FormLabel>
+                      <FormLabel className="text-foreground font-medium">Email Address</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Enter your registered phone"
+                          type="email"
+                          placeholder="patient@cloudberry.health"
                           className="rounded-xl border-border/60 bg-white h-11"
                           {...field}
-                          data-testid="input-signin-phone"
+                          data-testid="input-signin-email"
                         />
                       </FormControl>
                       <FormMessage />
@@ -108,6 +96,12 @@ export default function PatientSignin() {
                     </FormItem>
                   )}
                 />
+
+                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                  <p className="text-xs text-blue-700 font-medium">Demo credentials</p>
+                  <p className="text-xs text-blue-600 mt-0.5">Email: patient@cloudberry.health</p>
+                  <p className="text-xs text-blue-600">Password: demo123</p>
+                </div>
 
                 <Button
                   type="submit"

@@ -28,13 +28,12 @@ export default function OpsSignin() {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     signin.mutate({ data: values }, {
       onSuccess: (res) => {
-        localStorage.setItem("cloudberry_token", res.token || "ops_demo_token");
+        if (res.token) localStorage.setItem("cloudberry_token", res.token);
         setLocation("/ops/dashboard");
+        toast({ title: "Welcome, Operations.", description: "Signed in successfully.", duration: 3000 });
       },
       onError: () => {
-        localStorage.setItem("cloudberry_token", "ops_demo_token");
-        setLocation("/ops/dashboard");
-        toast({ title: "Logged in to Operations Portal", description: "Running in demo mode." });
+        toast({ title: "Invalid credentials", description: "Check your email and password.", variant: "destructive", duration: 3000 });
       }
     });
   };
@@ -145,6 +144,12 @@ export default function OpsSignin() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                    <p className="text-xs text-blue-700 font-medium">Demo credentials</p>
+                    <p className="text-xs text-blue-600 mt-0.5">Email: ops@cloudberry.health</p>
+                    <p className="text-xs text-blue-600">Password: demo123</p>
+                  </div>
 
                   <Button
                     type="submit"

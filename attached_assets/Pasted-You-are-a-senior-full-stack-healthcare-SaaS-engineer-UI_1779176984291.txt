@@ -1,0 +1,272 @@
+You are a senior full-stack healthcare SaaS engineer, UI/UX architect, database architect, QA tester, and deployment engineer working on an enterprise-grade healthcare platform called Cloudberry.
+
+CRITICAL INSTRUCTIONS:
+
+* DO NOT rebuild the project unnecessarily.
+* DO NOT regenerate already working sections.
+* MODIFY only what is needed.
+* Preserve the current theme, UI consistency, animations, spacing system, branding, responsiveness, and overall design language.
+* Optimize for MINIMUM credit/token usage.
+* Work in large efficient batches instead of repeated small edits.
+* Reuse existing components wherever possible.
+* Avoid duplicate APIs, duplicate state management, duplicate schemas, or duplicate layouts.
+* Maintain production-grade code quality.
+
+PRIMARY GOAL:
+Create a FULLY FUNCTIONAL healthcare web platform with:
+
+1. Patient Portal
+2. Physician Portal
+3. Operations/Admin Portal
+4. Shared PostgreSQL database
+5. Functional authentication
+6. Fully connected APIs
+7. Demo accounts with seeded realistic data
+8. Real-time interconnected dashboards
+9. Fully working CTAs/buttons/forms/navigation
+10. Production-ready responsive deployment
+
+TECH STACK:
+
+* React + TypeScript
+* TailwindCSS
+* Node.js + Express
+* PostgreSQL
+* Drizzle ORM
+* REST APIs
+* Vite
+* Shared component architecture
+* Secure session/token authentication
+
+DATABASE REQUIREMENTS:
+Create and fully connect:
+
+* Users table
+* Patients table
+* Physicians table
+* Operations/Admin table
+* Check-ins table
+* Glucose logs
+* Weight logs
+* Activity logs
+* Nutrition logs
+* Messages/chat table
+* Appointments
+* Resources library
+* Notifications
+* Analytics tables
+
+Ensure:
+
+* Proper foreign keys
+* Cascading relationships
+* Validation
+* Optimized schema
+* No redundant tables
+* Real persistence
+* Shared live updates across portals
+
+AUTHENTICATION:
+Create FULL authentication flow:
+
+* Login
+* Logout
+* Session handling
+* Role-based routing
+* Protected routes
+* Token/session persistence
+* Prevent unauthorized access
+* Shared auth system across all portals
+
+Create DEMO LOGIN credentials:
+PATIENT:
+email: [patient@cloudberry.health](mailto:patient@cloudberry.health)
+password: demo123
+
+PHYSICIAN:
+email: [physician@cloudberry.health](mailto:physician@cloudberry.health)
+password: demo123
+
+OPERATIONS ADMIN:
+email: [ops@cloudberry.health](mailto:ops@cloudberry.health)
+password: demo123
+
+Seed realistic demo data for all users.
+
+PATIENT PORTAL REQUIREMENTS:
+Make ALL sections fully functional:
+
+* Dashboard
+* Daily Check-In
+* Glucose
+* Activity
+* Nutrition
+* Messages
+* Resources
+* Progress tracking
+* Charts
+* Weekly summaries
+* Alerts
+* Notifications
+
+DAILY CHECK-IN:
+
+* All questions visible on one page
+* Slider inputs
+* Glucose entries selectable for any 3 days/week
+* Weight entry once weekly
+* Mood chips
+* Sleep tracking
+* Water tracking
+* Medication adherence
+* Activity tracking
+* Save to DB instantly
+* Analytics auto-update after each entry
+
+PATIENT ANALYTICS:
+Before first check-in:
+
+* All metrics should display 0/default states
+
+After each submission:
+
+* Update all charts dynamically
+* Recalculate trends
+* Sync across physician + admin portals
+
+GLUCOSE PAGE:
+
+* Real chart visualization
+* Reference ranges
+* Historical logs
+* Add/edit/delete readings
+* DB persistence
+
+ACTIVITY PAGE:
+
+* Weekly charts
+* Streak tracking
+* Energy trends
+* Historical data
+
+NUTRITION PAGE:
+
+* Meal adherence
+* Plan-based recommendations
+* Tracking system
+* Charts
+
+MESSAGES:
+
+* Functional chat UI
+* Persist messages in DB
+* Real physician-patient communication simulation
+
+RESOURCES:
+
+* Search/filter resources
+* Role-based access
+* Locked premium resources if applicable
+
+PHYSICIAN PORTAL:
+Create enterprise-level physician dashboard including:
+
+* Patient overview
+* HbA1c trends
+* Weight trends
+* Glucose analytics
+* Appointment management
+* Alerts
+* Patient risk indicators
+* Communication center
+* Care plan overview
+* Charts + analytics
+* Recent patient activity
+
+OPERATIONS/ADMIN PORTAL:
+Create professional admin dashboard:
+
+* Registrations overview
+* Full patient database
+* Physician management
+* Care team management
+* Analytics
+* Operational metrics
+* Search/filter/export
+* Engagement tracking
+* Alerts
+* KPI cards
+* Tables
+* Role management
+
+UI/UX REQUIREMENTS:
+
+* Preserve existing Cloudberry design system
+* Keep same theme/colors/layout consistency
+* White/soft clinical aesthetic
+* Modern healthcare SaaS appearance
+* Responsive on desktop/tablet/mobile
+* Smooth animations
+* Accessible components
+* Loading states
+* Empty states
+* Error states
+
+FUNCTIONALITY REQUIREMENTS:
+EVERY CTA/button/link/form must work:
+
+* No dead routes
+* No placeholder interactions
+* No fake buttons
+* No broken navigation
+* No console errors
+* No missing API calls
+
+SYSTEM INTEGRATION:
+Ensure:
+
+* All portals connected to same database
+* Real-time shared updates
+* API routes properly wired
+* Vite proxy configured correctly
+* Environment variables configured
+* Production-safe architecture
+
+TESTING:
+Self-test EVERYTHING:
+
+* Authentication
+* Routing
+* APIs
+* CRUD operations
+* Database writes
+* Charts
+* Forms
+* Responsive layouts
+* Navigation
+* Dashboard updates
+
+Fix all discovered issues automatically.
+
+DELIVERABLES:
+
+1. Fully working production-grade application
+2. Seeded demo database
+3. Working auth credentials
+4. Stable deployment
+5. No placeholder sections
+6. No unfinished features
+7. No mock-only UI
+8. All portals interconnected
+9. Optimized performant codebase
+10. Credit-efficient implementation
+
+IMPORTANT:
+
+* Preserve current working architecture.
+* Do not destroy existing working components.
+* Extend intelligently.
+* Use existing files/components where possible.
+* Avoid unnecessary package installs.
+* Avoid duplicate logic.
+* Minimize AI credit consumption while maximizing production readiness.
