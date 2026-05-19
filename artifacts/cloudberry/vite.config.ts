@@ -66,6 +66,18 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    proxy: {
+      // Forward /api requests to the API server during development.
+      // In production, Replit's path-based router sends /api traffic directly
+      // to the API artifact — no proxy needed.
+      // Set API_SERVER_URL to override the dev target (e.g. in CI or staging).
+      // The localhost:8080 default matches the API artifact's fixed port
+      // assignment in this Replit workspace (.replit localPort 8080).
+      "/api": {
+        target: process.env.API_SERVER_URL ?? "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port,

@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 
 const formSchema = z.object({
-  phone: z.string().min(5, "Email or phone required"),
+  phone: z.string().min(5, "Phone number required"),
   password: z.string().min(6, "Password is required"),
 });
 
@@ -62,14 +62,14 @@ export default function PatientSignin() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-foreground font-medium">Email Address</FormLabel>
+                      <FormLabel className="text-foreground font-medium">Phone Number</FormLabel>
                       <FormControl>
                         <Input
-                          type="email"
-                          placeholder="patient@cloudberry.health"
+                          type="tel"
+                          placeholder="e.g. 9876543210"
                           className="rounded-xl border-border/60 bg-white h-11"
                           {...field}
-                          data-testid="input-signin-email"
+                          data-testid="input-signin-phone"
                         />
                       </FormControl>
                       <FormMessage />
@@ -99,8 +99,7 @@ export default function PatientSignin() {
 
                 <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
                   <p className="text-xs text-blue-700 font-medium">Demo credentials</p>
-                  <p className="text-xs text-blue-600 mt-0.5">Email: patient@cloudberry.health</p>
-                  <p className="text-xs text-blue-600">Password: demo123</p>
+                  <p className="text-xs text-blue-600 mt-0.5">Phone: 9876543210 (any password)</p>
                 </div>
 
                 <Button

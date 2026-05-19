@@ -111,8 +111,7 @@ export default function CoachSignin() {
 
                 <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mt-2">
                   <p className="text-xs text-blue-700 font-medium">Demo credentials</p>
-                  <p className="text-xs text-blue-600 mt-0.5">Email: physician@cloudberry.health</p>
-                  <p className="text-xs text-blue-600">Password: demo123</p>
+                  <p className="text-xs text-blue-600 mt-0.5">Email: coach@cloudberry.health (any password)</p>
                 </div>
               </form>
             </Form>

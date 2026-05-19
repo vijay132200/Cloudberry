@@ -147,8 +147,7 @@ export default function OpsSignin() {
 
                   <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
                     <p className="text-xs text-blue-700 font-medium">Demo credentials</p>
-                    <p className="text-xs text-blue-600 mt-0.5">Email: ops@cloudberry.health</p>
-                    <p className="text-xs text-blue-600">Password: demo123</p>
+                    <p className="text-xs text-blue-600 mt-0.5">Email: ops@cloudberry.health (any password)</p>
                   </div>
 
                   <Button
