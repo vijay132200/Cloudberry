@@ -6,13 +6,13 @@ import {
   Activity, TrendingDown, Calendar, Clock, CheckCircle2, ArrowUp, AlertCircle,
   TrendingUp, MessageSquare, Video, Lock, ChevronRight, Star
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceArea, BarChart, Bar, Cell
 } from "recharts";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { AssessmentModal } from "./assessment";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -631,10 +631,14 @@ function PremiumDashboard({ weekNum, streak, adherence }: { weekNum: number; str
 /* ─── MAIN EXPORT ─────────────────────────────────────────────── */
 export default function PatientDashboard() {
   const plan = useMemo(() => getPlan(), []);
+  const [, navigate] = useLocation();
   const [assessmentDone, setAssessmentDone] = useState(() => {
     return localStorage.getItem("cloudberry_assessment_done") === "1";
   });
   const [showAssessment, setShowAssessment] = useState(false);
+  const [checkinRequired, setCheckinRequired] = useState(() => {
+    return localStorage.getItem("cloudberry_first_checkin_done") !== "1";
+  });
 
   const { data: dash } = useQuery({
     queryKey: ["dashboard"],
@@ -649,6 +653,13 @@ export default function PatientDashboard() {
   const weekNum = dash?.weekNumber ?? 3;
   const streak = dash?.streak ?? 12;
   const isNewPatient = dash?.streak === 0 || dash?.streak == null;
+
+  // Auto-launch assessment for new users the first time their data loads
+  useEffect(() => {
+    if (dash && isNewPatient && !assessmentDone) {
+      setShowAssessment(true);
+    }
+  }, [dash, isNewPatient, assessmentDone]);
 
   const adherence = useMemo(() => {
     if (dash?.recentCheckins?.length > 0) {
@@ -674,7 +685,7 @@ export default function PatientDashboard() {
 
   return (
     <PatientLayout>
-      {/* Initial Assessment Modal */}
+      {/* Initial Assessment Modal — auto-shown for new patients */}
       {showAssessment && !assessmentDone && (
         <AssessmentModal
           plan={plan}
@@ -682,8 +693,39 @@ export default function PatientDashboard() {
             localStorage.setItem("cloudberry_assessment_done", "1");
             setAssessmentDone(true);
             setShowAssessment(false);
+            // New-user flow: assessment → first check-in → dashboard
+            navigate("/patient/checkin");
           }}
         />
+      )}
+
+      {/* First check-in gate: after assessment but before first check-in */}
+      {assessmentDone && checkinRequired && isNewPatient && (
+        <div className="fixed inset-0 z-40 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-border p-8 max-w-md w-full text-center space-y-5">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-7 h-7 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Assessment complete! 🎉</h2>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                Your health profile is set up. Complete your first daily check-in to unlock your personalised dashboard.
+              </p>
+            </div>
+            <Button className="w-full rounded-xl" onClick={() => navigate("/patient/checkin")}>
+              Do Your First Check-in <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+            <button
+              className="text-xs text-muted-foreground underline underline-offset-2"
+              onClick={() => {
+                localStorage.setItem("cloudberry_first_checkin_done", "1");
+                setCheckinRequired(false);
+              }}
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
       )}
 
       <div className="p-4 md:p-5 max-w-5xl mx-auto space-y-4">

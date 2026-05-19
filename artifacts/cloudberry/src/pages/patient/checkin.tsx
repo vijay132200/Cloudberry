@@ -162,6 +162,7 @@ export default function CheckinPage() {
           notes: hardest.length > 0 ? `Hardest today: ${hardest.join(", ")}` : undefined,
         }),
       });
+      localStorage.setItem("cloudberry_first_checkin_done", "1");
       setSubmitted(true);
     } catch {
       setSubmitted(true);

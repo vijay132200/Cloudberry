@@ -69,7 +69,7 @@ function getRiskDot(risk: string) {
   return "bg-rose-500";
 }
 
-type TabType = "patients" | "staff";
+type TabType = "patients" | "staff" | "credentials";
 
 export default function OpsDashboard() {
   const { toast } = useToast();
@@ -179,13 +179,15 @@ export default function OpsDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border/60">
-          {(["patients", "staff"] as TabType[]).map(t => (
+          {(["patients", "staff", "credentials"] as TabType[]).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-5 py-2.5 text-sm font-medium transition-colors capitalize ${tab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
-              {t === "patients" ? `Patient Roster (${(patients as any[]).length})` : `Care Team (${(staff as any[]).length})`}
+              {t === "patients" ? `Patient Roster (${(patients as any[]).length})`
+                : t === "staff" ? `Care Team (${(staff as any[]).length})`
+                : "🔑 Demo Credentials"}
             </button>
           ))}
         </div>
@@ -476,6 +478,147 @@ export default function OpsDashboard() {
           </div>
         )}
 
+        {tab === "credentials" && (
+          <div className="space-y-6">
+            {/* Patient credentials */}
+            <Card className="border-border shadow-sm overflow-hidden">
+              <CardHeader className="border-b bg-muted/20 py-4">
+                <CardTitle className="text-base text-foreground flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" /> Patient Login Credentials
+                  <Badge variant="outline" className="ml-2 text-[10px] font-mono">Password: demo123</Badge>
+                </CardTitle>
+              </CardHeader>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-muted-foreground bg-muted/20 border-b uppercase">
+                    <tr>
+                      <th className="px-5 py-3 font-medium">Patient Name</th>
+                      <th className="px-5 py-3 font-medium">Phone (Login ID)</th>
+                      <th className="px-5 py-3 font-medium">Plan</th>
+                      <th className="px-5 py-3 font-medium">Password</th>
+                      <th className="px-5 py-3 font-medium">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {[
+                      { name: "Rahul Sharma", phone: "9876543210", plan: "comprehensive" },
+                      { name: "Ananya Patel", phone: "9765432109", plan: "premium" },
+                      { name: "Vikram Singh", phone: "9654321098", plan: "basic" },
+                      { name: "Meera Iyer", phone: "9543210987", plan: "premium" },
+                      { name: "Karan Malhotra", phone: "9432109876", plan: "comprehensive" },
+                      { name: "Divya Reddy", phone: "9321098765", plan: "basic" },
+                      { name: "Arjun Nair", phone: "9210987654", plan: "comprehensive" },
+                      { name: "Preethi Menon", phone: "9109876543", plan: "premium" },
+                    ].map((p, i) => (
+                      <tr key={i} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-5 py-3 font-semibold text-foreground">{p.name}</td>
+                        <td className="px-5 py-3">
+                          <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{p.phone}</span>
+                        </td>
+                        <td className="px-5 py-3">
+                          <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 ${p.plan === "premium" ? "border-amber-300 text-amber-700 bg-amber-50" : p.plan === "comprehensive" ? "border-sky-300 text-sky-700 bg-sky-50" : "border-slate-300 text-slate-600 bg-slate-50"}`}>
+                            {p.plan}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className="font-mono text-xs bg-green-50 border border-green-200 text-green-800 px-2 py-0.5 rounded">demo123</span>
+                        </td>
+                        <td className="px-5 py-3 text-xs text-muted-foreground">
+                          {i === 0 ? "Primary demo account" : i <= 2 ? "Active, has check-ins" : "Seeded with history"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            {/* Staff credentials */}
+            <Card className="border-border shadow-sm overflow-hidden">
+              <CardHeader className="border-b bg-muted/20 py-4">
+                <CardTitle className="text-base text-foreground flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-primary" /> Staff Portal Credentials
+                  <Badge variant="outline" className="ml-2 text-[10px] font-mono">Password: demo123 · Sign in at /physician/signin</Badge>
+                </CardTitle>
+              </CardHeader>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-muted-foreground bg-muted/20 border-b uppercase">
+                    <tr>
+                      <th className="px-5 py-3 font-medium">Name</th>
+                      <th className="px-5 py-3 font-medium">Role</th>
+                      <th className="px-5 py-3 font-medium">Email</th>
+                      <th className="px-5 py-3 font-medium">Password</th>
+                      <th className="px-5 py-3 font-medium">Redirects to</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {[
+                      { name: "Dr. Sneha Mehta", role: "physician", email: "dr.mehta@cloudberry.health", dest: "/physician/dashboard" },
+                      { name: "Dr. Raj Patel", role: "physician", email: "dr.raj@cloudberry.health", dest: "/physician/dashboard" },
+                      { name: "Dr. Priya Singh", role: "physician", email: "dr.priya@cloudberry.health", dest: "/physician/dashboard" },
+                      { name: "Priya Sharma", role: "dietician", email: "priya.diet@cloudberry.health", dest: "/dietician/dashboard" },
+                      { name: "Kavya Nair", role: "dietician", email: "kavya.diet@cloudberry.health", dest: "/dietician/dashboard" },
+                      { name: "Rohan Verma", role: "dietician", email: "rohan.diet@cloudberry.health", dest: "/dietician/dashboard" },
+                      { name: "Ranjit Kumar", role: "caretaker", email: "ranjit.care@cloudberry.health", dest: "/caretaker/dashboard" },
+                      { name: "Sunita Rao", role: "caretaker", email: "sunita.care@cloudberry.health", dest: "/caretaker/dashboard" },
+                      { name: "Mahesh Iyer", role: "caretaker", email: "mahesh.care@cloudberry.health", dest: "/caretaker/dashboard" },
+                      { name: "Priya Nair", role: "ops", email: "ops@cloudberry.health", dest: "/ops/dashboard" },
+                      { name: "Arjun Kapoor", role: "ops", email: "ops2@cloudberry.health", dest: "/ops/dashboard" },
+                    ].map((s, i) => (
+                      <tr key={i} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-5 py-3 font-semibold text-foreground">{s.name}</td>
+                        <td className="px-5 py-3">
+                          <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 flex items-center gap-1 w-fit ${roleColor(s.role)}`}>
+                            {roleIcon(s.role)} {s.role}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-1.5 text-xs text-foreground/80">
+                            <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                            {s.email}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className="font-mono text-xs bg-green-50 border border-green-200 text-green-800 px-2 py-0.5 rounded">demo123</span>
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className="font-mono text-xs text-muted-foreground">{s.dest}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            {/* Quick-start guide */}
+            <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+              <CardContent className="pt-5 pb-5">
+                <p className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4" /> Quick Demo Guide
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-blue-900">
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-blue-700">Patient Portal</p>
+                    <p>→ Sign in at <span className="font-mono">/patient/signin</span></p>
+                    <p>→ Phone: any number above (e.g. 9876543210)</p>
+                    <p>→ Password: <span className="font-mono">demo123</span></p>
+                    <p>→ New patients see Assessment → Check-in → Dashboard flow</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-blue-700">Staff Portals</p>
+                    <p>→ All sign in at <span className="font-mono">/physician/signin</span></p>
+                    <p>→ Email: any from the list above</p>
+                    <p>→ Password: <span className="font-mono">demo123</span></p>
+                    <p>→ Role-based auto-redirect to the correct portal</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {tab === "staff" && (
           <div className="space-y-4">
             <Card className="border-border shadow-sm overflow-hidden">
@@ -546,7 +689,7 @@ export default function OpsDashboard() {
               </div>
             </Card>
 
-            {/* Demo Credentials Card */}
+            {/* Demo Credentials Quick-ref Card */}
             <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
               <CardContent className="pt-5 pb-5">
                 <p className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
@@ -555,9 +698,9 @@ export default function OpsDashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
                     { role: "Operations", email: "ops@cloudberry.health" },
-                    { role: "Physician", email: "physician@cloudberry.health" },
-                    { role: "Dietician", email: "dietician@cloudberry.health" },
-                    { role: "Caretaker", email: "caretaker@cloudberry.health" },
+                    { role: "Physician", email: "dr.mehta@cloudberry.health" },
+                    { role: "Dietician", email: "priya.diet@cloudberry.health" },
+                    { role: "Caretaker", email: "ranjit.care@cloudberry.health" },
                   ].map(c => (
                     <div key={c.role} className="bg-white/80 rounded-xl border border-blue-200 p-3">
                       <p className="text-[10px] text-blue-600 font-semibold uppercase">{c.role}</p>
@@ -566,7 +709,12 @@ export default function OpsDashboard() {
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] text-blue-600 mt-3">Patient demo IDs: patient@cloudberry.health, patient.basic@cloudberry.health, patient.premium@cloudberry.health (and .week / .new variants)</p>
+                <p className="text-[10px] text-blue-600 mt-3">
+                  Patient logins use phone numbers (e.g. 9876543210 for Rahul Sharma). See the <button
+                    onClick={() => setTab("credentials")}
+                    className="underline font-semibold"
+                  >🔑 Demo Credentials tab</button> for the full list.
+                </p>
               </CardContent>
             </Card>
           </div>

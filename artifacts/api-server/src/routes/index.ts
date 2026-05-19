@@ -9,6 +9,9 @@ import tipsRouter from "./tips";
 import appointmentsRouter from "./appointments";
 import coachRouter from "./coach";
 import opsRouter from "./ops";
+import physicianRouter from "./physician";
+import dieticianRouter from "./dietician";
+import caretakerRouter from "./caretaker";
 
 const router = Router();
 
@@ -22,5 +25,8 @@ router.use("/tips", tipsRouter);
 router.use("/appointments", appointmentsRouter);
 router.use("/coach", coachRouter);
 router.use("/ops", opsRouter);
+router.use("/physician", physicianRouter);
+router.use("/dietician", dieticianRouter);
+router.use("/caretaker", caretakerRouter);
 
 export default router;

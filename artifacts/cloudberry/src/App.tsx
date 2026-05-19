@@ -25,7 +25,7 @@ import PatientSignup from "@/pages/patient/signup";
 import CoachSignin from "@/pages/coach/signin";
 import OpsSignin from "@/pages/ops/signin";
 
-// App routes
+// Patient Portal
 import PatientDashboard from "@/pages/patient/dashboard";
 import PatientCheckin from "@/pages/patient/checkin";
 import PatientAppointments from "@/pages/patient/appointments";
@@ -33,17 +33,25 @@ import PatientRecords from "@/pages/patient/records";
 import PatientSupport from "@/pages/patient/support";
 import PatientSettings from "@/pages/patient/settings";
 
+// Coach Portal (legacy)
 import CoachPatients from "@/pages/coach/patients/index";
 import CoachPatientDetail from "@/pages/coach/patients/detail";
 
+// Physician Portal
+import PhysicianDashboard from "@/pages/physician/dashboard";
+
+// Dietician Portal
+import DieticianDashboard from "@/pages/dietician/dashboard";
+
+// Caretaker Portal
+import CaretakerDashboard from "@/pages/caretaker/dashboard";
+
+// Ops Portal
 import OpsDashboard from "@/pages/ops/dashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
+    queries: { retry: 1, refetchOnWindowFocus: false },
   },
 });
 
@@ -63,7 +71,7 @@ function Router() {
       <Route path="/physician" component={PhysicianPage} />
       <Route path="/physician/signup" component={PhysicianSignupPage} />
 
-      {/* Patient */}
+      {/* Patient Portal */}
       <Route path="/patient/signin" component={PatientSignin} />
       <Route path="/patient/signup" component={PatientSignup} />
       <Route path="/patient/dashboard" component={PatientDashboard} />
@@ -73,15 +81,27 @@ function Router() {
       <Route path="/patient/support" component={PatientSupport} />
       <Route path="/patient/settings" component={PatientSettings} />
 
-      {/* Physician portal */}
+      {/* Staff Signin (shared for physician / dietician / caretaker) */}
       <Route path="/physician/signin" component={PhysicianSignin} />
+      <Route path="/staff/signin" component={PhysicianSignin} />
+      <Route path="/dietician/signin" component={PhysicianSignin} />
+      <Route path="/caretaker/signin" component={PhysicianSignin} />
 
-      {/* Coach */}
+      {/* Physician Portal */}
+      <Route path="/physician/dashboard" component={PhysicianDashboard} />
+
+      {/* Dietician Portal */}
+      <Route path="/dietician/dashboard" component={DieticianDashboard} />
+
+      {/* Caretaker Portal */}
+      <Route path="/caretaker/dashboard" component={CaretakerDashboard} />
+
+      {/* Legacy Coach Portal */}
       <Route path="/coach/signin" component={CoachSignin} />
       <Route path="/coach/patients" component={CoachPatients} />
       <Route path="/coach/patients/:id" component={CoachPatientDetail} />
 
-      {/* Ops */}
+      {/* Operations Portal */}
       <Route path="/ops/signin" component={OpsSignin} />
       <Route path="/ops/dashboard" component={OpsDashboard} />
 
