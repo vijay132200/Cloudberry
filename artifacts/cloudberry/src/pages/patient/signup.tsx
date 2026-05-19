@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,11 +10,23 @@ import { usePatientSignup } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { PatientSignupInputPrimaryGoal } from "@workspace/api-client-react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/\d/, "Password must include at least one number")
+  .regex(/[^a-zA-Z0-9]/, "Password must include at least one special character");
+
+const phoneSchema = z.string()
+  .regex(/^\d{10}$/, "Phone must be exactly 10 digits");
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Name is required"),
-  phone: z.string().min(10, "Valid phone number required"),
+  phone: phoneSchema,
+  email: z.string().email("Valid email address required"),
+  password: passwordSchema,
+  confirmPassword: z.string(),
   city: z.string().min(2, "City is required"),
   primaryGoal: z.enum([
     PatientSignupInputPrimaryGoal.weight_loss,
@@ -21,14 +34,19 @@ const formSchema = z.object({
     PatientSignupInputPrimaryGoal.both
   ], { required_error: "Please select a goal" }),
   preferredCallbackTime: z.string().optional(),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  selectedPlan: z.string().optional()
+  selectedPlan: z.string().optional(),
+  consent: z.boolean().refine(v => v === true, { message: "You must accept the terms to continue" }),
+}).refine(d => d.password === d.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 export default function PatientSignup() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const signup = usePatientSignup();
+  const [showPw, setShowPw] = useState(false);
+  const [showCpw, setShowCpw] = useState(false);
 
   const queryParams = new URLSearchParams(window.location.search);
   const defaultPlan = queryParams.get("plan") || "comprehensive";
@@ -36,30 +54,28 @@ export default function PatientSignup() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      fullName: "", phone: "", city: "",
-      primaryGoal: undefined, preferredCallbackTime: "",
-      email: "", selectedPlan: defaultPlan
+      fullName: "", phone: "", email: "", password: "", confirmPassword: "",
+      city: "", primaryGoal: undefined, preferredCallbackTime: "",
+      selectedPlan: defaultPlan, consent: false,
     }
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    const plan = values.selectedPlan && values.selectedPlan !== "undecided"
-      ? values.selectedPlan
-      : "comprehensive";
-
+    const plan = values.selectedPlan && values.selectedPlan !== "undecided" ? values.selectedPlan : "comprehensive";
     localStorage.setItem("cloudberry_plan", plan);
     localStorage.setItem("cloudberry_name", values.fullName);
 
-    signup.mutate({ data: values }, {
-      onSuccess: (res) => {
-        localStorage.setItem("cloudberry_token", res.token || "demo_token");
+    signup.mutate({ data: { ...values, selectedPlan: plan } }, {
+      onSuccess: (res: any) => {
+        if (res.token) localStorage.setItem("cloudberry_token", res.token);
+        if (res.plan) localStorage.setItem("cloudberry_plan", res.plan);
+        if (res.fullName) localStorage.setItem("cloudberry_name", res.fullName);
         setLocation("/patient/dashboard");
         toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here.", duration: 3000 });
       },
-      onError: () => {
-        localStorage.setItem("cloudberry_token", "demo_token");
-        setLocation("/patient/dashboard");
-        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here.", duration: 3000 });
+      onError: (err: any) => {
+        const msg = err?.message || "Registration failed. Please try again.";
+        toast({ title: "Registration failed", description: msg, variant: "destructive", duration: 4000 });
       }
     });
   };
@@ -75,16 +91,16 @@ export default function PatientSignup() {
         </div>
 
         <div className="bg-white rounded-3xl border border-border/50 shadow-lg p-8 md:p-10">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-foreground">Start Your Journey</h2>
             <Link href="/patient/signin" className="text-sm text-primary font-semibold hover:underline">
               Log in instead
             </Link>
           </div>
 
-          <div className="flex gap-3 mb-6">
+          <div className="flex gap-3 mb-7">
             {[
-              { title: "Personalized Plans", desc: "Tailored to your biology." },
+              { title: "Personalised Plans", desc: "Tailored to your biology." },
               { title: "Daily Support", desc: "Accountability every day." },
               { title: "Doctor-Led", desc: "Clinical oversight throughout." },
             ].map((item) => (
@@ -98,137 +114,161 @@ export default function PatientSignup() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
+              <FormField control={form.control} name="fullName" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium">Full Name *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Rahul Sharma" className="rounded-xl h-11 border-border/60" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="phone" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-medium">Full Name *</FormLabel>
+                    <FormLabel className="font-medium">Mobile Number * <span className="text-[10px] text-muted-foreground">(10 digits)</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-name" />
+                      <Input type="tel" placeholder="9876543210" maxLength={10} className="rounded-xl h-11 border-border/60" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-medium">Mobile Number *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+91" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-phone" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-medium">Email Address</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="john@example.com" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium">Email Address *</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="you@example.com" className="rounded-xl h-11 border-border/60" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-medium">City *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Indore" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-city" />
-                      </FormControl>
-                      <p className="text-[10px] text-muted-foreground mt-1">Currently available in Indore. Expanding soon.</p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="preferredCallbackTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-medium">Preferred Callback Time</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 2 PM - 5 PM" className="rounded-xl h-11 border-border/60" {...field} data-testid="input-signup-time" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control} name="password" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium">Password *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input type={showPw ? "text" : "password"} placeholder="Min 8 chars, 1 number, 1 special"
+                          className="rounded-xl h-11 border-border/60 pr-10" {...field} />
+                        <button type="button" onClick={() => setShowPw(v => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium">Confirm Password *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input type={showCpw ? "text" : "password"} placeholder="Repeat password"
+                          className="rounded-xl h-11 border-border/60 pr-10" {...field} />
+                        <button type="button" onClick={() => setShowCpw(v => !v)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showCpw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
 
-              <FormField
-                control={form.control}
-                name="primaryGoal"
-                render={({ field }) => (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-xs text-blue-700">
+                Password must be at least 8 characters and include at least one number and one special character (e.g. @, #, !, %).
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField control={form.control} name="city" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-medium">Primary Goal *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="rounded-xl h-11 border-border/60" data-testid="select-signup-goal">
-                          <SelectValue placeholder="Select your main goal" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value={PatientSignupInputPrimaryGoal.weight_loss}>Weight Loss</SelectItem>
-                        <SelectItem value={PatientSignupInputPrimaryGoal.diabetes_management}>Diabetes / Glucose Management</SelectItem>
-                        <SelectItem value={PatientSignupInputPrimaryGoal.both}>Both Weight & Diabetes Management</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel className="font-medium">City *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Indore" className="rounded-xl h-11 border-border/60" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="selectedPlan"
-                render={({ field }) => (
+                )} />
+                <FormField control={form.control} name="preferredCallbackTime" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-medium">Preferred Program</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="rounded-xl h-11 border-border/60" data-testid="select-signup-plan">
-                          <SelectValue placeholder="Select a program (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="basic">Accountability Program (₹990/mo)</SelectItem>
-                        <SelectItem value="comprehensive">Structured Coaching (₹1,990/mo)</SelectItem>
-                        <SelectItem value="premium">Advanced Monitoring (₹3,990/mo)</SelectItem>
-                        <SelectItem value="undecided">Not sure yet — let's discuss</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel className="font-medium">Preferred Callback Time</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. 2 PM – 5 PM" className="rounded-xl h-11 border-border/60" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+                )} />
+              </div>
 
-              <Button
-                type="submit"
-                className="w-full mt-6 rounded-full h-12 text-base shadow-sm"
-                disabled={signup.isPending}
-                data-testid="btn-signup-submit"
-              >
-                {signup.isPending ? "Setting up..." : "Start My Journey"}
+              <FormField control={form.control} name="primaryGoal" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium">Primary Goal *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="rounded-xl h-11 border-border/60">
+                        <SelectValue placeholder="Select your main goal" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={PatientSignupInputPrimaryGoal.weight_loss}>Weight Loss</SelectItem>
+                      <SelectItem value={PatientSignupInputPrimaryGoal.diabetes_management}>Diabetes / Glucose Management</SelectItem>
+                      <SelectItem value={PatientSignupInputPrimaryGoal.both}>Both Weight & Diabetes Management</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="selectedPlan" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium">Preferred Program</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="rounded-xl h-11 border-border/60">
+                        <SelectValue placeholder="Select a program (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="basic">Basic Plan — ₹990/mo</SelectItem>
+                      <SelectItem value="comprehensive">Comprehensive Plan — ₹1,990/mo</SelectItem>
+                      <SelectItem value="premium">Premium Plan — ₹3,990/mo</SelectItem>
+                      <SelectItem value="undecided">Not sure yet — let's discuss</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="consent" render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-3 space-y-0 rounded-xl border border-border/60 bg-muted/20 p-4">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm font-normal cursor-pointer">
+                      I agree to the{" "}
+                      <Link href="/terms" className="text-primary underline">Terms & Conditions</Link>
+                      {" "}and{" "}
+                      <Link href="/privacy-policy" className="text-primary underline">Privacy Policy</Link>.
+                      I understand that my health data will be handled in accordance with healthcare privacy standards.
+                    </FormLabel>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )} />
+
+              <Button type="submit" className="w-full mt-2 rounded-full h-12 text-base shadow-sm"
+                disabled={signup.isPending}>
+                {signup.isPending ? "Setting up your account..." : "Start My Journey"}
               </Button>
 
-              <p className="text-xs text-center text-muted-foreground mt-3">
-                By submitting, you agree to our Terms of Service and Privacy Policy. Our team will call you to complete onboarding.
+              <p className="text-xs text-center text-muted-foreground">
+                Our team will call you to complete onboarding and confirm your plan.
               </p>
             </form>
           </Form>

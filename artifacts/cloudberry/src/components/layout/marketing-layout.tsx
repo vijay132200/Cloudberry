@@ -142,7 +142,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 <Link href="/blogs" className="text-white/60 hover:text-white text-sm transition-colors">Blogs</Link>
                 <div className="flex flex-col gap-2 mt-1">
                   <Link href="/patient/signin" className="inline-flex items-center gap-1.5 bg-primary/80 hover:bg-primary text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Patient Portal →</Link>
-                  <Link href="/physician" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Physician's Portal →</Link>
+                  <Link href="/physician/signin" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Physician's Portal →</Link>
                 </div>
               </div>
               <div className="flex flex-col gap-3">
@@ -199,18 +199,18 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             </Link>
-            <Link href="/physician" onClick={() => setLoginOpen(false)}>
-              <div className="border rounded-2xl p-5 hover:border-secondary hover:bg-secondary/5 transition-all cursor-pointer group">
+            <Link href="/physician/signin" onClick={() => setLoginOpen(false)}>
+              <div className="border rounded-2xl p-5 hover:border-sky-400 hover:bg-sky-50/60 transition-all cursor-pointer group">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-                    <Stethoscope className="w-5 h-5 text-secondary" />
+                  <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center shrink-0">
+                    <Stethoscope className="w-5 h-5 text-sky-600" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-base">Physician's Portal</span>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-secondary transition-colors" />
+                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-sky-600 transition-colors" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Manage patients, review outcomes & care coordination</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Physicians, dieticians & caretakers — manage patients & care plans</p>
                   </div>
                 </div>
               </div>

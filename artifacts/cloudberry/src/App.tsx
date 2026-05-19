@@ -9,8 +9,10 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home";
 import RefundPolicyPage from "@/pages/refund-policy";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
+import TermsPage from "@/pages/terms";
 import PhysicianPage from "@/pages/physician/index";
 import PhysicianSignupPage from "@/pages/physician/signup";
+import PhysicianSignin from "@/pages/physician/signin";
 import AboutPage from "@/pages/about";
 import BlogsPage from "@/pages/blogs";
 import ProgramsPage from "@/pages/programs";
@@ -55,6 +57,7 @@ function Router() {
       <Route path="/connect" component={ConnectPage} />
       <Route path="/refund-policy" component={RefundPolicyPage} />
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+      <Route path="/terms" component={TermsPage} />
       <Route path="/physician" component={PhysicianPage} />
       <Route path="/physician/signup" component={PhysicianSignupPage} />
 
@@ -65,6 +68,9 @@ function Router() {
       <Route path="/patient/records" component={PatientRecords} />
       <Route path="/patient/support" component={PatientSupport} />
       <Route path="/patient/settings" component={PatientSettings} />
+
+      {/* Physician portal */}
+      <Route path="/physician/signin" component={PhysicianSignin} />
 
       {/* Coach */}
       <Route path="/coach/signin" component={CoachSignin} />
