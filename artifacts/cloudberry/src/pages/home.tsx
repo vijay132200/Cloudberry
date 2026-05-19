@@ -279,12 +279,11 @@ export default function HomePage() {
       </section>
 
       {/* WHAT WE AIM TO HELP YOU IMPROVE */}
-      <section className="py-16 bg-gradient-to-br from-foreground via-foreground to-foreground/90 text-background relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent pointer-events-none" />
-        <div className="container mx-auto px-4 md:px-6 relative z-10">
+      <section className="py-16 bg-gradient-to-b from-blue-soft/30 to-muted/20 border-y">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">What We Aim To Help You Improve</h2>
-            <p className="text-background/70 text-lg max-w-xl mx-auto">Measurable outcomes that matter — tracked consistently over time.</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">What We Aim To Help You Improve</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">Measurable outcomes that matter — tracked consistently over time.</p>
           </div>
           <div
             className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth max-w-5xl mx-auto"
@@ -292,15 +291,15 @@ export default function HomePage() {
           >
             {impactBlocks.map((block, i) => (
               <div key={i} className="snap-start shrink-0 w-[75vw] sm:w-[50vw] md:w-[calc(25%-1rem)] lg:w-56">
-                <div className="bg-white/8 border border-white/15 rounded-2xl p-6 flex flex-col gap-3 backdrop-blur-sm hover:bg-white/12 transition-colors h-full">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">{block.icon}</div>
-                  <h3 className="font-semibold text-base text-background leading-snug">{block.title}</h3>
-                  <p className="text-background/65 text-sm leading-relaxed">{block.desc}</p>
+                <div className="bg-background border border-border rounded-2xl p-6 flex flex-col gap-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all h-full">
+                  <div className="w-12 h-12 rounded-xl bg-primary/8 flex items-center justify-center">{block.icon}</div>
+                  <h3 className="font-semibold text-base text-foreground leading-snug">{block.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{block.desc}</p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-center text-xs text-background/40 mt-3 md:hidden">← Swipe to see more →</p>
+          <p className="text-center text-xs text-muted-foreground mt-3 md:hidden">← Swipe to see more →</p>
         </div>
       </section>
 
