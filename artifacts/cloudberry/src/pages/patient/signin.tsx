@@ -97,9 +97,10 @@ export default function PatientSignin() {
                   )}
                 />
 
-                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-                  <p className="text-xs text-blue-700 font-medium">Demo credentials</p>
-                  <p className="text-xs text-blue-600 mt-0.5">Phone: 9876543210 (any password)</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 space-y-1">
+                  <p className="text-xs text-blue-700 font-semibold">Demo credentials (password: demo123)</p>
+                  <p className="text-xs text-blue-600">Comprehensive: 9876543210</p>
+                  <p className="text-xs text-blue-600">Premium: 9765432109 &nbsp;·&nbsp; Basic: 9654321098</p>
                 </div>
 
                 <Button

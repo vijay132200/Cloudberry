@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, Calendar, FolderOpen, HeadphonesIcon, Settings, LogOut, User } from "lucide-react";
 import { useEffect } from "react";
 
 export function PatientLayout({ children }: { children: React.ReactNode }) {
@@ -13,63 +13,75 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
   }, [location, setLocation]);
 
   const navItems = [
-    { name: "Home", href: "/patient/dashboard", icon: Home },
-    { name: "Settings", href: "/patient/settings", icon: Settings },
+    { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
+    { name: "Daily Check-in", href: "/patient/checkin", icon: ClipboardCheck },
+    { name: "Appointments", href: "/patient/appointments", icon: Calendar },
+    { name: "Resources", href: "/patient/records", icon: FolderOpen },
+    { name: "Support", href: "/patient/support", icon: HeadphonesIcon },
+    { name: "My Profile", href: "/patient/settings", icon: User },
   ];
 
   const handleLogout = () => {
     localStorage.removeItem("cloudberry_token");
+    localStorage.removeItem("cloudberry_name");
+    localStorage.removeItem("cloudberry_plan");
     setLocation("/patient/signin");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-blue-50/40 pb-20 md:pb-0 font-sans flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-slate-50/40 pb-20 md:pb-0 font-sans flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white/80 backdrop-blur-sm border-r border-border/60 fixed h-screen top-0 left-0 z-20 shadow-sm">
-        <div className="p-6 border-b border-border/60 bg-gradient-to-br from-primary/5 to-blue-100/30">
+      <aside className="hidden md:flex flex-col w-60 bg-white border-r border-border/60 fixed h-screen top-0 left-0 z-20 shadow-sm">
+        <div className="px-5 py-5 border-b border-border/60">
           <Link href="/" className="flex items-center gap-2">
-            <span className="font-sans text-xl font-bold tracking-tight text-foreground">Cloudberry</span>
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <span className="text-white font-bold text-xs">C</span>
+            </div>
+            <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
           </Link>
-          <p className="text-[11px] text-muted-foreground mt-1 leading-snug">Patient Portal</p>
+          <p className="text-[10px] text-muted-foreground mt-1 ml-9">Patient Portal</p>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location === item.href;
+            const isActive = location.startsWith(item.href);
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm ${
                   isActive
-                    ? "bg-gradient-to-r from-primary/15 to-blue-100/50 text-primary font-semibold shadow-sm border border-primary/15"
+                    ? "bg-primary/10 text-primary font-semibold"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 }`}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
                 {item.name}
               </Link>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-border/60">
+        <div className="px-3 py-4 border-t border-border/60">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-destructive hover:bg-destructive/10 transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-muted-foreground hover:bg-destructive/8 hover:text-destructive transition-colors"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
             Sign Out
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 relative min-h-[100dvh]">
+      <main className="flex-1 md:ml-60 relative min-h-[100dvh]">
         {/* Mobile Header */}
-        <header className="md:hidden bg-white/90 backdrop-blur-sm border-b border-border/60 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
+        <header className="md:hidden bg-white border-b border-border/60 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-sans text-lg font-bold tracking-tight text-foreground">Cloudberry</span>
+            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-white font-bold text-[10px]">C</span>
+            </div>
+            <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
           </div>
-          <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
+          <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground p-1">
             <LogOut className="w-5 h-5" />
           </button>
         </header>
@@ -78,22 +90,22 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-border/60 z-30 pb-safe shadow-lg">
-        <div className="flex items-center justify-around px-2 py-2">
-          {navItems.map((item) => {
-            const isActive = location === item.href;
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-border/60 z-30 shadow-lg">
+        <div className="flex items-center justify-around px-1 py-1.5">
+          {navItems.slice(0, 5).map((item) => {
+            const isActive = location.startsWith(item.href);
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex flex-col items-center justify-center w-16 py-2 gap-1 rounded-lg ${
+                className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-lg gap-0.5 min-w-[56px] ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <div className={`${isActive ? "bg-primary/10" : "bg-transparent"} p-1 rounded-full transition-colors`}>
-                  <item.icon className={`w-5 h-5 ${isActive ? "fill-primary/20" : ""}`} />
+                <div className={`p-1.5 rounded-lg transition-colors ${isActive ? "bg-primary/10" : ""}`}>
+                  <item.icon className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-medium">{item.name}</span>
+                <span className="text-[9px] font-medium leading-none">{item.name.split(" ")[0]}</span>
               </Link>
             );
           })}

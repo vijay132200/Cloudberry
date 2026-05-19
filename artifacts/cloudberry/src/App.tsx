@@ -27,6 +27,8 @@ import OpsSignin from "@/pages/ops/signin";
 
 // App routes
 import PatientDashboard from "@/pages/patient/dashboard";
+import PatientCheckin from "@/pages/patient/checkin";
+import PatientAppointments from "@/pages/patient/appointments";
 import PatientRecords from "@/pages/patient/records";
 import PatientSupport from "@/pages/patient/support";
 import PatientSettings from "@/pages/patient/settings";
@@ -65,6 +67,8 @@ function Router() {
       <Route path="/patient/signin" component={PatientSignin} />
       <Route path="/patient/signup" component={PatientSignup} />
       <Route path="/patient/dashboard" component={PatientDashboard} />
+      <Route path="/patient/checkin" component={PatientCheckin} />
+      <Route path="/patient/appointments" component={PatientAppointments} />
       <Route path="/patient/records" component={PatientRecords} />
       <Route path="/patient/support" component={PatientSupport} />
       <Route path="/patient/settings" component={PatientSettings} />
