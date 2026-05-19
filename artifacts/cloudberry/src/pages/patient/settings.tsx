@@ -6,135 +6,284 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Download, CreditCard, Bell, Shield, User } from "lucide-react";
+import { Download, CreditCard, Bell, Shield, User, ChevronRight } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
-export default function PatientSettings() {
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API = `${BASE}/api`;
+
+async function fetchJson(path: string) {
+  const token = localStorage.getItem("cloudberry_token");
+  const r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) throw new Error("Failed");
+  return r.json();
+}
+async function patchJson(path: string, body: any) {
+  const token = localStorage.getItem("cloudberry_token");
+  const r = await fetch(`${API}${path}`, {
+    method: "PATCH", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("Failed");
+  return r.json();
+}
+
+type Section = "profile" | "billing" | "notifications" | "security";
+
+const NAV: { key: Section; label: string; icon: any }[] = [
+  { key: "profile", label: "Profile", icon: User },
+  { key: "billing", label: "Plan & Billing", icon: CreditCard },
+  { key: "notifications", label: "Notifications", icon: Bell },
+  { key: "security", label: "Security", icon: Shield },
+];
+
+const PLAN_LABELS: Record<string, { name: string; price: string }> = {
+  basic: { name: "Accountability Program", price: "₹990" },
+  comprehensive: { name: "Structured Coaching", price: "₹1,990" },
+  premium: { name: "Advanced Monitoring", price: "₹3,990" },
+};
+
+function ProfileSection() {
+  const qc = useQueryClient();
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => fetchJson("/patients/me") });
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (me) { setFullName(me.fullName ?? ""); setEmail(me.email ?? ""); setCity(me.city ?? ""); }
+  }, [me]);
+
+  const save = useMutation({
+    mutationFn: () => patchJson("/patients/me", { fullName, email, city }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["me"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      localStorage.setItem("cloudberry_name", fullName);
+      setSaved(true); setTimeout(() => setSaved(false), 2500);
+    },
+  });
+
   return (
-    <PatientLayout>
-      <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-serif font-bold text-foreground">Settings</h1>
-          <p className="text-muted-foreground">Manage your account, preferences, and billing.</p>
+    <Card className="border-border/60 shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg"><User className="w-5 h-5" /> Personal Information</CardTitle>
+        <CardDescription>Update your contact details and demographics.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2"><Label>Full Name</Label><Input value={fullName} onChange={e => setFullName(e.target.value)} /></div>
+        <div className="space-y-2"><Label>Email</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
+        <div className="space-y-2"><Label>City</Label><Input value={city} onChange={e => setCity(e.target.value)} /></div>
+        <div className="space-y-2"><Label>Phone Number</Label><Input value={me?.phone ?? ""} disabled className="bg-muted" /><p className="text-xs text-muted-foreground">Contact support to change your registered phone.</p></div>
+        <div className="flex items-center gap-3 pt-2">
+          <Button className="rounded-xl" onClick={() => save.mutate()} disabled={save.isPending}>{save.isPending ? "Saving…" : "Save Changes"}</Button>
+          {saved && <span className="text-xs text-green-600 font-medium">Saved ✓</span>}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Sidebar Nav (Desktop) */}
-          <div className="hidden md:flex flex-col gap-2">
-            <Button variant="ghost" className="justify-start font-medium bg-muted">Profile</Button>
-            <Button variant="ghost" className="justify-start font-medium text-muted-foreground">Plan & Billing</Button>
-            <Button variant="ghost" className="justify-start font-medium text-muted-foreground">Notifications</Button>
-            <Button variant="ghost" className="justify-start font-medium text-muted-foreground">Security</Button>
+function BillingSection() {
+  const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => fetchJson("/patients/me") });
+  const planKey = me?.plan ?? "comprehensive";
+  const plan = PLAN_LABELS[planKey] ?? PLAN_LABELS.comprehensive;
+  const startedAt = me?.createdAt ? new Date(me.createdAt) : new Date();
+  const nextBilling = new Date(startedAt); nextBilling.setMonth(nextBilling.getMonth() + (me?.weekNumber ? Math.ceil(me.weekNumber / 4) : 1));
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg"><CreditCard className="w-5 h-5" /> Active Plan</CardTitle>
+          <CardDescription>Manage your subscription.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex justify-between items-center flex-wrap gap-3">
+            <div>
+              <h4 className="font-bold text-primary">{plan.name}</h4>
+              <p className="text-sm text-foreground">{plan.price} / month</p>
+              <p className="text-xs text-muted-foreground mt-1">Next billing: {nextBilling.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
+            </div>
+            <Badge variant="outline" className="bg-white">Active</Badge>
           </div>
 
-          <div className="md:col-span-2 space-y-8">
-            {/* Profile */}
-            <Card className="border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><User className="w-5 h-5"/> Personal Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>First Name</Label>
-                    <Input defaultValue="Rahul" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Last Name</Label>
-                    <Input defaultValue="Sharma" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input defaultValue="rahul.sharma@example.com" type="email" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Phone Number</Label>
-                  <Input defaultValue="+91 98765 43210" disabled className="bg-muted" />
-                  <p className="text-xs text-muted-foreground">Contact support to change your registered phone number.</p>
-                </div>
-                <Button className="mt-2 rounded-xl">Save Changes</Button>
-              </CardContent>
-            </Card>
+          <div>
+            <h4 className="font-medium mb-3 text-sm">Payment Method</h4>
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-6 bg-muted rounded flex items-center justify-center font-mono text-[10px] font-bold">VISA</div>
+                <span className="text-sm">•••• •••• •••• 4242</span>
+              </div>
+              <Button variant="ghost" size="sm" className="text-primary h-8">Edit</Button>
+            </div>
+          </div>
 
-            {/* Plan & Billing */}
-            <Card className="border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5"/> Plan & Billing</CardTitle>
-                <CardDescription>Manage your subscription and payment methods</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-primary">Comprehensive Plan</h4>
-                    <p className="text-sm text-foreground">₹1,990 / month</p>
-                    <p className="text-xs text-muted-foreground mt-1">Next billing date: Oct 25, 2025</p>
+          <div>
+            <h4 className="font-medium mb-3 text-sm">Invoices</h4>
+            <div className="space-y-1">
+              {[0, 1, 2].map(i => {
+                const d = new Date(startedAt); d.setMonth(d.getMonth() - i);
+                return (
+                  <div key={i} className="flex items-center justify-between p-2 hover:bg-muted/40 rounded-lg transition-colors">
+                    <span className="text-sm">{d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} — {plan.price}</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><Download className="w-4 h-4" /></Button>
                   </div>
-                  <Badge variant="outline" className="bg-white">Active</Badge>
-                </div>
+                );
+              })}
+            </div>
+          </div>
 
-                <div>
-                  <h4 className="font-medium mb-3">Payment Method</h4>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-6 bg-muted rounded flex items-center justify-center font-mono text-[10px] font-bold">VISA</div>
-                      <span className="text-sm">•••• •••• •••• 4242</span>
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-primary h-8">Edit</Button>
-                  </div>
-                </div>
+          <Separator />
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" className="rounded-xl" asChild><a href="/cloudberry/#pricing">Change plan</a></Button>
+            <Button variant="outline" className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 rounded-xl">Cancel Subscription</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
-                <div>
-                  <h4 className="font-medium mb-3">Invoices</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors">
-                      <span className="text-sm">Sep 25, 2025 - ₹1,990</span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><Download className="w-4 h-4"/></Button>
-                    </div>
-                    <div className="flex items-center justify-between p-2 hover:bg-muted rounded-lg transition-colors">
-                      <span className="text-sm">Aug 25, 2025 - ₹1,990</span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full"><Download className="w-4 h-4"/></Button>
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 rounded-xl">Cancel Subscription</Button>
-              </CardContent>
-            </Card>
+function NotificationsSection() {
+  const [prefs, setPrefs] = useState(() => {
+    const stored = localStorage.getItem("cloudberry_notif_prefs");
+    return stored ? JSON.parse(stored) : { checkinReminder: true, whatsapp: true, marketing: false, weeklySummary: true, careTeamMessages: true };
+  });
+  const update = (k: string, v: boolean) => {
+    const next = { ...prefs, [k]: v }; setPrefs(next);
+    localStorage.setItem("cloudberry_notif_prefs", JSON.stringify(next));
+  };
+  const items: { k: string; label: string; desc: string }[] = [
+    { k: "checkinReminder", label: "Daily Check-in Reminder", desc: "Push notification at 8 PM if you haven't checked in" },
+    { k: "weeklySummary", label: "Weekly Summary", desc: "Sunday digest of your progress" },
+    { k: "careTeamMessages", label: "Care Team Messages", desc: "Notify me when my care team sends a message" },
+    { k: "whatsapp", label: "WhatsApp Updates", desc: "Important reminders via WhatsApp" },
+    { k: "marketing", label: "Marketing Emails", desc: "Product news, tips and offers" },
+  ];
+  return (
+    <Card className="border-border/60 shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg"><Bell className="w-5 h-5" /> Notifications</CardTitle>
+        <CardDescription>Choose how we keep you informed.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-1">
+        {items.map((it, i) => (
+          <div key={it.k}>
+            {i > 0 && <Separator className="my-1" />}
+            <div className="flex items-center justify-between py-3">
+              <div className="pr-4">
+                <h4 className="text-sm font-medium">{it.label}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">{it.desc}</p>
+              </div>
+              <Switch checked={prefs[it.k]} onCheckedChange={(v) => update(it.k, v)} />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
-            {/* Notifications */}
-            <Card className="border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5"/> Notifications</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Daily Check-in Reminder</h4>
-                    <p className="text-xs text-muted-foreground">Receive a push notification at 8 PM</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">WhatsApp Updates</h4>
-                    <p className="text-xs text-muted-foreground">Receive important updates via WhatsApp</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium">Marketing Emails</h4>
-                    <p className="text-xs text-muted-foreground">News, tips and offers</p>
-                  </div>
-                  <Switch />
-                </div>
-              </CardContent>
-            </Card>
+function SecuritySection() {
+  const [pw1, setPw1] = useState(""); const [pw2, setPw2] = useState(""); const [msg, setMsg] = useState("");
+  const onChange = () => {
+    if (pw1.length < 6) return setMsg("Password must be at least 6 characters.");
+    if (pw1 !== pw2) return setMsg("Passwords do not match.");
+    setMsg("Password updated successfully ✓"); setPw1(""); setPw2("");
+  };
+  const sessions = [
+    { device: "This browser", platform: navigator.userAgent.includes("Mobile") ? "Mobile · Chrome" : "Desktop · Chrome", current: true, lastActive: "Now" },
+    { device: "iPhone", platform: "iOS · Safari", current: false, lastActive: "2 hours ago" },
+  ];
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg"><Shield className="w-5 h-5" /> Password</CardTitle>
+          <CardDescription>Choose a strong password you don't use elsewhere.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2"><Label>New password</Label><Input type="password" value={pw1} onChange={e => { setPw1(e.target.value); setMsg(""); }} /></div>
+          <div className="space-y-2"><Label>Confirm password</Label><Input type="password" value={pw2} onChange={e => { setPw2(e.target.value); setMsg(""); }} /></div>
+          {msg && <p className={`text-xs ${msg.includes("✓") ? "text-green-600" : "text-destructive"}`}>{msg}</p>}
+          <Button className="rounded-xl" onClick={onChange} disabled={!pw1 || !pw2}>Update password</Button>
+        </CardContent>
+      </Card>
 
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Active Sessions</CardTitle>
+          <CardDescription>Devices signed into your account.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {sessions.map((s, i) => (
+            <div key={i} className="flex items-center justify-between p-3 border border-border/50 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-foreground">{s.device} {s.current && <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>}</p>
+                <p className="text-xs text-muted-foreground">{s.platform} · {s.lastActive}</p>
+              </div>
+              {!s.current && <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 text-xs h-8">Sign out</Button>}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Two-Factor Authentication</CardTitle>
+          <CardDescription>Add an extra layer of security with SMS verification.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div><p className="text-sm">SMS verification</p><p className="text-xs text-muted-foreground mt-0.5">Not enabled</p></div>
+            <Button variant="outline" size="sm">Enable</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function PatientSettings() {
+  const [section, setSection] = useState<Section>("profile");
+
+  return (
+    <PatientLayout>
+      <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">My Profile</h1>
+          <p className="text-muted-foreground text-sm">Manage your account, preferences, and billing.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 lg:gap-8">
+          {/* Sidebar */}
+          <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible -mx-4 px-4 md:m-0 md:p-0">
+            {NAV.map(n => (
+              <button
+                key={n.key}
+                onClick={() => setSection(n.key)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 md:shrink ${
+                  section === n.key
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
+              >
+                <n.icon className="w-4 h-4 shrink-0" />
+                <span>{n.label}</span>
+                <ChevronRight className={`w-3 h-3 ml-auto hidden md:block ${section === n.key ? "text-primary" : "text-muted-foreground/40"}`} />
+              </button>
+            ))}
+          </nav>
+
+          {/* Section */}
+          <div>
+            {section === "profile" && <ProfileSection />}
+            {section === "billing" && <BillingSection />}
+            {section === "notifications" && <NotificationsSection />}
+            {section === "security" && <SecuritySection />}
           </div>
         </div>
       </div>

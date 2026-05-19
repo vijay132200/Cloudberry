@@ -1,0 +1,287 @@
+The patient portal and all dashboards must NOT behave like a static admin template with fake/generated metrics. The entire system should function dynamically using only actual database-driven patient activity and operational updates.
+
+IMPORTANT:
+All patient-facing metrics, charts, adherence scores, consistency tracking, trends, insights, and dashboard states must be calculated from real stored data inside the database and not hardcoded demo content except for explicitly marked demo credentials.
+
+====================================================
+REAL DATA LOGIC
+====================================================
+
+For every NEW patient signup (non-demo account):
+
+INITIAL STATE:
+- Daily check-ins = 0
+- Weekly adherence = no data
+- Weight trend = unavailable
+- Behavioral consistency = unavailable
+- Glucose trend = unavailable
+- Insights = unavailable
+- Coach review = not scheduled
+- Messages = no messages yet
+- Care team = not assigned yet
+
+Dashboard should intelligently display:
+- “No data recorded yet”
+- “Complete your first check-in”
+- “Awaiting care team assignment”
+- “Review pending”
+instead of showing fake placeholder analytics.
+
+DO NOT preload fabricated metrics for real users.
+
+====================================================
+CHECK-IN LOGIC
+====================================================
+
+The daily check-in system must be fully database-driven.
+
+Rules:
+- If no check-in submitted today → dashboard shows “Check-in pending”
+- Once completed → mark “Done for today”
+- Weekly adherence must calculate dynamically based on completed check-ins
+- Consistency score must calculate from actual logs
+- Trends should gradually evolve over days/weeks of usage
+
+Example:
+If user completed 5 of 7 check-ins:
+- adherence = 71%
+- display only recorded days
+- missing days = “No data”
+
+Everything must evolve naturally over time using real patient activity.
+
+====================================================
+DASHBOARD DATA RULES
+====================================================
+
+ALL dashboard cards must pull real data from:
+- daily check-ins
+- uploaded glucose readings
+- uploaded meals
+- appointment records
+- operations updates
+- physician/dietician notes
+- adherence history
+
+DO NOT:
+- use static JSON
+- preload fake charts
+- show generated trends before sufficient data exists
+
+If insufficient data:
+show intelligent empty states instead.
+
+====================================================
+OPERATIONS-DEPENDENT ACTIVATION LOGIC
+====================================================
+
+The patient dashboard must remain partially inactive until Operations/Admin configures the patient.
+
+Before Operations assignment:
+- No physician assigned
+- No dietician assigned
+- No caretaker assigned
+- No meetings
+- No care messages
+- No clinical insights
+
+Display:
+- “Yet to be assigned”
+- “No upcoming meetings”
+- “No messages yet”
+- “Care plan pending”
+
+Only after Operations updates the patient profile and assigns care members should:
+- meetings appear
+- care messages appear
+- intervention insights appear
+- advanced dashboard analytics unlock
+
+====================================================
+OPERATIONS PORTAL REQUIREMENTS
+====================================================
+
+The Operations portal must function as the master administrative control layer.
+
+Operations should be able to:
+
+1. View ALL patients
+2. View complete patient dashboards
+3. Access all uploaded reports
+4. Review all check-ins
+5. Assign:
+   - physician
+   - dietician
+   - caretaker
+6. Update care status
+7. Schedule appointments
+8. Trigger dashboard activation
+9. Add notes
+10. Escalate/de-escalate cases
+11. Verify patient onboarding completion
+
+====================================================
+OPERATIONS ASSIGNMENT SYSTEM
+====================================================
+
+Create a fully functional assignment system.
+
+Operations must assign:
+- Physician
+- Dietician
+- Caretaker
+
+Before assignment:
+Dashboard should display:
+- “Awaiting care team allocation”
+
+After assignment:
+- Meetings become visible
+- Messaging activates
+- Care plans appear
+- Recommendations unlock
+
+====================================================
+PATIENT DASHBOARD METRICS
+====================================================
+
+The following sections must calculate from real patient activity only:
+
+- Weekly adherence
+- Weight trend
+- Behavioral consistency
+- Energy & wellbeing
+- Fasting glucose trend
+- Weekly insights
+- Coach reviews
+- Focus areas
+- Care team messages
+
+Example insights:
+- Dinner inconsistency affecting glucose
+- Better activity improving fasting glucose
+- Sleep affecting cravings
+
+Insights should only generate if enough data exists.
+
+====================================================
+CARE TEAM MESSAGE LOGIC
+====================================================
+
+Messages from:
+- physician
+- dietician
+- caretaker
+- operations
+
+must only appear if actually created in database.
+
+Otherwise display:
+- “No messages yet”
+
+====================================================
+APPOINTMENT SECTION
+====================================================
+
+Under Appointments:
+- Allow reschedule requests
+- Allow patient ticket raising
+- Allow cancellation requests
+- Allow appointment notes
+- Show meeting status
+
+Create a proper support/request flow.
+
+====================================================
+PROFILE SECTION
+====================================================
+
+Under My Profile make ALL sections fully functional:
+
+1. Profile
+- editable user details
+- demographics
+- medical info
+
+2. Plan & Billing
+- active plan
+- upgrade flow
+- invoices
+- payment history
+
+3. Notifications
+- preferences
+- reminders
+- alerts
+- email/SMS toggles
+
+4. Security
+- password reset
+- device sessions
+- authentication settings
+
+====================================================
+SITE-WIDE UX IMPROVEMENTS
+====================================================
+
+Make the entire platform:
+- more interactive
+- smoother
+- cleaner
+- less visually boxed
+- less cluttered
+- more premium
+
+Reduce:
+- excessive borders
+- excessive padding blocks
+- admin-template feeling
+
+Increase:
+- whitespace
+- hierarchy
+- responsiveness
+- animation smoothness
+- healthcare-grade UX
+
+====================================================
+NAVIGATION IMPROVEMENTS
+====================================================
+
+In ALL portals:
+- sign out button must remain accessible
+- no excessive scrolling needed
+- improve sidebar usability
+- sticky navigation where appropriate
+
+====================================================
+TESTING REQUIREMENTS
+====================================================
+
+Test the platform thoroughly using:
+- actual seeded users
+- newly registered users
+- different plan types
+- different role permissions
+
+Verify:
+- all calculations
+- adherence logic
+- dynamic charts
+- onboarding flow
+- assignment logic
+- messaging
+- appointments
+- ticket raising
+- uploads
+- role access
+- profile editing
+- operations workflow
+
+====================================================
+IMPORTANT PRODUCT PRINCIPLE
+====================================================
+
+This platform must behave like a real metabolic continuity-care system using evolving patient data — NOT a fake dashboard template with hardcoded analytics.
+
+The system should progressively become richer and more intelligent as more patient data is collected over time.
