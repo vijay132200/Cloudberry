@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   usersTable,
+  staffTable,
   patientsTable,
   patientPlansTable,
   patientNotesTable,
@@ -25,8 +26,8 @@ function parseToken(authHeader: string | undefined): { userId: number; role: str
 
 async function loadStaff(id: number | null) {
   if (!id) return null;
-  const [u] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
-  return u ? { id: u.id, name: u.fullName, role: u.role, email: u.email ?? null } : null;
+  const [s] = await db.select().from(staffTable).where(eq(staffTable.id, id)).limit(1);
+  return s ? { id: s.id, name: s.fullName, role: s.role, email: s.email ?? null, specialty: s.specialty ?? null } : null;
 }
 
 router.get("/me", async (req, res) => {

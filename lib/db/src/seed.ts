@@ -4,6 +4,7 @@ import { db } from "./index";
 import {
   usersTable, staffTable, patientsTable,
   checkinsTable, appointmentsTable, metricsTable, patientPlansTable,
+  patientNotesTable,
 } from "./schema";
 
 function hash(password: string) {
@@ -13,6 +14,12 @@ function hash(password: string) {
 const DEMO_PW = hash("demo123");
 
 async function seed() {
+  // ── Destructive-action guardrail ───────────────────────────────────────
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    console.error("❌ Refusing to seed: NODE_ENV=production. Set ALLOW_DESTRUCTIVE_SEED=true to override.");
+    process.exit(1);
+  }
+
   console.log("🌱 Seeding database...\n");
 
   // ── WIPE existing data (dev only) ──────────────────────────────────────
@@ -20,6 +27,7 @@ async function seed() {
   await db.delete(metricsTable);
   await db.delete(appointmentsTable);
   await db.delete(checkinsTable);
+  await db.delete(patientNotesTable);
   await db.delete(patientPlansTable);
   await db.delete(patientsTable);
   await db.delete(usersTable);
@@ -102,81 +110,61 @@ async function seed() {
       weeklyGoals: "Lose 0.5 kg. Log all meals. Complete all 7 daily check-ins.",
     });
 
-    // Check-ins (8–14 per patient)
+    // Check-ins (8–14 per patient) — batch insert
     const checkinCount = 8 + Math.floor(Math.random() * 7);
     const meals = ["yes", "mostly", "partially", "no"];
     const energy = ["good", "moderate", "low"];
     const moods = ["great", "good", "neutral", "tired"];
-    const glucoseBase = p.primaryGoal === "diabetes_reversal" || p.primaryGoal === "pcos_management" ? 145 : 95;
+    const isMetabolic = p.primaryGoal === "diabetes_reversal" || p.primaryGoal === "pcos_management";
+    const glucoseBase = isMetabolic ? 145 : 95;
 
+    const checkinValues = [];
     for (let i = checkinCount; i >= 1; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      await db.insert(checkinsTable).values({
+      const date = new Date(); date.setDate(date.getDate() - i);
+      checkinValues.push({
         patientId: patient.id,
         mealsFollowed: meals[Math.floor(Math.random() * (i < 3 ? 2 : 4))],
         activityCompleted: Math.random() > 0.35,
         energyLevel: energy[Math.floor(Math.random() * 3)],
         mood: moods[Math.floor(Math.random() * 4)],
-        glucoseReading: (p.primaryGoal === "diabetes_reversal" || p.primaryGoal === "pcos_management")
+        glucoseReading: isMetabolic
           ? Number((glucoseBase - i * 0.6 + (Math.random() * 12 - 6)).toFixed(1))
           : null,
         notes: i % 4 === 0 ? "Feeling consistent, managing cravings better." : null,
         createdAt: date,
       });
     }
+    await db.insert(checkinsTable).values(checkinValues);
 
-    // Weight metrics
+    // Metrics (weight, optionally glucose, sleep + hunger) — batch insert
+    const metricValues: any[] = [];
     for (let i = checkinCount; i >= 1; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i * 3);
+      const wd = new Date(); wd.setDate(wd.getDate() - i * 3);
       const weight = p.startingWeight - ((p.startingWeight - p.currentWeight) * (1 - i / checkinCount));
-      await db.insert(metricsTable).values({
-        patientId: patient.id, type: "weight",
-        value: Number(weight.toFixed(1)),
-        date: date.toISOString().split("T")[0],
-      });
+      metricValues.push({ patientId: patient.id, type: "weight", value: Number(weight.toFixed(1)), date: wd.toISOString().split("T")[0] });
     }
-
-    // Glucose metrics for diabetic/pcos patients
-    if (p.primaryGoal === "diabetes_reversal" || p.primaryGoal === "pcos_management") {
-      for (let i = checkinCount; i >= 1; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        await db.insert(metricsTable).values({
-          patientId: patient.id, type: "fasting_glucose",
-          value: Number((glucoseBase - i * 0.6 + (Math.random() * 8 - 4)).toFixed(1)),
-          date: date.toISOString().split("T")[0],
-        });
-      }
-    }
-
-    // Sleep & hunger metrics
     for (let i = checkinCount; i >= 1; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const ds = date.toISOString().split("T")[0];
-      await db.insert(metricsTable).values({ patientId: patient.id, type: "sleep_hours", value: Number((5.5 + Math.random() * 3).toFixed(1)), date: ds });
-      await db.insert(metricsTable).values({ patientId: patient.id, type: "hunger_score", value: Math.floor(1 + Math.random() * 5), date: ds });
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split("T")[0];
+      if (isMetabolic) {
+        metricValues.push({ patientId: patient.id, type: "fasting_glucose", value: Number((glucoseBase - i * 0.6 + (Math.random() * 8 - 4)).toFixed(1)), date: ds });
+      }
+      metricValues.push({ patientId: patient.id, type: "sleep_hours", value: Number((5.5 + Math.random() * 3).toFixed(1)), date: ds });
+      metricValues.push({ patientId: patient.id, type: "hunger_score", value: Math.floor(1 + Math.random() * 5), date: ds });
     }
+    await db.insert(metricsTable).values(metricValues);
 
-    // Appointments (3 upcoming per patient)
+    // Appointments (3 upcoming per patient) — batch insert
     const careTeam = [
       { name: "Dr. Sneha Mehta", role: "Physician" },
       { name: "Priya Sharma", role: "Dietician" },
       { name: "Ranjit Kumar", role: "Caretaker" },
     ];
-    for (let i = 0; i < 3; i++) {
-      const apptDate = new Date();
-      apptDate.setDate(apptDate.getDate() + (i + 1) * 7);
-      await db.insert(appointmentsTable).values({
-        patientId: patient.id,
-        careTeamMember: careTeam[i].name,
-        role: careTeam[i].role,
-        scheduledAt: apptDate,
-        status: "upcoming",
-      });
-    }
+    const apptValues = [0, 1, 2].map(i => {
+      const apptDate = new Date(); apptDate.setDate(apptDate.getDate() + (i + 1) * 7);
+      return { patientId: patient.id, careTeamMember: careTeam[i].name, role: careTeam[i].role, scheduledAt: apptDate, status: "upcoming" };
+    });
+    await db.insert(appointmentsTable).values(apptValues);
     console.log(`  ✔ ${p.fullName} (${p.plan}, ${checkinCount} check-ins)`);
   }
 
