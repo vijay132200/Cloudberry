@@ -35,6 +35,7 @@ minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - '@replit/*'
   - stripe-replit-sync
+  - postcss
 
 onlyBuiltDependencies:
   - '@swc/core'
@@ -44,6 +45,14 @@ onlyBuiltDependencies:
 
 overrides:
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
+  'brace-expansion@2': 2.0.3
+  'fast-uri@3': 3.1.2
+  'lodash': 4.18.1
+  'path-to-regexp@8': 8.4.2
+  'picomatch@2': 2.3.2
+  'picomatch@4': 4.0.4
+  'postcss@8': 8.5.15
+  'yaml@2': 2.9.0
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-arm64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-x64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-freebsd-ia32': '-'
