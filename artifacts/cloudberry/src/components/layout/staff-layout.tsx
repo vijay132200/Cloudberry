@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Users, LayoutDashboard, LogOut, BarChart3, Settings } from "lucide-react";
+import { Users, LayoutDashboard, LogOut, BarChart3, Settings, ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 
@@ -15,6 +15,8 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
 
   const handleLogout = () => {
     localStorage.removeItem("cloudberry_token");
+    localStorage.removeItem("cloudberry_role");
+    localStorage.removeItem("cloudberry_name");
     setLocation(`/${type}/signin`);
   };
 
@@ -22,8 +24,8 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
     ? [{ name: "My Patients", href: "/coach/patients", icon: Users }]
     : [
         { name: "Command Center", href: "/ops/dashboard", icon: LayoutDashboard },
-        { name: "Analytics", href: "/ops/dashboard", icon: BarChart3 },
-        { name: "Settings", href: "/ops/dashboard", icon: Settings },
+        { name: "Analytics", href: "/ops/analytics", icon: BarChart3 },
+        { name: "Settings", href: "/ops/settings", icon: Settings },
       ];
 
   return (

@@ -57,6 +57,19 @@ export default function CaretakerDashboard() {
   const [uploadText, setUploadText] = useState("");
   const [messageText, setMessageText] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [opsBackup] = useState(() => localStorage.getItem("cloudberry_ops_backup"));
+
+  const handleReturnToOps = () => {
+    if (!opsBackup) return;
+    try {
+      const { token, role, name: n } = JSON.parse(opsBackup);
+      localStorage.setItem("cloudberry_token", token);
+      localStorage.setItem("cloudberry_role", role ?? "ops");
+      if (n) localStorage.setItem("cloudberry_name", n);
+      localStorage.removeItem("cloudberry_ops_backup");
+      setLocation("/ops/dashboard");
+    } catch { setLocation("/ops/dashboard"); }
+  };
 
   const name = localStorage.getItem("cloudberry_name") || "Caretaker";
   const specialty = localStorage.getItem("cloudberry_specialty") || "";
@@ -104,7 +117,19 @@ export default function CaretakerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <>
+    {opsBackup && (
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-violet-700 text-white text-xs px-4 py-2 flex items-center justify-between shadow-lg">
+        <span className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-violet-300 animate-pulse" />
+          Viewing <strong>Caretaker Portal</strong> from Operations — read-only preview mode
+        </span>
+        <button onClick={handleReturnToOps} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full font-semibold text-xs transition-colors flex items-center gap-1.5">
+          ← Return to Ops
+        </button>
+      </div>
+    )}
+    <div className={`min-h-screen bg-slate-50 flex${opsBackup ? " pt-9" : ""}`}>
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? "w-60" : "w-16"} transition-all bg-purple-950 text-white flex flex-col shrink-0`}>
         <div className="p-4 border-b border-white/10 flex items-center gap-3">
@@ -356,5 +381,6 @@ export default function CaretakerDashboard() {
         </div>
       )}
     </div>
+    </>
   );
 }

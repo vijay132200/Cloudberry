@@ -1361,13 +1361,16 @@ export default function OpsDashboard() {
               </div>
             </Card>
 
-            {/* Staff credentials */}
+            {/* Staff credentials — live from DB */}
             <Card className="border-border shadow-sm overflow-hidden">
               <CardHeader className="border-b bg-muted/20 py-4">
-                <CardTitle className="text-base text-foreground flex items-center gap-2">
-                  <Stethoscope className="w-4 h-4 text-primary" /> Staff Portal Credentials
-                  <Badge variant="outline" className="ml-2 text-[10px] font-mono">Sign in at /physician/signin</Badge>
-                </CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="text-base text-foreground flex items-center gap-2">
+                    <Stethoscope className="w-4 h-4 text-primary" /> Staff Portal Credentials
+                    <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">Live from DB · {(staff as any[]).length} accounts</Badge>
+                  </CardTitle>
+                  <Badge variant="outline" className="text-[10px] font-mono">Sign in at /physician/signin</Badge>
+                </div>
               </CardHeader>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
@@ -1376,44 +1379,68 @@ export default function OpsDashboard() {
                       <th className="px-5 py-3 font-medium">Name</th>
                       <th className="px-5 py-3 font-medium">Role</th>
                       <th className="px-5 py-3 font-medium">Email</th>
+                      <th className="px-5 py-3 font-medium">Specialty</th>
                       <th className="px-5 py-3 font-medium">Password</th>
-                      <th className="px-5 py-3 font-medium">Redirects to</th>
+                      <th className="px-5 py-3 font-medium">Patients</th>
+                      <th className="px-5 py-3 font-medium text-right">Portal Access</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
-                    {[
-                      { name: "Dr. Sneha Mehta", role: "physician", email: "dr.mehta@cloudberry.health", dest: "/physician/dashboard" },
-                      { name: "Dr. Raj Patel", role: "physician", email: "dr.raj@cloudberry.health", dest: "/physician/dashboard" },
-                      { name: "Dr. Priya Singh", role: "physician", email: "dr.priya@cloudberry.health", dest: "/physician/dashboard" },
-                      { name: "Priya Sharma", role: "dietician", email: "priya.diet@cloudberry.health", dest: "/dietician/dashboard" },
-                      { name: "Kavya Nair", role: "dietician", email: "kavya.diet@cloudberry.health", dest: "/dietician/dashboard" },
-                      { name: "Rohan Verma", role: "dietician", email: "rohan.diet@cloudberry.health", dest: "/dietician/dashboard" },
-                      { name: "Ranjit Kumar", role: "caretaker", email: "ranjit.care@cloudberry.health", dest: "/caretaker/dashboard" },
-                      { name: "Sunita Rao", role: "caretaker", email: "sunita.care@cloudberry.health", dest: "/caretaker/dashboard" },
-                      { name: "Mahesh Iyer", role: "caretaker", email: "mahesh.care@cloudberry.health", dest: "/caretaker/dashboard" },
-                      { name: "Priya Nair", role: "ops", email: "ops@cloudberry.health", dest: "/ops/dashboard" },
-                      { name: "Arjun Kapoor", role: "ops", email: "ops2@cloudberry.health", dest: "/ops/dashboard" },
-                    ].map((s, i) => (
-                      <tr key={i} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-5 py-3 font-semibold text-foreground">{s.name}</td>
-                        <td className="px-5 py-3">
-                          <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 flex items-center gap-1 w-fit ${roleColor(s.role)}`}>
-                            {roleIcon(s.role)} {s.role}
-                          </Badge>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-1.5 text-xs text-foreground/80">
-                            <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />{s.email}
-                          </div>
-                        </td>
-                        <td className="px-5 py-3">
-                          <span className="font-mono text-xs bg-green-50 border border-green-200 text-green-800 px-2 py-0.5 rounded">demo123</span>
-                        </td>
-                        <td className="px-5 py-3">
-                          <span className="font-mono text-xs text-muted-foreground">{s.dest}</span>
-                        </td>
-                      </tr>
-                    ))}
+                    {sLoading ? (
+                      <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading staff from database…</td></tr>
+                    ) : (staff as any[]).map((s: any) => {
+                      const dest = s.role === "physician" ? "/physician/dashboard"
+                        : s.role === "dietician" ? "/dietician/dashboard"
+                        : s.role === "caretaker" ? "/caretaker/dashboard"
+                        : "/ops/dashboard";
+                      const isOpsRole = s.role === "ops";
+                      const accessPortal = () => {
+                        if (isOpsRole) return;
+                        const currentToken = localStorage.getItem("cloudberry_token");
+                        const currentRole = localStorage.getItem("cloudberry_role");
+                        const currentName = localStorage.getItem("cloudberry_name");
+                        localStorage.setItem("cloudberry_ops_backup", JSON.stringify({ token: currentToken, role: currentRole, name: currentName }));
+                        const previewToken = btoa(JSON.stringify({ userId: s.id, role: s.role }));
+                        localStorage.setItem("cloudberry_token", previewToken);
+                        localStorage.setItem("cloudberry_role", s.role);
+                        localStorage.setItem("cloudberry_name", s.fullName);
+                        if (s.specialty) localStorage.setItem("cloudberry_specialty", s.specialty);
+                        navigate(dest);
+                      };
+                      return (
+                        <tr key={s.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-5 py-3 font-semibold text-foreground">{s.fullName}</td>
+                          <td className="px-5 py-3">
+                            <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 flex items-center gap-1 w-fit ${roleColor(s.role)}`}>
+                              {roleIcon(s.role)} {s.role}
+                            </Badge>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-1.5 text-xs text-foreground/80">
+                              <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />{s.email}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-xs text-muted-foreground">{s.specialty || "—"}</td>
+                          <td className="px-5 py-3">
+                            <span className="font-mono text-xs bg-green-50 border border-green-200 text-green-800 px-2 py-0.5 rounded">demo123</span>
+                          </td>
+                          <td className="px-5 py-3">
+                            <span className="text-sm font-medium text-primary">{s.patientCount ?? 0}</span>
+                            <span className="text-xs text-muted-foreground ml-1">assigned</span>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            {!isOpsRole ? (
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] px-3 border-primary/30 text-primary hover:bg-primary/5"
+                                onClick={accessPortal}>
+                                <ExternalLink className="w-3 h-3 mr-1" /> Open Portal
+                              </Button>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground italic">current portal</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

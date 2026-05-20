@@ -48,6 +48,8 @@ import CaretakerDashboard from "@/pages/caretaker/dashboard";
 
 // Ops Portal
 import OpsDashboard from "@/pages/ops/dashboard";
+import OpsAnalytics from "@/pages/ops/analytics";
+import OpsSettings from "@/pages/ops/settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,6 +106,8 @@ function Router() {
       {/* Operations Portal */}
       <Route path="/ops/signin" component={OpsSignin} />
       <Route path="/ops/dashboard" component={OpsDashboard} />
+      <Route path="/ops/analytics" component={OpsAnalytics} />
+      <Route path="/ops/settings" component={OpsSettings} />
 
       {/* 404 */}
       <Route component={NotFound} />

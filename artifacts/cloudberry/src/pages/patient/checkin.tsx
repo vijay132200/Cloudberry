@@ -113,11 +113,11 @@ export default function CheckinPage() {
   const storedName = localStorage.getItem("cloudberry_name") || "Rahul Sharma";
   const firstName = storedName.split(" ")[0];
 
-  const [nutrition, setNutrition] = useState(65);
-  const [activity, setActivity] = useState(50);
-  const [hunger, setHunger] = useState(40);
-  const [energy, setEnergy] = useState(70);
-  const [sleepQ, setSleepQ] = useState(75);
+  const [nutrition, setNutrition] = useState(0);
+  const [activity, setActivity] = useState(0);
+  const [hunger, setHunger] = useState(0);
+  const [energy, setEnergy] = useState(0);
+  const [sleepQ, setSleepQ] = useState(0);
   const [glucose, setGlucose] = useState("");
   const [mealPhoto, setMealPhoto] = useState<string | null>(null);
   const [hardest, setHardest] = useState<string[]>([]);

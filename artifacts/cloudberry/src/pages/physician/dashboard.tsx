@@ -82,6 +82,7 @@ export default function PhysicianDashboard() {
   const [scheduleText, setScheduleText] = useState("");
   const [scheduleDate, setScheduleDate] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [opsBackup] = useState(() => localStorage.getItem("cloudberry_ops_backup"));
 
   const name = localStorage.getItem("cloudberry_name") || "Physician";
   const specialty = localStorage.getItem("cloudberry_specialty") || "";
@@ -89,8 +90,20 @@ export default function PhysicianDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("cloudberry_token");
     const role = localStorage.getItem("cloudberry_role");
-    if (!token || role !== "physician") { setLocation("/physician/signin"); }
+    if (!token || (role !== "physician" && !opsBackup)) { setLocation("/physician/signin"); }
   }, []);
+
+  const handleReturnToOps = () => {
+    if (!opsBackup) return;
+    try {
+      const { token, role, name: n } = JSON.parse(opsBackup);
+      localStorage.setItem("cloudberry_token", token);
+      localStorage.setItem("cloudberry_role", role ?? "ops");
+      if (n) localStorage.setItem("cloudberry_name", n);
+      localStorage.removeItem("cloudberry_ops_backup");
+      setLocation("/ops/dashboard");
+    } catch { setLocation("/ops/dashboard"); }
+  };
 
   const { data: patients = [], isLoading } = useQuery<any[]>({
     queryKey: ["physician-patients"],
@@ -145,7 +158,19 @@ export default function PhysicianDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <>
+    {opsBackup && (
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-violet-700 text-white text-xs px-4 py-2 flex items-center justify-between shadow-lg">
+        <span className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-violet-300 animate-pulse" />
+          Viewing <strong>Physician Portal</strong> from Operations — read-only preview mode
+        </span>
+        <button onClick={handleReturnToOps} className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full font-semibold text-xs transition-colors flex items-center gap-1.5">
+          ← Return to Ops
+        </button>
+      </div>
+    )}
+    <div className={`min-h-screen bg-slate-50 flex${opsBackup ? " pt-9" : ""}`}>
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? "w-60" : "w-16"} transition-all bg-sky-950 text-white flex flex-col shrink-0`}>
         <div className="p-4 border-b border-white/10 flex items-center gap-3">
@@ -606,5 +631,6 @@ export default function PhysicianDashboard() {
         </div>
       )}
     </div>
+    </>
   );
 }
