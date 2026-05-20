@@ -1,0 +1,234 @@
+The Operations portal has either been removed, overwritten, disconnected from routes, or is no longer rendering correctly. Restore and fully rebuild the Operations portal immediately while preserving all existing Neon database connections and application functionality.
+
+The Operations portal is one of the most important system layers and must function as the administrative and workflow control center of the entire Cloudberry platform.
+
+====================================================
+RESTORE OPERATIONS PORTAL
+=========================
+
+Restore:
+
+* operations dashboard
+* patient management
+* staff assignment system
+* lead management
+* patient detail panels
+* scheduling visibility
+* operational workflows
+* alerts/escalation system
+
+Ensure the Operations portal is accessible again through:
+
+* correct routes
+* navigation/sidebar
+* role-based auth
+* protected access
+
+====================================================
+OPERATIONS PORTAL REQUIREMENTS
+==============================
+
+Operations staff must be able to:
+
+1. View all patients
+2. View all staff
+3. View complete patient profiles
+4. View patient dashboards
+5. Review uploaded reports/documents
+6. View all check-ins
+7. View metrics/history
+8. Assign:
+
+   * physician
+   * dietician
+   * caretaker
+9. Add/edit notes
+10. Schedule appointments
+11. Escalate/de-escalate cases
+12. Manage leads
+13. Track onboarding status
+14. Trigger patient activation
+15. Monitor inactive/high-risk patients
+
+====================================================
+VERY IMPORTANT DATABASE REQUIREMENT
+===================================
+
+ALL form entries, check-ins, uploads, edits, notes, assignments, messages, appointments, and dashboard updates must persist permanently inside the Neon PostgreSQL database.
+
+Nothing should remain frontend-only or temporary state.
+
+====================================================
+DATABASE PERSISTENCE REQUIREMENTS
+=================================
+
+Ensure the following are fully database-driven:
+
+* Daily check-ins
+* Weekly adherence
+* Weight logs
+* Glucose logs
+* Sleep logs
+* Hunger/craving scores
+* Meal uploads
+* Assessment forms
+* Care plans
+* Messages
+* Appointments
+* Profile updates
+* Operations assignments
+* Lead forms
+* Notes/comments
+* Support tickets
+* Reschedule requests
+* Notifications
+
+====================================================
+PORTAL SYNCHRONIZATION
+======================
+
+Changes made in ANY portal must reflect across ALL relevant portals in real time or near-real time.
+
+Examples:
+
+1. Patient submits check-in
+   → visible in:
+
+* patient dashboard
+* physician portal
+* dietician portal
+* caretaker portal
+* operations portal
+
+2. Operations assigns physician
+   → visible in:
+
+* patient dashboard
+* physician portal
+* appointments
+* messages
+
+3. Dietician adds recommendation
+   → visible in:
+
+* patient dashboard
+* operations portal
+
+4. Appointment rescheduled
+   → updates for:
+
+* patient
+* assigned staff
+* operations
+
+====================================================
+PATIENT DATA FLOW
+=================
+
+Every patient should have persistent evolving records over time.
+
+Do NOT reset data on refresh/restart.
+
+The dashboard should progressively evolve based on:
+
+* recorded check-ins
+* uploaded reports
+* metrics
+* care team interactions
+* appointments
+* operational updates
+
+====================================================
+REMOVE FRONTEND-ONLY STATES
+===========================
+
+Eliminate:
+
+* fake local-only updates
+* temporary state-based dashboard changes
+* hardcoded metrics
+* frontend-only forms
+* unsaved interactions
+
+Everything important must write to Neon DB.
+
+====================================================
+VERIFY DATABASE CONNECTIONS
+===========================
+
+Verify:
+
+* DATABASE_URL is correctly connected
+* all APIs are writing successfully
+* all tables are mapped correctly
+* no broken ORM/schema relations exist
+* all CRUD operations function properly
+
+====================================================
+VERIFY ROLE-BASED ACCESS
+========================
+
+Ensure:
+
+* patients
+* physicians
+* dieticians
+* caretakers
+* operations
+
+all:
+
+* sign in correctly
+* access correct dashboards
+* only see permitted data
+* have proper protected routes
+
+====================================================
+UI/UX REQUIREMENTS
+==================
+
+Keep the UI:
+
+* premium
+* healthcare-grade
+* clean
+* responsive
+* operationally efficient
+
+Reduce:
+
+* excessive borders
+* admin-template feeling
+* clutter
+
+Improve:
+
+* hierarchy
+* navigation
+* responsiveness
+* loading states
+* empty states
+* accessibility
+
+====================================================
+FINAL REQUIREMENT
+=================
+
+After restoring everything:
+perform a complete end-to-end verification using actual database activity.
+
+Test:
+
+* check-in persistence
+* operations assignments
+* appointment flows
+* dashboard updates
+* message syncing
+* role access
+* profile updates
+* lead creation
+* support tickets
+* metrics persistence
+* real dashboard evolution
+
+The system must behave like a real healthcare continuity-care platform with fully persistent patient data and operational synchronization.
