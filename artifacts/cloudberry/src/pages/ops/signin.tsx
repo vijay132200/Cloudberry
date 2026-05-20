@@ -29,6 +29,8 @@ export default function OpsSignin() {
     signin.mutate({ data: values }, {
       onSuccess: (res) => {
         if (res.token) localStorage.setItem("cloudberry_token", res.token);
+        if (res.role) localStorage.setItem("cloudberry_role", res.role);
+        if ((res as any).fullName) localStorage.setItem("cloudberry_name", (res as any).fullName);
         setLocation("/ops/dashboard");
         toast({ title: "Welcome, Operations.", description: "Signed in successfully.", duration: 3000 });
       },

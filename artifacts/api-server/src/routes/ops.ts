@@ -340,4 +340,40 @@ router.post("/patients/:id/notes", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// GET /api/ops/leads — list all inbound leads
+router.get("/leads", async (req, res) => {
+  try {
+    const rows = await db.select().from(leadsTable).orderBy(desc(leadsTable.createdAt)).limit(500);
+    res.json(rows.map(l => ({
+      ...l,
+      createdAt: l.createdAt instanceof Date ? l.createdAt.toISOString() : l.createdAt,
+    })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/patients/:id/appointments — schedule appointment for a patient
+router.post("/patients/:id/appointments", async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const { careTeamMember, role, scheduledAt, notes } = req.body;
+    if (!careTeamMember || !scheduledAt) {
+      res.status(400).json({ error: "careTeamMember and scheduledAt are required" }); return;
+    }
+    const [appt] = await db.insert(appointmentsTable).values({
+      patientId,
+      careTeamMember,
+      role: role ?? "physician",
+      scheduledAt: new Date(scheduledAt),
+      status: "upcoming",
+      notes: notes ?? null,
+    }).returning();
+    res.status(201).json({
+      ...appt,
+      scheduledAt: appt.scheduledAt.toISOString(),
+      createdAt: appt.createdAt.toISOString(),
+    });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 export default router;

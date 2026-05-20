@@ -10,7 +10,7 @@ import {
   Bell, Download, Search, Phone, Mail, TrendingUp, Activity, Star,
   Stethoscope, Target, Dumbbell, Salad, UserCheck, Shield, ChevronRight,
   X, ChevronDown, Weight, MapPin, CalendarCheck, User, FileText,
-  MessageSquare, Plus, ExternalLink, ArrowUp, ArrowDown
+  MessageSquare, Plus, ExternalLink, ArrowUp, ArrowDown, CalendarPlus, ClipboardList
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -107,8 +107,110 @@ function exportCSV(patients: any[]) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-type TabType = "patients" | "registrations" | "staff" | "credentials";
-type DetailTab = "profile" | "checkins" | "team" | "notes" | "plan";
+type TabType = "patients" | "registrations" | "leads" | "staff" | "credentials";
+type DetailTab = "profile" | "checkins" | "metrics" | "team" | "notes" | "appointments" | "plan";
+
+/* ── Appointment Scheduler ────────────────────────────────────────── */
+function AppointmentScheduler({ patient, detail, staff, onRefresh }: { patient: any; detail: any; staff: any[]; onRefresh: () => void }) {
+  const { toast } = useToast();
+  const [form, setForm] = useState({ careTeamMember: "", role: "physician", scheduledAt: "", notes: "" });
+  const [saving, setSaving] = useState(false);
+
+  const careTeamOptions = [
+    ...(detail?.assignedPhysician ? [{ name: detail.assignedPhysician, role: "physician" }] : []),
+    ...(detail?.assignedDietician ? [{ name: detail.assignedDietician, role: "dietician" }] : []),
+    ...(detail?.assignedCaretaker ? [{ name: detail.assignedCaretaker, role: "caretaker" }] : []),
+  ];
+
+  const handleSchedule = async () => {
+    if (!form.careTeamMember || !form.scheduledAt) { toast({ title: "Fill in care team member and date/time", variant: "destructive" }); return; }
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("cloudberry_token") || "";
+      const r = await fetch(`${import.meta.env.BASE_URL?.replace(/\/$/, "")}/api/ops/patients/${patient.id}/appointments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ careTeamMember: form.careTeamMember, role: form.role, scheduledAt: form.scheduledAt, notes: form.notes }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      toast({ title: "Appointment scheduled", description: `${form.careTeamMember} on ${new Date(form.scheduledAt).toLocaleDateString("en-IN")}` });
+      setForm({ careTeamMember: "", role: "physician", scheduledAt: "", notes: "" });
+      onRefresh();
+    } catch { toast({ title: "Failed to schedule", variant: "destructive" }); }
+    finally { setSaving(false); }
+  };
+
+  const appts: any[] = detail?.appointments ?? [];
+
+  return (
+    <div className="space-y-5">
+      {/* Schedule new */}
+      <Card className="border-border">
+        <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5"><CalendarPlus className="w-3.5 h-3.5 text-primary" /> Schedule New Appointment</CardTitle></CardHeader>
+        <CardContent className="space-y-3 pb-4">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-foreground">Care Team Member</label>
+            {careTeamOptions.length > 0 ? (
+              <Select value={form.careTeamMember} onValueChange={v => {
+                const opt = careTeamOptions.find(o => o.name === v);
+                setForm(f => ({ ...f, careTeamMember: v, role: opt?.role ?? "physician" }));
+              }}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select care team member" /></SelectTrigger>
+                <SelectContent>
+                  {careTeamOptions.map((o, i) => <SelectItem key={i} value={o.name}>{o.name} <span className="text-muted-foreground capitalize ml-1">({o.role})</span></SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input value={form.careTeamMember} onChange={e => setForm(f => ({ ...f, careTeamMember: e.target.value }))}
+                placeholder="Enter care team member name" className="h-9 text-xs" />
+            )}
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-foreground">Role</label>
+            <Select value={form.role} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
+              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="physician">Physician</SelectItem>
+                <SelectItem value="dietician">Dietician</SelectItem>
+                <SelectItem value="caretaker">Caretaker</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-foreground">Date & Time</label>
+            <Input type="datetime-local" value={form.scheduledAt} onChange={e => setForm(f => ({ ...f, scheduledAt: e.target.value }))}
+              className="h-9 text-xs" min={new Date().toISOString().slice(0, 16)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-foreground">Notes (optional)</label>
+            <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              placeholder="Appointment notes or instructions..." className="text-xs min-h-[60px] resize-none rounded-xl" />
+          </div>
+          <Button className="w-full rounded-xl" onClick={handleSchedule} disabled={saving}>
+            <CalendarPlus className="w-3.5 h-3.5 mr-1.5" />{saving ? "Scheduling..." : "Schedule Appointment"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Existing appointments */}
+      <div>
+        <p className="text-xs font-semibold text-foreground mb-2">Scheduled Appointments ({appts.length})</p>
+        {appts.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">No appointments on record.</p>
+        ) : appts.slice(0, 10).map((a: any, i: number) => (
+          <div key={i} className="border border-border/50 rounded-xl p-3 text-xs mb-2">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground">{a.careTeamMember}</span>
+              <Badge variant="outline" className={`text-[10px] capitalize ${a.status === "upcoming" ? "bg-sky-50 text-sky-700 border-sky-200" : a.status === "completed" ? "bg-green-50 text-green-700 border-green-200" : "bg-muted text-muted-foreground"}`}>{a.status}</Badge>
+            </div>
+            <p className="text-muted-foreground mt-0.5 capitalize">{a.role} · {a.scheduledAt ? new Date(a.scheduledAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</p>
+            {a.notes && <p className="text-muted-foreground italic mt-0.5">"{a.notes}"</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── Patient Detail Slide-out Panel ─────────────────────────────── */
 function PatientDetailPanel({
@@ -252,10 +354,10 @@ function PatientDetailPanel({
 
         {/* Tabs */}
         <div className="flex border-b px-5 overflow-x-auto shrink-0">
-          {(["profile", "checkins", "team", "notes", "plan"] as DetailTab[]).map(t => (
+          {(["profile", "checkins", "metrics", "team", "notes", "appointments", "plan"] as DetailTab[]).map(t => (
             <button key={t} onClick={() => setDetailTab(t)}
               className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors capitalize ${detailTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t === "checkins" ? "Check-ins" : t === "team" ? "🏥 Care Team" : t === "plan" ? "Care Plan" : t}
+              {t === "checkins" ? "Check-ins" : t === "team" ? "Care Team" : t === "plan" ? "Care Plan" : t === "appointments" ? "Appointments" : t}
             </button>
           ))}
         </div>
@@ -317,6 +419,50 @@ function PatientDetailPanel({
               <div className="text-xs text-muted-foreground text-center pt-1">
                 Joined: {p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"}
               </div>
+            </div>
+          )}
+
+          {/* Metrics */}
+          {!isLoading && detailTab === "metrics" && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground mb-3">Recent health metrics from Neon database</p>
+              {(!detail?.metrics || detail.metrics.length === 0) ? (
+                <div className="text-center text-muted-foreground text-sm py-10">No metrics recorded yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {["weight", "glucose", "fasting_glucose", "sleep_hours", "hunger_score"].map(type => {
+                    const entries = detail.metrics.filter((m: any) => m.type === type);
+                    if (!entries.length) return null;
+                    const latest = entries[0];
+                    const unit = type === "weight" ? "kg" : type.includes("glucose") ? "mg/dL" : type === "sleep_hours" ? "hrs" : "/5";
+                    const label = type === "weight" ? "Weight" : type === "glucose" ? "Glucose" : type === "fasting_glucose" ? "Fasting Glucose" : type === "sleep_hours" ? "Sleep" : "Hunger";
+                    return (
+                      <div key={type} className="border border-border/50 rounded-xl p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-foreground">{label}</span>
+                          <span className="text-xs text-muted-foreground">{entries.length} readings</span>
+                        </div>
+                        <div className="flex items-end gap-1 overflow-x-auto pb-1">
+                          {entries.slice(0, 10).reverse().map((m: any, i: number) => {
+                            const vals = entries.slice(0, 10).map((x: any) => x.value);
+                            const min = Math.min(...vals), max = Math.max(...vals);
+                            const range = max - min || 1;
+                            const h = Math.round(20 + ((m.value - min) / range) * 30);
+                            return (
+                              <div key={i} className="flex flex-col items-center gap-0.5 shrink-0">
+                                <span className="text-[9px] text-muted-foreground">{m.value}</span>
+                                <div className="w-6 rounded-t bg-primary/60" style={{ height: `${h}px` }} />
+                                <span className="text-[9px] text-muted-foreground">{m.date?.slice(5) || m.createdAt?.slice(5, 10)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1.5">Latest: <span className="font-semibold text-foreground">{latest.value} {unit}</span> on {latest.date || latest.createdAt?.slice(0, 10)}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -468,6 +614,14 @@ function PatientDetailPanel({
             </div>
           )}
 
+          {/* Appointments */}
+          {!isLoading && detailTab === "appointments" && (
+            <AppointmentScheduler patient={p} detail={detail} staff={staff} onRefresh={() => {
+              qc.invalidateQueries({ queryKey: ["ops-patient-detail", patient.id] });
+              onRefresh();
+            }} />
+          )}
+
           {/* Care Plan */}
           {!isLoading && detailTab === "plan" && (
             <div className="space-y-4">
@@ -551,6 +705,13 @@ export default function OpsDashboard() {
     refetchInterval: 60000,
   });
 
+  const { data: leads = [], isLoading: lLoading, refetch: refetchLeads } = useQuery({
+    queryKey: ["ops-leads"],
+    queryFn: () => fetchJson("/ops/leads"),
+    refetchInterval: 60000,
+  });
+  const [leadSearch, setLeadSearch] = useState("");
+
   const escalateMutation = useMutation({
     mutationFn: (id: number) => patchJson(`/ops/patients/${id}/escalate`, {}),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["ops-patients"] }); toast({ title: "Patient escalated", variant: "destructive" }); },
@@ -593,7 +754,7 @@ export default function OpsDashboard() {
   };
 
   return (
-    <StaffLayout>
+    <StaffLayout type="ops">
       {/* Patient detail panel */}
       {selectedPatient && (
         <PatientDetailPanel
@@ -647,13 +808,14 @@ export default function OpsDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border/60 overflow-x-auto">
-          {(["patients", "registrations", "staff", "credentials"] as TabType[]).map(t => (
+          {(["patients", "registrations", "leads", "staff", "credentials"] as TabType[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-5 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${tab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               {t === "patients" ? `Patient Roster (${(patients as any[]).length})`
-                : t === "registrations" ? `New Registrations (${(patients as any[]).length})`
+                : t === "registrations" ? `Registrations (${(patients as any[]).length})`
+                : t === "leads" ? `Leads (${(leads as any[]).length})`
                 : t === "staff" ? `Care Team (${(staff as any[]).length})`
-                : "🔑 Credentials"}
+                : "Credentials"}
             </button>
           ))}
         </div>
@@ -942,6 +1104,116 @@ export default function OpsDashboard() {
                   <br /><br />
                   The <span className="font-semibold">✓</span> badge indicates the field passed format validation and was unique in the system at time of registration. For OTP-based verification, this can be integrated via SMS/email service.
                 </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* ── LEADS TAB ────────────────────────────────────────────── */}
+        {tab === "leads" && (
+          <div className="space-y-4">
+            <Card className="border-border shadow-sm overflow-hidden">
+              <CardHeader className="border-b bg-muted/20 py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base text-foreground flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-primary" /> Inbound Leads
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Prospective patients from the website lead form. Convert to active patients by clicking "Onboard".</p>
+                  </div>
+                  <div className="relative w-full sm:w-48">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input placeholder="Search leads..." value={leadSearch} onChange={e => setLeadSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs rounded-lg border-border/60" />
+                  </div>
+                </div>
+              </CardHeader>
+
+              {lLoading ? (
+                <div className="py-12 text-center text-sm text-muted-foreground">Loading leads...</div>
+              ) : (leads as any[]).length === 0 ? (
+                <div className="py-16 text-center space-y-3">
+                  <ClipboardList className="w-10 h-10 text-muted-foreground/30 mx-auto" />
+                  <p className="text-sm font-medium text-muted-foreground">No leads yet</p>
+                  <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                    Leads are created when a prospective patient fills out the website enquiry form. They'll appear here for follow-up and onboarding.
+                  </p>
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => navigate("/connect")}>
+                    View Lead Form →
+                  </Button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-muted-foreground bg-muted/20 border-b uppercase">
+                      <tr>
+                        <th className="px-5 py-3 font-medium">Name</th>
+                        <th className="px-5 py-3 font-medium">Phone</th>
+                        <th className="px-5 py-3 font-medium">Email</th>
+                        <th className="px-5 py-3 font-medium">City</th>
+                        <th className="px-5 py-3 font-medium">Goal</th>
+                        <th className="px-5 py-3 font-medium">Callback Time</th>
+                        <th className="px-5 py-3 font-medium">Submitted</th>
+                        <th className="px-5 py-3 font-medium text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {(leads as any[]).filter((l: any) =>
+                        !leadSearch || l.fullName?.toLowerCase().includes(leadSearch.toLowerCase()) ||
+                        l.phone?.includes(leadSearch) || l.email?.toLowerCase().includes(leadSearch.toLowerCase())
+                      ).map((l: any) => (
+                        <tr key={l.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-5 py-3 font-semibold text-foreground">{l.fullName}</td>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-1.5 text-xs font-mono">
+                              <Phone className="w-3 h-3 text-muted-foreground" />{l.phone}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-xs text-muted-foreground">{l.email || "—"}</td>
+                          <td className="px-5 py-3 text-xs text-muted-foreground">{l.city}</td>
+                          <td className="px-5 py-3"><Badge variant="outline" className="text-[10px] capitalize">{goalLabel(l.primaryGoal)}</Badge></td>
+                          <td className="px-5 py-3 text-xs text-muted-foreground">{l.preferredCallbackTime || "Any time"}</td>
+                          <td className="px-5 py-3 text-xs text-muted-foreground">
+                            {l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—"}
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <Button size="sm" className="h-7 text-[10px] px-3 bg-primary hover:bg-primary/90"
+                              onClick={() => navigate(`/patient/signup`)}>
+                              Onboard
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+
+            {/* Summary card */}
+            <Card className="border-indigo-200 bg-indigo-50/50 shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm font-semibold text-indigo-800 mb-2 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" /> Lead Pipeline Summary
+                </p>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-indigo-700">{(leads as any[]).length}</p>
+                    <p className="text-xs text-indigo-600">Total Leads</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-emerald-700">{(patients as any[]).length}</p>
+                    <p className="text-xs text-emerald-600">Active Patients</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-sky-700">
+                      {(leads as any[]).length + (patients as any[]).length > 0
+                        ? Math.round(((patients as any[]).length / ((leads as any[]).length + (patients as any[]).length)) * 100)
+                        : 0}%
+                    </p>
+                    <p className="text-xs text-sky-600">Conversion Rate</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
