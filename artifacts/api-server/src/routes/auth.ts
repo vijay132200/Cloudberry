@@ -63,7 +63,7 @@ router.post("/patient/signup", async (req, res) => {
     await db.insert(patientsTable).values({
       userId: user.id, primaryGoal, plan,
       weekNumber: 1, preferredCallbackTime: preferredCallbackTime || null,
-      status: "active", riskLevel: "low",
+      status: "pending_approval", riskLevel: "low",
     });
 
     const token = generateToken(user.id, "patient");
@@ -100,8 +100,12 @@ router.post("/patient/signin", async (req, res) => {
     }
 
     const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, user.id)).limit(1);
+    if (patient?.status === "pending_approval") {
+      res.status(403).json({ status: "pending_approval", error: "Your account is pending approval by our team." });
+      return;
+    }
     const token = generateToken(user.id, "patient");
-    res.json({ token, role: "patient", userId: user.id, fullName: user.fullName, plan: patient?.plan ?? "basic" });
+    res.json({ token, role: "patient", userId: user.id, fullName: user.fullName, plan: patient?.plan ?? "basic", status: patient?.status ?? "active" });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });

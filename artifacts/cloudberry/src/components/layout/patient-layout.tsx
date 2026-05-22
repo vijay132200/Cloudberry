@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, ClipboardCheck, Calendar, FolderOpen, HeadphonesIcon, Settings, LogOut, User } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, LogOut, User } from "lucide-react";
 import { useEffect } from "react";
 
 export function PatientLayout({ children }: { children: React.ReactNode }) {
@@ -15,9 +15,6 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
     { name: "Daily Check-in", href: "/patient/checkin", icon: ClipboardCheck },
-    { name: "Appointments", href: "/patient/appointments", icon: Calendar },
-    { name: "Resources", href: "/patient/records", icon: FolderOpen },
-    { name: "Support", href: "/patient/support", icon: HeadphonesIcon },
     { name: "My Profile", href: "/patient/settings", icon: User },
   ];
 

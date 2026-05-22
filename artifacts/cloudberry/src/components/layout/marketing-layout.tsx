@@ -35,11 +35,8 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Programs & Pricing", href: "/programs" },
-    { name: "Connect with us", href: "/connect" },
-    { name: "Blogs", href: "/blogs" },
-    { name: "FAQs", href: "/faqs" },
-    { name: "About Us", href: "/about" },
+    { name: "Programs & Pricing", href: "/#pricing" },
+    { name: "FAQs", href: "/#faqs" },
   ];
 
   return (
@@ -60,18 +57,22 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-5">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.name}
                 href={link.href}
                 className="text-sm font-medium transition-colors text-foreground/80 hover:text-primary"
               >
                 {link.name}
-              </Link>
+              </a>
             ))}
+            <Link href="/patient/signup">
+              <Button variant="outline" className="rounded-full shadow-sm border-primary/40 text-primary hover:bg-primary hover:text-white">
+                Get Started
+              </Button>
+            </Link>
             <Button
               onClick={() => setLoginOpen(true)}
-              variant="outline"
-              className="rounded-full shadow-sm border-primary/40 text-primary hover:bg-primary hover:text-white"
+              className="rounded-full shadow-sm"
             >
               Login
             </Button>
@@ -97,19 +98,24 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
       >
         <nav className="flex flex-col gap-6 text-lg">
           {navLinks.map((link) => (
-            <Link
+            <a
               key={link.name}
               href={link.href}
               onClick={() => setMobileMenuOpen(false)}
               className="font-medium border-b pb-3 border-border/40 text-foreground"
             >
               {link.name}
-            </Link>
+            </a>
           ))}
+          <Link href="/patient/signup" onClick={() => setMobileMenuOpen(false)}>
+            <Button size="lg" className="mt-2 rounded-full w-full">
+              Get Started
+            </Button>
+          </Link>
           <Button
             size="lg"
             variant="outline"
-            className="mt-4 rounded-full border-primary/40 text-primary"
+            className="rounded-full border-primary/40 text-primary"
             onClick={() => { setMobileMenuOpen(false); setLoginOpen(true); }}
           >
             Login
@@ -123,7 +129,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
       <footer className="bg-foreground text-background py-12 md:py-16 mt-auto">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 lg:gap-12 items-start border-b border-white/10 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 lg:gap-12 items-start border-b border-white/10 pb-10">
             <div className="flex flex-col gap-4">
               <Link href="/" className="flex items-center gap-2">
                 <span className="font-sans text-xl font-bold tracking-tight leading-none text-background">Cloudberry</span>
@@ -136,33 +142,19 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
             <div className="grid grid-cols-2 gap-8">
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Platform</h4>
-                <Link href="/programs" className="text-white/60 hover:text-white text-sm transition-colors">Programs & Pricing</Link>
-                <Link href="/faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</Link>
-                <Link href="/about" className="text-white/60 hover:text-white text-sm transition-colors">About Us</Link>
-                <Link href="/blogs" className="text-white/60 hover:text-white text-sm transition-colors">Blogs</Link>
+                <a href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs & Pricing</a>
+                <a href="/#faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</a>
                 <div className="flex flex-col gap-2 mt-1">
                   <Link href="/patient/signin" className="inline-flex items-center gap-1.5 bg-primary/80 hover:bg-primary text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Patient Portal →</Link>
                   <Link href="/physician/signin" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Physician's Portal →</Link>
                 </div>
               </div>
               <div className="flex flex-col gap-3">
-                <h4 className="font-semibold text-white/90">Contact Us</h4>
-                <p className="text-white/60 text-sm">Indore, Madhya Pradesh, India</p>
-                <a href="mailto:hello@cloudberry.health" className="text-white/60 hover:text-white text-sm transition-colors">hello@cloudberry.health</a>
-                <div className="flex flex-col gap-2 mt-1">
-                  <h4 className="font-semibold text-white/90 text-xs uppercase tracking-wider">Legal</h4>
-                  <Link href="/refund-policy" className="text-white/60 hover:text-white text-sm transition-colors">Refund Policy</Link>
-                  <Link href="/privacy-policy" className="text-white/60 hover:text-white text-sm transition-colors">Privacy Policy</Link>
-                </div>
+                <h4 className="font-semibold text-white/90">Legal</h4>
+                <Link href="/refund-policy" className="text-white/60 hover:text-white text-sm transition-colors">Refund Policy</Link>
+                <Link href="/privacy-policy" className="text-white/60 hover:text-white text-sm transition-colors">Privacy Policy</Link>
+                <Link href="/terms" className="text-white/60 hover:text-white text-sm transition-colors">Terms & Conditions</Link>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <h4 className="font-semibold text-white/90">Get in Touch</h4>
-              <p className="text-white/60 text-sm">Have questions? Our team is here to help you start your journey.</p>
-              <Link href="/connect" className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors w-fit mt-1">
-                Connect with us <ArrowRight className="w-4 h-4" />
-              </Link>
             </div>
           </div>
 
@@ -237,9 +229,11 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
       {/* Floating Mobile CTA */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-40 lg:hidden">
-        <Button size="lg" className="w-full rounded-full shadow-lg text-md py-6" onClick={() => setLoginOpen(true)}>
-          Login →
-        </Button>
+        <Link href="/patient/signup">
+          <Button size="lg" className="w-full rounded-full shadow-lg text-md py-6">
+            Get Started →
+          </Button>
+        </Link>
       </div>
     </div>
   );

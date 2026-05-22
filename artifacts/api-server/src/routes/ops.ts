@@ -340,6 +340,56 @@ router.post("/patients/:id/notes", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// GET /api/ops/pending-approvals — list patients with pending_approval status
+router.get("/pending-approvals", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const rows = await db.select({
+      patientId: patientsTable.id,
+      userId: patientsTable.userId,
+      fullName: usersTable.fullName,
+      email: usersTable.email,
+      phone: usersTable.phone,
+      city: usersTable.city,
+      plan: patientsTable.plan,
+      primaryGoal: patientsTable.primaryGoal,
+      preferredCallbackTime: patientsTable.preferredCallbackTime,
+      createdAt: patientsTable.createdAt,
+      status: patientsTable.status,
+    }).from(patientsTable)
+      .innerJoin(usersTable, eq(patientsTable.userId, usersTable.id))
+      .where(eq(patientsTable.status, "pending_approval"))
+      .orderBy(desc(patientsTable.createdAt));
+    res.json(rows.map(r => ({
+      ...r,
+      id: r.patientId,
+      createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+    })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/patients/:id/approve — approve a pending patient
+router.post("/patients/:id/approve", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    await db.update(patientsTable).set({ status: "active" }).where(eq(patientsTable.id, patientId));
+    res.json({ ok: true, message: "Patient approved and activated" });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/patients/:id/reject — reject a pending patient application
+router.post("/patients/:id/reject", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    await db.update(patientsTable).set({ status: "rejected" }).where(eq(patientsTable.id, patientId));
+    res.json({ ok: true, message: "Patient application rejected" });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // GET /api/ops/leads — list all inbound leads
 router.get("/leads", async (req, res) => {
   try {

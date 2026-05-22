@@ -194,10 +194,6 @@ function SecuritySection() {
     if (pw1 !== pw2) return setMsg("Passwords do not match.");
     setMsg("Password updated successfully ✓"); setPw1(""); setPw2("");
   };
-  const sessions = [
-    { device: "This browser", platform: navigator.userAgent.includes("Mobile") ? "Mobile · Chrome" : "Desktop · Chrome", current: true, lastActive: "Now" },
-    { device: "iPhone", platform: "iOS · Safari", current: false, lastActive: "2 hours ago" },
-  ];
   return (
     <div className="space-y-6">
       <Card className="border-border/60 shadow-sm">
@@ -213,36 +209,6 @@ function SecuritySection() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Active Sessions</CardTitle>
-          <CardDescription>Devices signed into your account.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {sessions.map((s, i) => (
-            <div key={i} className="flex items-center justify-between p-3 border border-border/50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-foreground">{s.device} {s.current && <Badge variant="outline" className="ml-2 text-[10px]">Current</Badge>}</p>
-                <p className="text-xs text-muted-foreground">{s.platform} · {s.lastActive}</p>
-              </div>
-              {!s.current && <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 text-xs h-8">Sign out</Button>}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Two-Factor Authentication</CardTitle>
-          <CardDescription>Add an extra layer of security with SMS verification.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div><p className="text-sm">SMS verification</p><p className="text-xs text-muted-foreground mt-0.5">Not enabled</p></div>
-            <Button variant="outline" size="sm">Enable</Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

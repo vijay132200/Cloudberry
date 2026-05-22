@@ -1,0 +1,45 @@
+-In patient onboarding, after filling details and clicking “Start My Journey”:
+Remove Initial Health Assessment completely
+Show a confirmation/success screen saying they joined the program and will be contacted within 24 hours
+Add operations-side approval flow:
+Operations team can approve patients in operations portal
+Only after approval should patient dashboard access become active after login
+-Remove “Ready to take the first step?” section completely
+-Remove “Connect With Us” from everywhere on the site, including buttons, pages, sections, and links
+-Remove Blogs completely from everywhere
+-Remove About Us completely from everywhere
+-Remove Programs and Pricing page completely
+Wherever “Programs and Pricing” is clicked, it must scroll/navigate to the Programs section on the Home page
+-In mobile view, change the big button from “Login” to “Get Started”
+-Remove FAQs page completely
+Wherever “FAQs” is clicked, it must scroll/navigate to the Programs section on the Home page
+-Remove Contact Us section from the footer
+-Keep the Cloudberry logo fully consistent everywhere exactly like the Home page version (simple black text logo only), dont show the C logo, not the blue text it must display like it is in the home page. It is not showing properly in the login page, sign up page, dashboard,etc.
+-In the Home page, there are currently 3 cards add one more card beside the “Doctor Led” card
+New card content:
+Top text: “Coordinated”
+Bottom text: “Care Team”
+-Top navigation menu must contain only:
+Home
+Programs and Pricing
+FAQs
+Get Started
+Login
+-In dashboards only of all plans:
+Show current metric state directly on cards (example: current weight is 70 KG)
+When user taps/clicks a card, open graph/trend/history view for that metric
+Move “Your Care Team” section lower on the page
+Remove “Care Team Messages” section completely
+Remove “Appointments” tab completely
+In Dashboard tab only show:
+Next Care Agent Meeting
+Next Doctor Meeting
+Remove “Resources” tab completely
+Remove “Support” tab completely
+Remove “Active Sessions” from My Profile
+Remove “Two Factor Authentication” from My Profile
+Weight data must only be collected weekly
+Adjust all dashboards, trends, analytics, and visualizations according to weekly-only weight collection
+Remove all fictional/demo/fake/generated data or graphs
+Remove “Join Call” option completely
+- Dont remove platform section from the footer, and the legal section, change only what i have said and nothing else

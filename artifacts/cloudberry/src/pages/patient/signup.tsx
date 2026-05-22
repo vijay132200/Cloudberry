@@ -8,9 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { usePatientSignup } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { PatientSignupInputPrimaryGoal } from "@workspace/api-client-react";
-import { CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, Clock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 const passwordSchema = z.string()
@@ -43,10 +43,11 @@ const formSchema = z.object({
 
 export default function PatientSignup() {
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const signup = usePatientSignup();
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submittedName, setSubmittedName] = useState("");
 
   const queryParams = new URLSearchParams(window.location.search);
   const defaultPlan = queryParams.get("plan") || "comprehensive";
@@ -66,12 +67,9 @@ export default function PatientSignup() {
     localStorage.setItem("cloudberry_name", values.fullName);
 
     signup.mutate({ data: { ...values, selectedPlan: plan } }, {
-      onSuccess: (res: any) => {
-        if (res.token) localStorage.setItem("cloudberry_token", res.token);
-        if (res.plan) localStorage.setItem("cloudberry_plan", res.plan);
-        if (res.fullName) localStorage.setItem("cloudberry_name", res.fullName);
-        setLocation("/patient/dashboard");
-        toast({ title: "Welcome to Cloudberry!", description: "Your journey to better metabolic health starts here.", duration: 3000 });
+      onSuccess: (_res: any) => {
+        setSubmittedName(values.fullName);
+        setSubmitted(true);
       },
       onError: (err: any) => {
         const msg = err?.message || "Registration failed. Please try again.";
@@ -80,12 +78,50 @@ export default function PatientSignup() {
     });
   };
 
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50/60 via-white to-green-50/40 flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-md text-center">
+          <Link href="/" className="inline-block mb-8">
+            <span className="font-sans text-2xl font-bold tracking-tight text-foreground">Cloudberry</span>
+          </Link>
+          <div className="bg-white rounded-3xl border border-border/50 shadow-lg p-8 md:p-10 space-y-6">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+              <Clock className="w-8 h-8 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Application Received!</h2>
+              <p className="text-muted-foreground mt-2 leading-relaxed">
+                Thank you, <span className="font-semibold text-foreground">{submittedName}</span>. Your application has been submitted and is currently pending review by our team.
+              </p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-2">
+              <p className="text-sm font-semibold text-amber-900">What happens next?</p>
+              <ul className="text-sm text-amber-800 space-y-1.5">
+                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /> Our operations team will review your application</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /> You'll receive a call to confirm your details and plan</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /> Once approved, your portal will be activated</li>
+              </ul>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Questions? Email us at{" "}
+              <a href="mailto:hello@cloudberry.health" className="text-primary hover:underline">hello@cloudberry.health</a>
+            </p>
+            <Link href="/">
+              <Button variant="outline" className="rounded-full w-full">Back to Home</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/60 via-white to-green-50/40 flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <Link href="/">
-            <span className="font-sans text-2xl font-bold tracking-tight text-primary">Cloudberry</span>
+            <span className="font-sans text-2xl font-bold tracking-tight text-foreground">Cloudberry</span>
           </Link>
           <p className="text-sm text-muted-foreground mt-1">Doctor-Led Care for Long-Term Metabolic Health</p>
         </div>

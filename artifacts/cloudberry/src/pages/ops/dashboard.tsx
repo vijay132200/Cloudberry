@@ -107,7 +107,7 @@ function exportCSV(patients: any[]) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-type TabType = "patients" | "registrations" | "leads" | "staff" | "credentials";
+type TabType = "pending" | "patients" | "registrations" | "leads" | "staff" | "credentials";
 type DetailTab = "profile" | "checkins" | "metrics" | "team" | "notes" | "appointments" | "plan";
 
 /* ── Appointment Scheduler ────────────────────────────────────────── */
@@ -676,7 +676,7 @@ export default function OpsDashboard() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [tab, setTab] = useState<TabType>("patients");
+  const [tab, setTab] = useState<TabType>("pending");
   const [staffSearch, setStaffSearch] = useState("");
   const [regSearch, setRegSearch] = useState("");
 
@@ -711,6 +711,32 @@ export default function OpsDashboard() {
     refetchInterval: 60000,
   });
   const [leadSearch, setLeadSearch] = useState("");
+
+  const { data: pendingPatients = [], isLoading: pendingLoading, refetch: refetchPending } = useQuery({
+    queryKey: ["ops-pending"],
+    queryFn: () => fetchJson("/ops/pending-approvals"),
+    refetchInterval: 15000,
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (id: number) => postJson(`/ops/patients/${id}/approve`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops-pending"] });
+      qc.invalidateQueries({ queryKey: ["ops-patients"] });
+      qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
+      toast({ title: "Patient approved", description: "Their portal has been activated." });
+    },
+    onError: () => toast({ title: "Failed to approve", variant: "destructive" }),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (id: number) => postJson(`/ops/patients/${id}/reject`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops-pending"] });
+      toast({ title: "Application rejected", variant: "destructive" });
+    },
+    onError: () => toast({ title: "Failed to reject", variant: "destructive" }),
+  });
 
   const escalateMutation = useMutation({
     mutationFn: (id: number) => patchJson(`/ops/patients/${id}/escalate`, {}),
@@ -808,10 +834,19 @@ export default function OpsDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border/60 overflow-x-auto">
-          {(["patients", "registrations", "leads", "staff", "credentials"] as TabType[]).map(t => (
+          {(["pending", "patients", "registrations", "leads", "staff", "credentials"] as TabType[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-5 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${tab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t === "patients" ? `Patient Roster (${(patients as any[]).length})`
+              {t === "pending" ? (
+                <span className="flex items-center gap-1.5">
+                  Pending Approvals
+                  {(pendingPatients as any[]).length > 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                      {(pendingPatients as any[]).length}
+                    </span>
+                  )}
+                </span>
+              ) : t === "patients" ? `Patient Roster (${(patients as any[]).length})`
                 : t === "registrations" ? `Registrations (${(patients as any[]).length})`
                 : t === "leads" ? `Leads (${(leads as any[]).length})`
                 : t === "staff" ? `Care Team (${(staff as any[]).length})`
@@ -819,6 +854,92 @@ export default function OpsDashboard() {
             </button>
           ))}
         </div>
+
+        {/* ── PENDING APPROVALS TAB ────────────────────────────────── */}
+        {tab === "pending" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Pending Patient Applications</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Review and approve or reject new patient sign-ups before their portal is activated.</p>
+              </div>
+              <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => refetchPending()}>
+                Refresh
+              </Button>
+            </div>
+
+            {pendingLoading && (
+              <div className="text-center text-sm text-muted-foreground py-12">Loading pending applications...</div>
+            )}
+
+            {!pendingLoading && (pendingPatients as any[]).length === 0 && (
+              <Card className="border-border shadow-sm">
+                <CardContent className="py-16 text-center">
+                  <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                  <p className="text-base font-semibold text-foreground">All clear!</p>
+                  <p className="text-sm text-muted-foreground mt-1">No pending applications at this time.</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {!pendingLoading && (pendingPatients as any[]).length > 0 && (
+              <div className="space-y-3">
+                {(pendingPatients as any[]).map((p: any) => (
+                  <Card key={p.id} className="border-amber-200/70 shadow-sm bg-amber-50/20">
+                    <CardContent className="p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center font-bold text-sm text-amber-700 shrink-0">
+                            {p.fullName?.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-foreground text-sm">{p.fullName}</h3>
+                              <Badge variant="outline" className={`text-[10px] ${planColor(p.plan)}`}>{p.plan}</Badge>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>
+                              <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{p.email}</span>
+                              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{p.city || "—"}</span>
+                              <span className="flex items-center gap-1"><Target className="w-3 h-3" />{goalLabel(p.primaryGoal)}</span>
+                            </div>
+                            {p.preferredCallbackTime && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <span className="font-medium">Preferred callback:</span> {p.preferredCallbackTime}
+                              </p>
+                            )}
+                            <p className="text-[10px] text-muted-foreground mt-1.5">
+                              Applied {p.createdAt ? new Date(p.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 shrink-0 sm:flex-col sm:items-end">
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                            onClick={() => approveMutation.mutate(p.id)}
+                            disabled={approveMutation.isPending || rejectMutation.isPending}
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 gap-1.5"
+                            onClick={() => rejectMutation.mutate(p.id)}
+                            disabled={approveMutation.isPending || rejectMutation.isPending}
+                          >
+                            <X className="w-3.5 h-3.5" /> Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── PATIENTS TAB ─────────────────────────────────────────── */}
         {tab === "patients" && (

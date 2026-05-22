@@ -37,6 +37,14 @@ export default function PatientSignin() {
         body: JSON.stringify({ phone: phone.trim(), password }),
       });
       const data = await res.json();
+      if (data.status === "pending_approval") {
+        toast({
+          title: "Account pending approval",
+          description: "Your account is under review. Our team will activate it shortly and reach out to you.",
+          duration: 7000,
+        });
+        return;
+      }
       if (!res.ok) {
         toast({ title: "Unable to sign in", description: data.error || "Check your credentials and try again.", variant: "destructive" });
         return;

@@ -471,26 +471,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CONNECT WITH US CTA SECTION */}
-      <section className="py-14 bg-gradient-to-br from-primary/5 via-blue-soft/30 to-warm-neutral/40 border-t">
-        <div className="container mx-auto px-4 md:px-6 max-w-4xl">
-          <div className="bg-white rounded-3xl shadow-lg border border-border/60 p-8 md:p-12 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Ready to take the first step?</h2>
-            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
-              Talk to our team. Whether you have questions or want to get started, we're here for you.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="rounded-full px-8 text-base">
-                <Link href="/connect">Connect with us <ArrowRight className="ml-2 h-5 w-5" /></Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-base border-primary/30 text-primary hover:bg-primary/5">
-                <Link href="/patient/signup">Start Your Journey</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="h-24 lg:hidden" />
     </MarketingLayout>
   );
