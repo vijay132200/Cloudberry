@@ -1,0 +1,25 @@
+Remove "Ready to take the first step?" section completely
+Remove connect with us frpm everywhere in the site, remove its buttons, pages, anything
+Remove blogs completely from everywhere
+Remove About Us completely from everywhere
+Remove programs and pricing page, whenever i press on the programs and pricing button anywhere in the site it must lead to the programs section in the home page
+In the mobile the big button in the bottom shall be get started not login
+Remove FAQs page, whenever i press on the FAQs button anywhere in the site it must lead to the programs section in the home page
+Remove contact us section from the footer in the end of the website
+The logo of cloudberry must stay consistent across the website in all the pages and everywhere like it is in the home page (just the text in black)
+In the home page, add one more card beside doctor led card
+Card shall be "Coordinated" (written above) "Care Team" (written below)
+The top menu shall be
+Home, Programs and Pricing, FAQs, Get Started, Login
+After filling details in the get started for patient portal and clicking on start my journey, remove Initial Health Assessment part completely, after one fils detail it must show thanks for joining the program or other stuff like that and show that we'll contact you in 24 hours, in the operations portal, there will be an option to approve the patient and when the operations person approves the patient will be able to see their dashboard after logging in, fit this logic
+In the dashboard of all the plans, there will be current state of that metric like current weight and when patient taps on that card the graph/trend or whatever will pop up that will show past history
+Move your care team section to down
+Remove care team messages section
+Remove appointments tab, only show next meet with the care agent and doctor in the dashboard tab
+Remove resources tab
+Remove Support tab
+Do something such that the patient is able to recieve actual notifications
+Remove active sessions and two factoe authentication in the my profile
+Weight data will be collected weekly, adjust everything according to it, i want no fictional/fake data
+Remove the join call option
+

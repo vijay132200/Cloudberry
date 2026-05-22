@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, staffTable, patientsTable, checkinsTable, metricsTable, appointmentsTable, patientNotesTable, patientPlansTable } from "@workspace/db";
-import { eq, desc, and, or } from "drizzle-orm";
+import { eq, desc, and, or, gte } from "drizzle-orm";
 
 const router = Router();
 
@@ -19,7 +19,6 @@ async function requirePhysician(req: any, res: any): Promise<{ staffId: number }
   return { staffId: staff.id };
 }
 
-// GET /physician/me
 router.get("/me", async (req, res) => {
   try {
     const parsed = parseToken(req.headers.authorization);
@@ -30,7 +29,6 @@ router.get("/me", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// GET /physician/patients
 router.get("/patients", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
@@ -74,7 +72,6 @@ router.get("/patients", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// GET /physician/patients/:id
 router.get("/patients/:id", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
@@ -92,7 +89,8 @@ router.get("/patients/:id", async (req, res) => {
 
     res.json({
       patient: { ...patient, fullName: user?.fullName, phone: user?.phone, email: user?.email, city: user?.city, createdAt: patient.createdAt.toISOString() },
-      plan: plan ?? null, checkins: checkins.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })),
+      plan: plan ?? null,
+      checkins: checkins.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })),
       metrics: metrics.map(m => ({ ...m, createdAt: m.createdAt.toISOString() })),
       appointments: appointments.map(a => ({ ...a, scheduledAt: a.scheduledAt.toISOString(), createdAt: a.createdAt.toISOString() })),
       notes: notes.map(n => ({ ...n, createdAt: n.createdAt.toISOString() })),
@@ -100,7 +98,6 @@ router.get("/patients/:id", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// PATCH /physician/patients/:id/escalate
 router.patch("/patients/:id/escalate", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
@@ -111,7 +108,6 @@ router.patch("/patients/:id/escalate", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// PATCH /physician/patients/:id/deescalate
 router.patch("/patients/:id/deescalate", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
@@ -122,12 +118,12 @@ router.patch("/patients/:id/deescalate", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// POST /physician/patients/:id/notes
 router.post("/patients/:id/notes", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
     if (!auth) return;
     const { content, category } = req.body;
+    if (!content?.trim()) { res.status(400).json({ error: "Content required" }); return; }
     const [note] = await db.insert(patientNotesTable).values({
       patientId: parseInt(req.params.id), coachId: auth.staffId,
       content, category: category ?? "physician",
@@ -136,17 +132,57 @@ router.post("/patients/:id/notes", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// GET /physician/dashboard - summary stats
+router.patch("/patients/:id/plan", async (req, res) => {
+  try {
+    const auth = await requirePhysician(req, res);
+    if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const { nutritionPlan, activityPlan, weeklyGoals } = req.body;
+
+    const [existing] = await db.select().from(patientPlansTable).where(eq(patientPlansTable.patientId, patientId)).limit(1);
+    let plan;
+    if (existing) {
+      const updateData: any = {};
+      if (nutritionPlan !== undefined) updateData.nutritionPlan = nutritionPlan;
+      if (activityPlan !== undefined) updateData.activityPlan = activityPlan;
+      if (weeklyGoals !== undefined) updateData.weeklyGoals = weeklyGoals;
+      [plan] = await db.update(patientPlansTable).set(updateData)
+        .where(eq(patientPlansTable.patientId, patientId)).returning();
+    } else {
+      [plan] = await db.insert(patientPlansTable).values({
+        patientId,
+        nutritionPlan: nutritionPlan ?? null,
+        activityPlan: activityPlan ?? null,
+        weeklyGoals: weeklyGoals ?? null,
+      }).returning();
+    }
+    res.json(plan);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 router.get("/dashboard", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
     if (!auth) return;
-    const patients = await db.select().from(patientsTable).where(eq(patientsTable.assignedCoachId, auth.staffId));
+    const patients = await db.select().from(patientsTable).where(
+      or(
+        eq(patientsTable.assignedPhysicianId, auth.staffId),
+        eq(patientsTable.assignedCoachId, auth.staffId)
+      )!
+    );
     const total = patients.length;
     const highRisk = patients.filter(p => p.riskLevel === "high").length;
     const activeCount = patients.filter(p => p.status === "active").length;
-    const upcomingAppts = await db.select().from(appointmentsTable).limit(20);
-    res.json({ totalPatients: total, highRisk, activeCount, upcomingAppointments: upcomingAppts.length });
+    const patientIds = patients.map(p => p.id);
+    let upcomingAppts = 0;
+    if (patientIds.length > 0) {
+      const now = new Date();
+      const appts = await db.select().from(appointmentsTable)
+        .where(and(eq(appointmentsTable.status, "upcoming"), gte(appointmentsTable.scheduledAt, now)))
+        .limit(100);
+      upcomingAppts = appts.filter(a => patientIds.includes(a.patientId)).length;
+    }
+    res.json({ totalPatients: total, highRisk, activeCount, upcomingAppointments: upcomingAppts });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
