@@ -3,6 +3,8 @@ modules = ["nodejs-24", "postgresql-16", "python-3.11"]
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
+run = ["bash", "-c", "PORT=8080 NODE_ENV=production node --enable-source-maps artifacts/api-server/dist/index.mjs"]
+build = ["bash", "scripts/build-prod.sh"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
