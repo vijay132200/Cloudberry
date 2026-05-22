@@ -1,0 +1,21 @@
+# Railway config for the standalone API Server service.
+# Pair with artifacts/api-server/nixpacks.toml (Source Root = artifacts/api-server).
+#
+# Environment variables required in Railway dashboard:
+#   DATABASE_URL  — Neon PostgreSQL connection string
+#   PORT          — set automatically by Railway
+#   SESSION_SECRET — random secret for signed cookies
+#
+# In this two-service layout the api-server does NOT serve the Vite frontend.
+# Only /api/* routes are handled; set FRONTEND_DIST only if you want to
+# override the static-file root (leave unset for API-only mode).
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "NODE_ENV=production node --enable-source-maps /app/artifacts/api-server/dist/index.mjs"
+healthcheckPath = "/api/healthz"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

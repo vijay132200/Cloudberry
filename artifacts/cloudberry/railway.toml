@@ -1,0 +1,18 @@
+# Railway config for the standalone Cloudberry (frontend) service.
+# Pair with artifacts/cloudberry/nixpacks.toml (Source Root = artifacts/cloudberry).
+#
+# Environment variables required in Railway dashboard:
+#   PORT           — set automatically by Railway
+#   API_SERVER_URL — public URL of the API Server Railway service, e.g.
+#                    https://cloudberry-api.up.railway.app
+#                    (the vite preview proxy forwards /api/* to this URL)
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd /app/artifacts/cloudberry && node_modules/.bin/vite preview --config vite.config.ts --host 0.0.0.0"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

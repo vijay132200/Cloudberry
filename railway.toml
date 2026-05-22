@@ -1,13 +1,40 @@
+# ─── OPTION A: Combined single-service deployment (default) ───────────────────
+#
+# One Railway service hosts both the Vite frontend and the Express API.
+# The API server serves /api/* routes AND the compiled Vite SPA as static files.
+#
+# Railway dashboard setup:
+#   Source Root  : (repo root — leave blank)
+#   nixpacks.toml: repo root/nixpacks.toml
+#
+# Required environment variables:
+#   DATABASE_URL   — Neon PostgreSQL connection string
+#   PORT           — set automatically by Railway
+#   SESSION_SECRET — random secret for signed cookies
+#
+# ─── OPTION B: Two separate services ──────────────────────────────────────────
+#
+# Deploy the frontend and backend as independent Railway services.
+# Each service has its own nixpacks.toml + railway.toml in its subdirectory.
+#
+#   API Server service:
+#     Source Root → artifacts/api-server
+#     uses artifacts/api-server/nixpacks.toml + artifacts/api-server/railway.toml
+#     Required env: DATABASE_URL, SESSION_SECRET
+#
+#   Cloudberry (frontend) service:
+#     Source Root → artifacts/cloudberry
+#     uses artifacts/cloudberry/nixpacks.toml + artifacts/cloudberry/railway.toml
+#     Required env: API_SERVER_URL (public URL of the API Server service above)
+#
+# ──────────────────────────────────────────────────────────────────────────────
+
 [build]
 builder = "nixpacks"
-# nixpacks.toml handles the install phase (Node 20 + pnpm install).
-# This command only runs the two compile steps that produce deployable output.
 buildCommand = "BASE_PATH=/ pnpm --filter @workspace/cloudberry run build && pnpm --filter @workspace/api-server run build"
 
 [deploy]
-# Single service: Express serves /api/* and the Vite SPA static files.
 startCommand = "NODE_ENV=production pnpm --filter @workspace/api-server run start"
-# Must match the route registered in artifacts/api-server/src/routes/health.ts
 healthcheckPath = "/api/healthz"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
