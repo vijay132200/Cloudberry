@@ -1,13 +1,8 @@
-# nixpacks build environment for Railway.
-# Controls Node.js version and overrides the default frozen-lockfile install.
-
 [phases.setup]
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-# Ensure the pinned pnpm version is active, then install with no lockfile
-# strictness so a config-version mismatch never blocks the build.
 cmds = [
-  "npm install -g pnpm@10.26.1 --quiet --no-progress",
+  "npm install -g corepack@0.24.1 --quiet --no-progress && corepack enable",
   "pnpm install --no-frozen-lockfile"
 ]
