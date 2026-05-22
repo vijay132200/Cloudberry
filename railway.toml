@@ -1,0 +1,13 @@
+[build]
+builder = "nixpacks"
+# 1. Install all workspace deps (no frozen lockfile so Railway never hits a config mismatch).
+# 2. Build the Vite frontend (BASE_PATH=/ for Railway's root-based routing).
+# 3. Build the Express API server via esbuild.
+buildCommand = "pnpm install --no-frozen-lockfile && BASE_PATH=/ pnpm --filter @workspace/cloudberry run build && pnpm --filter @workspace/api-server run build"
+
+[deploy]
+# Single service: Express serves both /api/* and the Vite SPA static files.
+startCommand = "NODE_ENV=production pnpm --filter @workspace/api-server run start"
+healthcheckPath = "/api/health"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

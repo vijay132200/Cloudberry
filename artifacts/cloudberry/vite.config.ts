@@ -4,27 +4,17 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
+// PORT is only required at serve/preview time, not during `vite build`.
+// Default to 3000 so Railway CI builds don't throw.
+const rawPort = process.env.PORT ?? "3000";
 const port = Number(rawPort);
-
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// BASE_PATH defaults to "/" for Railway / any non-Replit host.
+// Replit injects BASE_PATH at runtime via its path-based router.
+const basePath = process.env.BASE_PATH ?? "/";
 
 export default defineConfig({
   base: basePath,
@@ -68,11 +58,7 @@ export default defineConfig({
     },
     proxy: {
       // Forward /api requests to the API server during development.
-      // In production, Replit's path-based router sends /api traffic directly
-      // to the API artifact — no proxy needed.
-      // Set API_SERVER_URL to override the dev target (e.g. in CI or staging).
-      // The localhost:8080 default matches the API artifact's fixed port
-      // assignment in this Replit workspace (.replit localPort 8080).
+      // In production, the Express server handles /api directly.
       "/api": {
         target: process.env.API_SERVER_URL ?? "http://localhost:8080",
         changeOrigin: true,
@@ -83,5 +69,13 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: true,
+    // Proxy /api in preview mode so `vite preview` works as a standalone
+    // service with an external API_SERVER_URL (e.g. on Railway).
+    proxy: {
+      "/api": {
+        target: process.env.API_SERVER_URL ?? "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
   },
 });
