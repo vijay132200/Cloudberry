@@ -11,15 +11,7 @@ export default function CoachPatients() {
   const { data: patients, isLoading } = useListCoachPatients();
   const [, setLocation] = useLocation();
 
-  // Demo fallback
-  const demoPatients = [
-    { id: 1, fullName: "Rahul Sharma", plan: "Comprehensive", status: "active", riskLevel: "low", lastCheckinAt: "2 hours ago", nextSessionAt: "Tomorrow, 10am", adherencePct: 85, weekNumber: 3 },
-    { id: 2, fullName: "Priya Patel", plan: "Premium", status: "active", riskLevel: "high", lastCheckinAt: "2 days ago", nextSessionAt: "Today, 4pm", adherencePct: 45, weekNumber: 6 },
-    { id: 3, fullName: "Amit Kumar", plan: "Basic", status: "paused", riskLevel: "medium", lastCheckinAt: "1 week ago", nextSessionAt: null, adherencePct: 60, weekNumber: 2 },
-    { id: 4, fullName: "Neha Singh", plan: "Comprehensive", status: "active", riskLevel: "low", lastCheckinAt: "5 hours ago", nextSessionAt: "Friday, 11am", adherencePct: 92, weekNumber: 8 },
-  ];
-
-  const displayPatients = patients || demoPatients;
+  const displayPatients = patients ?? [];
 
   const getRiskColor = (risk: string) => {
     switch(risk) {
@@ -45,7 +37,9 @@ export default function CoachPatients() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">My Patients</h1>
-            <p className="text-sm text-muted-foreground">You are currently managing {displayPatients.length} active patients.</p>
+            <p className="text-sm text-muted-foreground">
+            {isLoading ? "Loading patients…" : `You are currently managing ${displayPatients.length} active patient${displayPatients.length !== 1 ? "s" : ""}.`}
+          </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
@@ -69,6 +63,12 @@ export default function CoachPatients() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
+                {isLoading && (
+                  <tr><td colSpan={5} className="px-6 py-12 text-center text-muted-foreground text-sm">Loading patients from database…</td></tr>
+                )}
+                {!isLoading && displayPatients.length === 0 && (
+                  <tr><td colSpan={5} className="px-6 py-12 text-center text-muted-foreground text-sm">No patients assigned to you yet.</td></tr>
+                )}
                 {displayPatients.map((patient: any) => (
                   <tr 
                     key={patient.id} 

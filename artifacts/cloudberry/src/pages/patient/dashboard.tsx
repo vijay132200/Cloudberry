@@ -27,7 +27,8 @@ async function fetchDashboard() {
   if (!r.ok) throw new Error("Failed");
   return r.json();
 }
-function getPlan(): Plan {
+function getPlan(apiPlan?: string): Plan {
+  if (apiPlan === "basic" || apiPlan === "comprehensive" || apiPlan === "premium") return apiPlan;
   const p = localStorage.getItem("cloudberry_plan");
   return (p === "basic" || p === "comprehensive" || p === "premium") ? p : "comprehensive";
 }
@@ -423,7 +424,6 @@ function MetricRow({ dash }: { dash: any }) {
 
 /* ─── MAIN EXPORT ────────────────────────────────────────────── */
 export default function PatientDashboard() {
-  const plan = useMemo(() => getPlan(), []);
   const [, navigate] = useLocation();
   const [assessmentDone, setAssessmentDone] = useState(() => localStorage.getItem("cloudberry_assessment_done") === "1");
   const [showAssessment, setShowAssessment] = useState(false);
@@ -431,8 +431,10 @@ export default function PatientDashboard() {
 
   const { data: dash, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard, retry: 1, staleTime: 60_000 });
 
+  const plan = useMemo(() => getPlan(dash?.patient?.plan), [dash?.patient?.plan]);
+
   const storedName = localStorage.getItem("cloudberry_name") || "there";
-  const firstName = storedName.split(" ")[0];
+  const firstName = (dash?.patient?.fullName ?? storedName).split(" ")[0];
 
   const weekNum = dash?.weekNumber ?? 1;
   const streak = dash?.streak ?? 0;

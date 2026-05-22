@@ -1376,12 +1376,11 @@ export default function OpsDashboard() {
                       <th className="px-5 py-3 font-medium">Specialty</th>
                       <th className="px-5 py-3 font-medium">Email / Login</th>
                       <th className="px-5 py-3 font-medium">Patients</th>
-                      <th className="px-5 py-3 font-medium">Password</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
                     {sLoading && (
-                      <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading care team...</td></tr>
+                      <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading care team...</td></tr>
                     )}
                     {!sLoading && filteredStaff.map((s: any) => (
                       <tr key={s.id} className="hover:bg-muted/30 transition-colors">
@@ -1402,44 +1401,16 @@ export default function OpsDashboard() {
                           <span className="text-sm font-medium text-primary">{s.patientCount}</span>
                           <span className="text-xs text-muted-foreground ml-1">assigned</span>
                         </td>
-                        <td className="px-5 py-4">
-                          <span className="font-mono text-xs bg-muted/60 border border-border/40 px-2 py-0.5 rounded text-muted-foreground">demo123</span>
-                        </td>
                       </tr>
                     ))}
                     {!sLoading && filteredStaff.length === 0 && (
-                      <tr><td colSpan={7} className="px-5 py-12 text-center text-muted-foreground text-sm">No staff found.</td></tr>
+                      <tr><td colSpan={6} className="px-5 py-12 text-center text-muted-foreground text-sm">No staff found.</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </Card>
 
-            {/* Demo Credentials Quick-ref */}
-            <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
-              <CardContent className="pt-5 pb-5">
-                <p className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4" /> Demo Credentials Reference (all password: demo123)
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {[
-                    { role: "Operations", email: "ops@cloudberry.health" },
-                    { role: "Physician", email: "dr.mehta@cloudberry.health" },
-                    { role: "Dietician", email: "priya.diet@cloudberry.health" },
-                    { role: "Caretaker", email: "ranjit.care@cloudberry.health" },
-                  ].map(c => (
-                    <div key={c.role} className="bg-white/80 rounded-xl border border-blue-200 p-3">
-                      <p className="text-[10px] text-blue-600 font-semibold uppercase">{c.role}</p>
-                      <p className="text-xs text-foreground mt-1 font-mono break-all">{c.email}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Password: <span className="font-mono">demo123</span></p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-blue-600 mt-3">
-                  See the <button onClick={() => setTab("credentials")} className="underline font-semibold">🔑 Credentials tab</button> for the complete list of all patients and staff accounts.
-                </p>
-              </CardContent>
-            </Card>
           </div>
         )}
 
@@ -1450,8 +1421,8 @@ export default function OpsDashboard() {
             <Card className="border-border shadow-sm overflow-hidden">
               <CardHeader className="border-b bg-muted/20 py-4">
                 <CardTitle className="text-base text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" /> Patient Login Credentials
-                  <Badge variant="outline" className="ml-2 text-[10px] font-mono">Password: demo123 · Login field: phone number</Badge>
+                  <Users className="w-4 h-4 text-primary" /> Patient Accounts
+                  <Badge variant="outline" className="ml-2 text-[10px]">Login field: phone number</Badge>
                 </CardTitle>
               </CardHeader>
               <div className="overflow-x-auto">
@@ -1462,7 +1433,6 @@ export default function OpsDashboard() {
                       <th className="px-5 py-3 font-medium">Phone (Login ID)</th>
                       <th className="px-5 py-3 font-medium">Email</th>
                       <th className="px-5 py-3 font-medium">Plan</th>
-                      <th className="px-5 py-3 font-medium">Password</th>
                       <th className="px-5 py-3 font-medium">Care Team Complete?</th>
                     </tr>
                   </thead>
@@ -1476,9 +1446,6 @@ export default function OpsDashboard() {
                           <td className="px-5 py-3 text-xs text-muted-foreground">{p.email}</td>
                           <td className="px-5 py-3">
                             <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 ${planColor(p.plan)}`}>{p.plan}</Badge>
-                          </td>
-                          <td className="px-5 py-3">
-                            <span className="font-mono text-xs bg-green-50 border border-green-200 text-green-800 px-2 py-0.5 rounded">demo123</span>
                           </td>
                           <td className="px-5 py-3">
                             <Badge variant="outline" className={`text-[10px] ${teamComplete ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
@@ -1512,14 +1479,13 @@ export default function OpsDashboard() {
                       <th className="px-5 py-3 font-medium">Role</th>
                       <th className="px-5 py-3 font-medium">Email</th>
                       <th className="px-5 py-3 font-medium">Specialty</th>
-                      <th className="px-5 py-3 font-medium">Password</th>
                       <th className="px-5 py-3 font-medium">Patients</th>
                       <th className="px-5 py-3 font-medium text-right">Portal Access</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
                     {sLoading ? (
-                      <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading staff from database…</td></tr>
+                      <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading staff from database…</td></tr>
                     ) : (staff as any[]).map((s: any) => {
                       const dest = s.role === "physician" ? "/physician/dashboard"
                         : s.role === "dietician" ? "/dietician/dashboard"
@@ -1554,9 +1520,6 @@ export default function OpsDashboard() {
                           </td>
                           <td className="px-5 py-3 text-xs text-muted-foreground">{s.specialty || "—"}</td>
                           <td className="px-5 py-3">
-                            <span className="font-mono text-xs bg-green-50 border border-green-200 text-green-800 px-2 py-0.5 rounded">demo123</span>
-                          </td>
-                          <td className="px-5 py-3">
                             <span className="text-sm font-medium text-primary">{s.patientCount ?? 0}</span>
                             <span className="text-xs text-muted-foreground ml-1">assigned</span>
                           </td>
@@ -1578,28 +1541,6 @@ export default function OpsDashboard() {
               </div>
             </Card>
 
-            {/* Quick-start guide */}
-            <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
-              <CardContent className="pt-5 pb-5">
-                <p className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2"><Shield className="w-4 h-4" /> Quick Demo Guide</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-blue-900">
-                  <div className="space-y-1.5">
-                    <p className="font-semibold text-blue-700">Patient Portal</p>
-                    <p>→ Sign in at <span className="font-mono">/patient/signin</span></p>
-                    <p>→ Phone: any number from list above (e.g. 9876543210)</p>
-                    <p>→ Password: <span className="font-mono">demo123</span></p>
-                    <p>→ New patients see: Assessment → Check-in → Dashboard</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <p className="font-semibold text-blue-700">Staff Portals (Physician / Dietician / Caretaker / Ops)</p>
-                    <p>→ All sign in at <span className="font-mono">/physician/signin</span></p>
-                    <p>→ Email: any from list above</p>
-                    <p>→ Password: <span className="font-mono">demo123</span></p>
-                    <p>→ Role-based auto-redirect to correct portal</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
       </div>

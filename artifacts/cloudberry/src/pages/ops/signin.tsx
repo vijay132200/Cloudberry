@@ -26,7 +26,7 @@ export default function OpsSignin() {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     signin.mutate({ data: values }, {
-      onSuccess: (res) => {
+      onSuccess: (res: any) => {
         if (res.token) localStorage.setItem("cloudberry_token", res.token);
         if (res.role) localStorage.setItem("cloudberry_role", res.role);
         if ((res as any).fullName) localStorage.setItem("cloudberry_name", (res as any).fullName);

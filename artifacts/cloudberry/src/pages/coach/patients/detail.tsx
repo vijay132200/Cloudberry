@@ -12,6 +12,7 @@ import * as z from "zod";
 import { useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, MessageSquare, AlertCircle, FileText, CheckCircle2, TrendingDown } from "lucide-react";
 import { Link } from "wouter";
@@ -47,6 +48,16 @@ export default function CoachPatientDetail() {
     defaultValues: { nutritionPlan: "", activityPlan: "", weeklyGoals: "" }
   });
 
+  useEffect(() => {
+    if (data?.plan) {
+      planForm.reset({
+        nutritionPlan: data.plan.nutritionPlan ?? "",
+        activityPlan: data.plan.activityPlan ?? "",
+        weeklyGoals: data.plan.weeklyGoals ?? "",
+      });
+    }
+  }, [data?.plan]);
+
   const onAddNote = (values: z.infer<typeof noteSchema>) => {
     addNote.mutate({ id, data: values }, {
       onSuccess: () => {
@@ -55,8 +66,7 @@ export default function CoachPatientDetail() {
         queryClient.invalidateQueries({ queryKey: getGetCoachPatientDetailQueryKey(id) });
       },
       onError: () => {
-        toast({ title: "Demo Mode", description: "Note added locally." });
-        noteForm.reset();
+        toast({ title: "Error", description: "Failed to save note. Please try again.", variant: "destructive" });
       }
     });
   };
@@ -68,31 +78,20 @@ export default function CoachPatientDetail() {
         queryClient.invalidateQueries({ queryKey: getGetCoachPatientDetailQueryKey(id) });
       },
       onError: () => {
-        toast({ title: "Demo Mode", description: "Plan updated locally." });
+        toast({ title: "Error", description: "Failed to update plan. Please try again.", variant: "destructive" });
       }
     });
   };
 
-  // Demo fallback
-  const demoData = {
-    patient: { fullName: "Rahul Sharma", primaryGoal: "Weight Loss", weekNumber: 3, plan: "Comprehensive", startingWeight: 85, currentWeight: 78.1, targetWeight: 70 },
-    plan: { nutritionPlan: "High protein breakfast, Mediterranean dinner", activityPlan: "10k steps daily, 2x strength training", weeklyGoals: "Drink 3L water, sleep 7.5 hours" },
-    checkins: [
-      { id: 1, createdAt: "2025-10-15T10:00:00Z", mealsFollowed: "yes", activityCompleted: true, energyLevel: "good", mood: "positive" },
-      { id: 2, createdAt: "2025-10-14T10:00:00Z", mealsFollowed: "partially", activityCompleted: false, energyLevel: "moderate", mood: "neutral" },
-    ],
-    notes: [
-      { id: 1, createdAt: "2025-10-10T10:00:00Z", content: "Patient struggling with evening cravings. Suggested herbal tea and earlier dinner time.", category: "nutrition" }
-    ],
-    metrics: [
-      { id: 1, date: "Week 1", value: 82.5, type: "weight" },
-      { id: 2, date: "Week 2", value: 81.8, type: "weight" },
-      { id: 3, date: "Week 3", value: 81.0, type: "weight" },
-      { id: 4, date: "Current", value: 78.1, type: "weight" },
-    ]
-  };
+  if (isLoading || !data) return (
+    <StaffLayout type="coach">
+      <div className="p-6 text-sm text-muted-foreground">
+        {isLoading ? "Loading patient data…" : "Patient not found."}
+      </div>
+    </StaffLayout>
+  );
 
-  const pData = data || demoData;
+  const pData = data;
 
   return (
     <StaffLayout type="coach">
