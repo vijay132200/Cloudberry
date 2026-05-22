@@ -108,7 +108,7 @@ function exportCSV(patients: any[]) {
 }
 
 type TabType = "pending" | "patients" | "registrations" | "leads" | "staff" | "credentials";
-type DetailTab = "profile" | "checkins" | "metrics" | "team" | "notes" | "appointments" | "plan";
+type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "notes" | "plan";
 
 /* ── Appointment Scheduler ────────────────────────────────────────── */
 function AppointmentScheduler({ patient, detail, staff, onRefresh }: { patient: any; detail: any; staff: any[]; onRefresh: () => void }) {
@@ -220,7 +220,7 @@ function PatientDetailPanel({
 }) {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [detailTab, setDetailTab] = useState<DetailTab>("profile");
+  const [detailTab, setDetailTab] = useState<DetailTab>("dashboard");
   const [noteText, setNoteText] = useState("");
   const [submittingNote, setSubmittingNote] = useState(false);
 
@@ -354,10 +354,10 @@ function PatientDetailPanel({
 
         {/* Tabs */}
         <div className="flex border-b px-5 overflow-x-auto shrink-0">
-          {(["profile", "checkins", "metrics", "team", "notes", "appointments", "plan"] as DetailTab[]).map(t => (
+          {(["dashboard", "profile", "checkins", "team", "notes", "plan"] as DetailTab[]).map(t => (
             <button key={t} onClick={() => setDetailTab(t)}
               className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors capitalize ${detailTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t === "checkins" ? "Check-ins" : t === "team" ? "Care Team" : t === "plan" ? "Care Plan" : t === "appointments" ? "Appointments" : t}
+              {t === "checkins" ? "Check-ins" : t === "team" ? "Care Team" : t === "plan" ? "Care Plan" : t}
             </button>
           ))}
         </div>
@@ -365,6 +365,98 @@ function PatientDetailPanel({
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto p-5">
           {isLoading && <div className="text-center text-sm text-muted-foreground py-10">Loading patient data...</div>}
+
+          {/* Dashboard */}
+          {!isLoading && detailTab === "dashboard" && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Plan", value: p.plan ? p.plan.charAt(0).toUpperCase() + p.plan.slice(1) : "—" },
+                  { label: "Week", value: `Week ${p.weekNumber ?? "—"}` },
+                  { label: "Adherence", value: `${p.adherencePct ?? "—"}%` },
+                ].map(s => (
+                  <div key={s.label} className="bg-muted/40 rounded-xl p-3">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{s.label}</p>
+                    <p className="font-bold text-foreground text-sm">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Weight progress */}
+              {p.startingWeight && (
+                <Card className="border-border">
+                  <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-primary" /> Weight Progress</CardTitle></CardHeader>
+                  <CardContent className="pb-4">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <div className="text-center"><p className="text-[10px] text-muted-foreground">Start</p><p className="font-bold">{p.startingWeight} kg</p></div>
+                      <div className="flex-1 mx-4 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${Math.max(5, Math.min(95, ((p.startingWeight - p.currentWeight) / Math.max(p.startingWeight - p.targetWeight, 0.1)) * 100))}%` }} />
+                      </div>
+                      <div className="text-center"><p className="text-[10px] text-muted-foreground">Now</p><p className="font-bold text-primary">{p.currentWeight} kg</p></div>
+                      <div className="ml-4 text-center"><p className="text-[10px] text-muted-foreground">Goal</p><p className="font-bold text-muted-foreground">{p.targetWeight} kg</p></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recent check-ins */}
+              <Card className="border-border">
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Recent Check-ins</CardTitle></CardHeader>
+                <CardContent className="pb-4">
+                  {(!detail?.checkins || detail.checkins.length === 0) ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No check-ins yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {detail.checkins.slice(0, 5).map((c: any, i: number) => (
+                        <div key={c.id ?? i} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
+                          <span className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                          <div className="flex gap-1.5">
+                            <Badge variant="outline" className={`text-[10px] ${c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "all_meals" || c.mealsFollowed === "most_meals" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+                              Meals
+                            </Badge>
+                            <Badge variant="outline" className={`text-[10px] ${c.activityCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                              {c.activityCompleted ? "Active" : "Rest"}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Care plan */}
+              {detail?.nutritionPlan && (
+                <Card className="border-border">
+                  <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Care Plan</CardTitle></CardHeader>
+                  <CardContent className="pb-4 space-y-2 text-xs text-muted-foreground">
+                    <div><span className="font-semibold text-foreground">Nutrition: </span>{detail.nutritionPlan}</div>
+                    <div><span className="font-semibold text-foreground">Activity: </span>{detail.activityPlan}</div>
+                    <div><span className="font-semibold text-foreground">Weekly Goals: </span>{detail.weeklyGoals}</div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Care team */}
+              <Card className="border-border">
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Care Team</CardTitle></CardHeader>
+                <CardContent className="pb-4 space-y-2 text-xs">
+                  {[
+                    { label: "Physician", val: detail?.assignedPhysician, icon: <Stethoscope className="w-3.5 h-3.5 text-sky-500" /> },
+                    { label: "Dietician", val: detail?.assignedDietician, icon: <Activity className="w-3.5 h-3.5 text-emerald-500" /> },
+                    { label: "Caretaker", val: detail?.assignedCaretaker, icon: <UserCheck className="w-3.5 h-3.5 text-amber-500" /> },
+                  ].map(item => (
+                    <div key={item.label} className="flex items-center gap-2">
+                      {item.icon}
+                      <span className="text-muted-foreground w-20">{item.label}:</span>
+                      <span className={item.val ? "font-medium text-foreground" : "text-muted-foreground italic"}>{item.val || "Unassigned"}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Profile */}
           {!isLoading && detailTab === "profile" && (
@@ -422,49 +514,6 @@ function PatientDetailPanel({
             </div>
           )}
 
-          {/* Metrics */}
-          {!isLoading && detailTab === "metrics" && (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground mb-3">Recent health metrics from Neon database</p>
-              {(!detail?.metrics || detail.metrics.length === 0) ? (
-                <div className="text-center text-muted-foreground text-sm py-10">No metrics recorded yet.</div>
-              ) : (
-                <div className="space-y-2">
-                  {["weight", "glucose", "fasting_glucose", "sleep_hours", "hunger_score"].map(type => {
-                    const entries = detail.metrics.filter((m: any) => m.type === type);
-                    if (!entries.length) return null;
-                    const latest = entries[0];
-                    const unit = type === "weight" ? "kg" : type.includes("glucose") ? "mg/dL" : type === "sleep_hours" ? "hrs" : "/5";
-                    const label = type === "weight" ? "Weight" : type === "glucose" ? "Glucose" : type === "fasting_glucose" ? "Fasting Glucose" : type === "sleep_hours" ? "Sleep" : "Hunger";
-                    return (
-                      <div key={type} className="border border-border/50 rounded-xl p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-foreground">{label}</span>
-                          <span className="text-xs text-muted-foreground">{entries.length} readings</span>
-                        </div>
-                        <div className="flex items-end gap-1 overflow-x-auto pb-1">
-                          {entries.slice(0, 10).reverse().map((m: any, i: number) => {
-                            const vals = entries.slice(0, 10).map((x: any) => x.value);
-                            const min = Math.min(...vals), max = Math.max(...vals);
-                            const range = max - min || 1;
-                            const h = Math.round(20 + ((m.value - min) / range) * 30);
-                            return (
-                              <div key={i} className="flex flex-col items-center gap-0.5 shrink-0">
-                                <span className="text-[9px] text-muted-foreground">{m.value}</span>
-                                <div className="w-6 rounded-t bg-primary/60" style={{ height: `${h}px` }} />
-                                <span className="text-[9px] text-muted-foreground">{m.date?.slice(5) || m.createdAt?.slice(5, 10)}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-1.5">Latest: <span className="font-semibold text-foreground">{latest.value} {unit}</span> on {latest.date || latest.createdAt?.slice(0, 10)}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Check-ins */}
           {!isLoading && detailTab === "checkins" && (
@@ -614,13 +663,6 @@ function PatientDetailPanel({
             </div>
           )}
 
-          {/* Appointments */}
-          {!isLoading && detailTab === "appointments" && (
-            <AppointmentScheduler patient={p} detail={detail} staff={staff} onRefresh={() => {
-              qc.invalidateQueries({ queryKey: ["ops-patient-detail", patient.id] });
-              onRefresh();
-            }} />
-          )}
 
           {/* Care Plan */}
           {!isLoading && detailTab === "plan" && (
@@ -974,18 +1016,14 @@ export default function OpsDashboard() {
                   <thead className="text-xs text-muted-foreground bg-muted/20 border-b uppercase">
                     <tr>
                       <th className="px-4 py-3 font-medium">Patient</th>
-                      <th className="px-4 py-3 font-medium">Plan / Risk</th>
-                      <th className="px-4 py-3 font-medium">Adherence</th>
-                      <th className="px-4 py-3 font-medium">Physician</th>
-                      <th className="px-4 py-3 font-medium">Dietician</th>
-                      <th className="px-4 py-3 font-medium">Caretaker</th>
-                      <th className="px-4 py-3 font-medium">Last Check-in</th>
-                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+                      <th className="px-4 py-3 font-medium">Program</th>
+                      <th className="px-4 py-3 font-medium">Consistency</th>
+                      <th className="px-4 py-3 font-medium">Date Joined</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
                     {pLoading && (
-                      <tr><td colSpan={8} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading patients...</td></tr>
+                      <tr><td colSpan={4} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading patients...</td></tr>
                     )}
                     {!pLoading && filteredPatients.map((p: any) => (
                       <tr key={p.id}
@@ -997,56 +1035,29 @@ export default function OpsDashboard() {
                             {p.fullName}
                             {p.escalated && <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />}
                           </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5 ml-4 flex items-center gap-2">
-                            <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" />{p.phone}</span>
-                            <span>Wk {p.weekNumber}</span>
-                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5 ml-4">{p.city} · Week {p.weekNumber}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 border ${planColor(p.plan)}`}>{p.plan}</Badge>
-                            <Badge variant="outline" className={`uppercase text-[10px] px-2 py-0.5 border block ${getRiskStyle(p.riskLevel)}`}>{p.riskLevel}</Badge>
-                          </div>
+                          <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 border ${planColor(p.plan)}`}>{p.plan}</Badge>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                               <div className={`h-full rounded-full ${p.adherencePct >= 70 ? "bg-emerald-500" : p.adherencePct >= 40 ? "bg-amber-500" : "bg-rose-500"}`}
-                                style={{ width: `${p.adherencePct}%` }} />
+                                style={{ width: `${p.adherencePct ?? 0}%` }} />
                             </div>
                             <span className={`text-xs font-semibold ${p.adherencePct >= 70 ? "text-emerald-600" : p.adherencePct >= 40 ? "text-amber-600" : "text-rose-600"}`}>
-                              {p.adherencePct}%
+                              {p.adherencePct ?? "—"}%
                             </span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {p.assignedPhysician ? <span className="text-foreground font-medium">{p.assignedPhysician.split(" ").slice(0, 2).join(" ")}</span> : <span className="text-rose-400 italic">Unassigned</span>}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {p.assignedDietician ? <span className="text-foreground font-medium">{p.assignedDietician.split(" ")[0]}</span> : <span className="text-amber-400 italic">Unassigned</span>}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {p.assignedCaretaker ? <span className="text-foreground font-medium">{p.assignedCaretaker.split(" ")[0]}</span> : <span className="text-amber-400 italic">Unassigned</span>}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">{p.lastCheckinAt}</td>
-                        <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button size="sm" variant="outline" className="h-7 text-[10px] px-2"
-                              onClick={() => setSelectedPatient(p)}>
-                              View
-                            </Button>
-                            {!p.escalated && (
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 text-rose-600 border-rose-200 hover:bg-rose-50"
-                                onClick={() => escalateMutation.mutate(p.id)}>
-                                Escalate
-                              </Button>
-                            )}
-                          </div>
+                          {p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                         </td>
                       </tr>
                     ))}
                     {!pLoading && filteredPatients.length === 0 && (
-                      <tr><td colSpan={8} className="px-5 py-12 text-center text-muted-foreground text-sm">No patients found.</td></tr>
+                      <tr><td colSpan={4} className="px-5 py-12 text-center text-muted-foreground text-sm">No patients found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1174,14 +1185,14 @@ export default function OpsDashboard() {
                             <div className="flex items-center gap-1.5 text-xs">
                               <Phone className="w-3 h-3 text-muted-foreground" />
                               <span className="font-mono">{p.phone}</span>
-                              <CheckCircle className="w-3 h-3 text-emerald-500" title="Phone verified at signup" />
+                              <CheckCircle className="w-3 h-3 text-emerald-500" />
                             </div>
                           </td>
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-1.5 text-xs">
                               <Mail className="w-3 h-3 text-muted-foreground" />
                               <span className="truncate max-w-[160px]">{p.email}</span>
-                              <CheckCircle className="w-3 h-3 text-emerald-500" title="Email verified at signup" />
+                              <CheckCircle className="w-3 h-3 text-emerald-500" />
                             </div>
                           </td>
                           <td className="px-5 py-3 text-xs text-muted-foreground">{p.city}</td>

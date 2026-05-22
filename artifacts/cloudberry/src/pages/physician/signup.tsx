@@ -63,7 +63,7 @@ export default function PhysicianSignupPage() {
           <Card className="border-border/50 shadow-xl rounded-2xl overflow-hidden bg-white">
             <div className="h-1.5 bg-gradient-to-r from-primary via-blue-400 to-primary/60" />
             <CardHeader className="text-center pb-7 border-b border-border/40 pt-8 bg-gradient-to-br from-primary/5 to-blue-50/50">
-              <CardTitle className="text-2xl font-bold text-foreground">Partner with Cloudberry</CardTitle>
+              <CardTitle className="text-2xl font-bold text-foreground">Connect with Us</CardTitle>
               <CardDescription className="mt-2">
                 Leave your details and our clinical partnership team will reach out to discuss collaboration.
               </CardDescription>
@@ -74,8 +74,8 @@ export default function PhysicianSignupPage() {
                   <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-5">
                     <CheckCircle2 className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">Thank you for collaborating!</h3>
-                  <p className="text-muted-foreground">We have received your details and our partnership team will speak to you within the next 6 hours.</p>
+                  <h3 className="text-xl font-bold mb-2">Thank you for connecting!</h3>
+                  <p className="text-muted-foreground">We have received your details and our partnership team will speak to you within the next 24 hours.</p>
                 </div>
               ) : (
                 <Form {...form}>

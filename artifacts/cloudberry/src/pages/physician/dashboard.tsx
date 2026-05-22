@@ -7,12 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Users, AlertTriangle, Calendar, MessageSquare, Search, LogOut,
-  ChevronRight, Phone, Activity, TrendingDown, FileText, CheckCircle2,
-  HeartPulse, Stethoscope, X, Star, Clock, Target, Dumbbell, Salad,
-  ShieldAlert, ShieldCheck, Send, Video, RefreshCw
+  Users, Search, LogOut, ChevronRight, Activity, TrendingDown,
+  FileText, CheckCircle2, HeartPulse, Stethoscope, X, Clock,
+  Target, User, ShieldAlert, ShieldCheck, RefreshCw, Save,
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = `${BASE}/api`;
@@ -34,10 +33,12 @@ async function apiPost(path: string, body: any) {
   return r.json();
 }
 
-async function apiPatch(path: string) {
+async function apiPatch(path: string, body?: any) {
   const token = localStorage.getItem("cloudberry_token") || "";
   const r = await fetch(`${API}${path}`, {
-    method: "PATCH", headers: { Authorization: `Bearer ${token}` },
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: body ? JSON.stringify(body) : undefined,
   });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
@@ -54,7 +55,8 @@ const RISK_COLORS: Record<string, string> = {
   low: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
-type NavTab = "patients" | "messages" | "schedule" | "escalations";
+type NavTab = "patients" | "profile";
+type DetailTab = "dashboard" | "profile" | "checkins" | "notes";
 
 function formatGoal(g: string) {
   return g?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) ?? "—";
@@ -68,6 +70,115 @@ function relativeDays(iso: string | null) {
   return `${diff}d ago`;
 }
 
+/* ── Patient Dashboard (read-only) ─────────────────────────── */
+function PatientDashboardView({ patient, detail }: { patient: any; detail: any }) {
+  const weightData = detail?.metrics?.filter((m: any) => m.type === "weight").slice(0, 8).reverse() ?? [];
+  const glucoseData = detail?.metrics?.filter((m: any) => m.type === "fasting_glucose").slice(0, 10).reverse() ?? [];
+  const checkins = detail?.checkins ?? [];
+  const recentCheckins = checkins.slice(0, 5);
+  const adherencePct = checkins.length
+    ? Math.round((checkins.filter((c: any) => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "all_meals" || c.mealsFollowed === "most_meals").length / checkins.length) * 100)
+    : null;
+
+  return (
+    <div className="space-y-5">
+      {/* Summary stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Plan", value: patient.plan?.charAt(0).toUpperCase() + patient.plan?.slice(1), icon: <Target className="w-4 h-4 text-primary" /> },
+          { label: "Week", value: `Week ${patient.weekNumber ?? "—"}`, icon: <Clock className="w-4 h-4 text-amber-500" /> },
+          { label: "Adherence", value: adherencePct !== null ? `${adherencePct}%` : `${patient.adherencePct ?? "—"}%`, icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
+        ].map(s => (
+          <div key={s.label} className="bg-slate-50 border border-border/40 rounded-xl p-3 flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">{s.icon}<p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p></div>
+            <p className="font-bold text-foreground text-base">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Weight chart */}
+      <Card className="border-border/40 rounded-xl">
+        <CardHeader className="pb-2 pt-4 px-4 flex-row items-center gap-2">
+          <TrendingDown className="w-4 h-4 text-sky-500" />
+          <CardTitle className="text-sm">Weight Trend (kg)</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          {weightData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={130}>
+              <LineChart data={weightData}>
+                <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={(d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} />
+                <YAxis tick={{ fontSize: 9 }} />
+                <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} />
+                <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <p className="text-xs text-muted-foreground text-center py-6">No weight data recorded yet.</p>}
+        </CardContent>
+      </Card>
+
+      {/* Glucose chart — show only if premium or data exists */}
+      {(patient.plan === "premium" || glucoseData.length > 0) && (
+        <Card className="border-border/40 rounded-xl">
+          <CardHeader className="pb-2 pt-4 px-4 flex-row items-center gap-2">
+            <Activity className="w-4 h-4 text-rose-500" />
+            <CardTitle className="text-sm">Fasting Glucose (mg/dL)</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {glucoseData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={110}>
+                <BarChart data={glucoseData}>
+                  <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={(d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} />
+                  <YAxis tick={{ fontSize: 9 }} domain={[60, 200]} />
+                  <Tooltip formatter={(v: number) => [`${v} mg/dL`, "Glucose"]} />
+                  <Bar dataKey="value" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <p className="text-xs text-muted-foreground text-center py-6">No glucose data recorded yet.</p>}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent check-ins summary */}
+      <Card className="border-border/40 rounded-xl">
+        <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Recent Check-ins</CardTitle></CardHeader>
+        <CardContent className="px-4 pb-4">
+          {recentCheckins.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">No check-ins yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentCheckins.map((c: any) => (
+                <div key={c.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                  <p className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
+                  <div className="flex gap-1.5">
+                    <Badge className={`text-[10px] border ${c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "all_meals" || c.mealsFollowed === "most_meals" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+                      Meals: {c.mealsFollowed?.replace(/_/g, " ")}
+                    </Badge>
+                    <Badge className={`text-[10px] border ${c.activityCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                      {c.activityCompleted ? "Active" : "No Activity"}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Care plan */}
+      {detail?.plan && (
+        <Card className="border-border/40 rounded-xl">
+          <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Care Plan</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-4 space-y-3 text-xs text-muted-foreground">
+            <div><p className="font-semibold text-foreground text-xs mb-1">Nutrition Plan</p><p>{detail.plan.nutritionPlan}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Activity Plan</p><p>{detail.plan.activityPlan}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Weekly Goals</p><p>{detail.plan.weeklyGoals}</p></div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 export default function PhysicianDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -76,16 +187,19 @@ export default function PhysicianDashboard() {
   const [search, setSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState("all");
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [detailTab, setDetailTab] = useState<"profile" | "checkins" | "health" | "notes">("profile");
+  const [detailTab, setDetailTab] = useState<DetailTab>("dashboard");
   const [noteText, setNoteText] = useState("");
-  const [messageText, setMessageText] = useState("");
-  const [scheduleText, setScheduleText] = useState("");
-  const [scheduleDate, setScheduleDate] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [opsBackup] = useState(() => localStorage.getItem("cloudberry_ops_backup"));
 
-  const name = localStorage.getItem("cloudberry_name") || "Physician";
-  const specialty = localStorage.getItem("cloudberry_specialty") || "";
+  // My Profile edit state
+  const [editName, setEditName] = useState("");
+  const [editSpecialty, setEditSpecialty] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [profileEditing, setProfileEditing] = useState(false);
+
+  const storedName = localStorage.getItem("cloudberry_name") || "Physician";
+  const storedSpecialty = localStorage.getItem("cloudberry_specialty") || "";
 
   useEffect(() => {
     const token = localStorage.getItem("cloudberry_token");
@@ -109,6 +223,20 @@ export default function PhysicianDashboard() {
     queryKey: ["physician-patients"],
     queryFn: () => apiFetch("/physician/patients"),
   });
+
+  const { data: physicianMe } = useQuery({
+    queryKey: ["physician-me"],
+    queryFn: () => apiFetch("/physician/me"),
+    enabled: nav === "profile",
+  });
+
+  useEffect(() => {
+    if (physicianMe) {
+      setEditName(physicianMe.fullName || storedName);
+      setEditSpecialty(physicianMe.specialty || storedSpecialty);
+      setEditPhone(physicianMe.phone || "");
+    }
+  }, [physicianMe]);
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ["physician-patient-detail", selectedPatient?.id],
@@ -134,6 +262,18 @@ export default function PhysicianDashboard() {
     },
   });
 
+  const profileMut = useMutation({
+    mutationFn: (body: any) => apiPatch("/physician/me", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["physician-me"] });
+      if (editName) localStorage.setItem("cloudberry_name", editName);
+      if (editSpecialty !== undefined) localStorage.setItem("cloudberry_specialty", editSpecialty);
+      setProfileEditing(false);
+      toast({ title: "Profile updated successfully" });
+    },
+    onError: () => toast({ title: "Failed to update profile", variant: "destructive" }),
+  });
+
   const handleLogout = () => {
     ["cloudberry_token", "cloudberry_name", "cloudberry_role", "cloudberry_specialty"].forEach(k => localStorage.removeItem(k));
     setLocation("/physician/signin");
@@ -146,15 +286,9 @@ export default function PhysicianDashboard() {
 
   const highRisk = (patients as any[]).filter(p => p.riskLevel === "high");
 
-  // Build chart data from patient detail
-  const weightData = detail?.metrics?.filter((m: any) => m.type === "weight").slice(0, 6).reverse() ?? [];
-  const glucoseData = detail?.metrics?.filter((m: any) => m.type === "fasting_glucose").slice(0, 7).reverse() ?? [];
-
   const navItems: { key: NavTab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { key: "patients", label: "My Patients", icon: <Users className="w-4 h-4" />, badge: patients.length },
-    { key: "escalations", label: "Escalations", icon: <AlertTriangle className="w-4 h-4" />, badge: highRisk.length },
-    { key: "messages", label: "Messages", icon: <MessageSquare className="w-4 h-4" /> },
-    { key: "schedule", label: "Schedule Call", icon: <Calendar className="w-4 h-4" /> },
+    { key: "patients", label: "My Patients", icon: <Users className="w-4 h-4" />, badge: (patients as any[]).length },
+    { key: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
   ];
 
   return (
@@ -171,34 +305,44 @@ export default function PhysicianDashboard() {
       </div>
     )}
     <div className={`min-h-screen bg-slate-50 flex${opsBackup ? " pt-9" : ""}`}>
-      {/* Sidebar */}
-      <aside className={`${sidebarOpen ? "w-60" : "w-16"} transition-all bg-sky-950 text-white flex flex-col shrink-0`}>
-        <div className="p-4 border-b border-white/10 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-sky-400/20 border border-sky-400/30 flex items-center justify-center shrink-0">
-            <Stethoscope className="w-4 h-4 text-sky-300" />
+      {/* Sidebar — Light theme */}
+      <aside className={`${sidebarOpen ? "w-60" : "w-16"} transition-all bg-white border-r border-border/60 flex flex-col shrink-0 shadow-sm`}>
+        <div className="p-4 border-b border-border/60 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+            <Stethoscope className="w-4 h-4 text-primary" />
           </div>
           {sidebarOpen && (
             <div className="min-w-0">
-              <p className="text-xs font-bold text-white truncate">{name}</p>
-              <p className="text-[10px] text-sky-300 truncate">{specialty || "Physician"}</p>
+              <p className="text-xs font-bold text-foreground truncate">{storedName}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{storedSpecialty || "Physician"}</p>
             </div>
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map(item => (
             <button key={item.key} onClick={() => setNav(item.key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${nav === item.key ? "bg-sky-400/20 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}>
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${nav === item.key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-slate-50"}`}>
               {item.icon}
               {sidebarOpen && <span className="flex-1 text-left">{item.label}</span>}
               {sidebarOpen && item.badge !== undefined && item.badge > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${item.key === "escalations" ? "bg-rose-500 text-white" : "bg-sky-400/30 text-sky-200"}`}>{item.badge}</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{item.badge}</span>
               )}
             </button>
           ))}
+          {/* High risk alert inline */}
+          {sidebarOpen && highRisk.length > 0 && (
+            <div className="mt-3 px-3 py-2.5 rounded-lg bg-rose-50 border border-rose-100">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                <span className="text-xs font-semibold text-rose-700">{highRisk.length} High Risk</span>
+              </div>
+              <p className="text-[10px] text-rose-500 mt-0.5">Patients needing attention</p>
+            </div>
+          )}
         </nav>
-        <div className="p-3 border-t border-white/10">
+        <div className="p-3 border-t border-border/60">
           <button onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 text-sm transition-colors">
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-slate-50 text-sm transition-colors">
             <LogOut className="w-4 h-4 shrink-0" />
             {sidebarOpen && "Sign Out"}
           </button>
@@ -207,14 +351,13 @@ export default function PhysicianDashboard() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Topbar */}
         <header className="bg-white border-b border-border/60 px-6 py-4 flex items-center gap-4">
           <button onClick={() => setSidebarOpen(v => !v)} className="text-muted-foreground hover:text-foreground">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <div>
             <h1 className="font-bold text-foreground text-lg leading-tight">Physician Portal</h1>
-            <p className="text-xs text-muted-foreground">Dr. {name} &middot; {specialty}</p>
+            <p className="text-xs text-muted-foreground">Dr. {storedName} · {storedSpecialty}</p>
           </div>
           <div className="flex-1" />
           <span className="text-xs text-muted-foreground bg-slate-100 px-3 py-1.5 rounded-full">
@@ -230,7 +373,7 @@ export default function PhysicianDashboard() {
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-foreground">My Patients</h2>
-                  <p className="text-sm text-muted-foreground">{patients.length} patient{patients.length !== 1 ? "s" : ""} assigned to you</p>
+                  <p className="text-sm text-muted-foreground">{(patients as any[]).length} patient{(patients as any[]).length !== 1 ? "s" : ""} assigned to you</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <div className="relative">
@@ -247,6 +390,16 @@ export default function PhysicianDashboard() {
                 </div>
               </div>
 
+              {/* High risk banner */}
+              {highRisk.length > 0 && (
+                <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
+                  <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0" />
+                  <p className="text-sm text-rose-700 font-medium">{highRisk.length} patient{highRisk.length !== 1 ? "s" : ""} flagged as high risk — review their profiles.</p>
+                  <Button size="sm" variant="outline" className="ml-auto text-xs rounded-full text-rose-600 border-rose-200 hover:bg-rose-50"
+                    onClick={() => setRiskFilter("high")}>View</Button>
+                </div>
+              )}
+
               {isLoading ? (
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                   {[1,2,3].map(i => <div key={i} className="h-44 bg-white rounded-2xl animate-pulse" />)}
@@ -258,12 +411,12 @@ export default function PhysicianDashboard() {
               ) : (
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                   {filtered.map(p => (
-                    <Card key={p.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border-border/50 cursor-pointer" onClick={() => { setSelectedPatient(p); setDetailTab("profile"); }}>
+                    <Card key={p.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border-border/50 cursor-pointer" onClick={() => { setSelectedPatient(p); setDetailTab("dashboard"); }}>
                       <CardContent className="p-5">
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <p className="font-semibold text-foreground text-base">{p.fullName}</p>
-                            <p className="text-xs text-muted-foreground">{p.city} &middot; Week {p.weekNumber}</p>
+                            <p className="text-xs text-muted-foreground">{p.city} · Week {p.weekNumber}</p>
                           </div>
                           <Badge className={`${RISK_COLORS[p.riskLevel]} border text-xs capitalize`}>{p.riskLevel}</Badge>
                         </div>
@@ -285,23 +438,10 @@ export default function PhysicianDashboard() {
                             <p className="font-bold text-foreground text-xs">{relativeDays(p.lastCheckinAt)}</p>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="flex-1 h-8 text-xs rounded-full"
-                            onClick={e => { e.stopPropagation(); setSelectedPatient(p); setDetailTab("profile"); }}>
-                            <ChevronRight className="w-3 h-3 mr-1" />View Profile
-                          </Button>
-                          {p.riskLevel !== "high" ? (
-                            <Button size="sm" variant="outline" className="h-8 text-xs rounded-full text-rose-600 border-rose-200 hover:bg-rose-50"
-                              onClick={e => { e.stopPropagation(); escalateMut.mutate(p.id); }}>
-                              <ShieldAlert className="w-3 h-3 mr-1" />Escalate
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="outline" className="h-8 text-xs rounded-full text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                              onClick={e => { e.stopPropagation(); deescalateMut.mutate(p.id); }}>
-                              <ShieldCheck className="w-3 h-3 mr-1" />De-escalate
-                            </Button>
-                          )}
-                        </div>
+                        <Button size="sm" variant="outline" className="w-full h-8 text-xs rounded-full"
+                          onClick={e => { e.stopPropagation(); setSelectedPatient(p); setDetailTab("dashboard"); }}>
+                          <ChevronRight className="w-3 h-3 mr-1" />View Patient
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -310,121 +450,67 @@ export default function PhysicianDashboard() {
             </div>
           )}
 
-          {/* ── ESCALATIONS TAB ────────────────────────────────────── */}
-          {nav === "escalations" && (
-            <div className="space-y-5">
+          {/* ── MY PROFILE TAB ────────────────────────────────────── */}
+          {nav === "profile" && (
+            <div className="max-w-xl space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-foreground">Escalated Patients</h2>
-                <p className="text-sm text-muted-foreground">{highRisk.length} patient{highRisk.length !== 1 ? "s" : ""} requiring immediate attention</p>
+                <h2 className="text-xl font-bold text-foreground">My Profile</h2>
+                <p className="text-sm text-muted-foreground">Your details as seen by patients and the Cloudberry team</p>
               </div>
-              {highRisk.length === 0 ? (
-                <Card className="text-center py-16">
-                  <CardContent><ShieldCheck className="w-10 h-10 text-emerald-400 mx-auto mb-3" /><p className="text-muted-foreground font-medium">No escalated patients right now.</p><p className="text-xs text-muted-foreground mt-1">All patients are in good standing.</p></CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-3">
-                  {highRisk.map(p => (
-                    <Card key={p.id} className="bg-rose-50 border-rose-200 rounded-2xl shadow-sm">
-                      <CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-rose-100 border-2 border-rose-300 flex items-center justify-center shrink-0">
-                          <HeartPulse className="w-5 h-5 text-rose-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground">{p.fullName}</p>
-                          <p className="text-xs text-muted-foreground">{p.city} &middot; {formatGoal(p.primaryGoal)} &middot; Week {p.weekNumber}</p>
-                          <p className="text-xs text-rose-600 mt-1">Last check-in: {relativeDays(p.lastCheckinAt)}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" className="h-8 text-xs rounded-full" onClick={() => { setSelectedPatient(p); setDetailTab("profile"); setNav("patients"); }}>
-                            View
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-8 text-xs rounded-full text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                            onClick={() => deescalateMut.mutate(p.id)}>
-                            De-escalate
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── MESSAGES TAB ─────────────────────────────────────── */}
-          {nav === "messages" && (
-            <div className="space-y-5 max-w-2xl">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Send Message</h2>
-                <p className="text-sm text-muted-foreground">Communicate with patients, support team, and colleagues</p>
-              </div>
-              {[
-                { label: "Message a Patient", desc: "Send a clinical update or check-in reminder to a patient", color: "bg-sky-50 border-sky-200" },
-                { label: "Contact Dietician", desc: "Share nutrition recommendations or request a consult", color: "bg-emerald-50 border-emerald-200" },
-                { label: "Contact Caretaker", desc: "Coordinate daily care tasks or share patient updates", color: "bg-amber-50 border-amber-200" },
-                { label: "Contact Support Team", desc: "Escalate concerns or request operational assistance", color: "bg-violet-50 border-violet-200" },
-              ].map(item => (
-                <Card key={item.label} className={`${item.color} border rounded-2xl`}>
-                  <CardContent className="p-5">
-                    <p className="font-semibold text-foreground mb-1">{item.label}</p>
-                    <p className="text-xs text-muted-foreground mb-3">{item.desc}</p>
-                    <div className="flex gap-2">
-                      <textarea
-                        value={messageText}
-                        onChange={e => setMessageText(e.target.value)}
-                        placeholder="Type your message…"
-                        className="flex-1 rounded-xl border border-border/60 bg-white p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                      />
+              <Card className="rounded-2xl border-border/50 shadow-sm bg-white">
+                <CardHeader className="flex-row items-center justify-between px-6 pt-5 pb-3">
+                  <CardTitle className="text-base">Profile Details</CardTitle>
+                  <Button size="sm" variant="outline" className="rounded-full text-xs gap-1.5 h-8"
+                    onClick={() => setProfileEditing(v => !v)}>
+                    {profileEditing ? <><X className="w-3 h-3" /> Cancel</> : <><RefreshCw className="w-3 h-3" /> Edit</>}
+                  </Button>
+                </CardHeader>
+                <CardContent className="px-6 pb-6 space-y-4">
+                  <div className="flex items-center gap-4 pb-4 border-b border-border/40">
+                    <div className="w-14 h-14 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center shrink-0">
+                      <Stethoscope className="w-7 h-7 text-primary" />
                     </div>
-                    <div className="flex justify-end mt-2">
-                      <Button size="sm" className="rounded-full h-8 text-xs gap-2"
-                        onClick={() => { toast({ title: "Message sent!", description: "Your message has been delivered." }); setMessageText(""); }}>
-                        <Send className="w-3 h-3" />Send Message
+                    <div>
+                      <p className="font-bold text-foreground text-lg">{editName || storedName}</p>
+                      <p className="text-sm text-muted-foreground">{editSpecialty || storedSpecialty || "Physician"}</p>
+                    </div>
+                  </div>
+                  {profileEditing ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">Full Name</label>
+                        <Input value={editName} onChange={e => setEditName(e.target.value)} className="rounded-xl" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">Specialty</label>
+                        <Input value={editSpecialty} onChange={e => setEditSpecialty(e.target.value)} placeholder="e.g. Endocrinology" className="rounded-xl" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">Phone</label>
+                        <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Contact number" className="rounded-xl" />
+                      </div>
+                      <Button className="rounded-full gap-2 w-full" disabled={profileMut.isPending}
+                        onClick={() => profileMut.mutate({ fullName: editName, specialty: editSpecialty, phone: editPhone })}>
+                        <Save className="w-4 h-4" />{profileMut.isPending ? "Saving…" : "Save Changes"}
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* ── SCHEDULE TAB ─────────────────────────────────────── */}
-          {nav === "schedule" && (
-            <div className="space-y-5 max-w-xl">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Schedule a Call</h2>
-                <p className="text-sm text-muted-foreground">Plan a consultation or follow-up call with a patient</p>
-              </div>
-              <Card className="rounded-2xl border-border/50 shadow-sm bg-white">
-                <CardContent className="p-6 space-y-4">
-                  <div>
-                    <label className="text-sm font-medium block mb-1.5">Select Patient</label>
-                    <select className="w-full h-10 rounded-xl border border-border/60 px-3 text-sm bg-white">
-                      <option value="">Choose a patient…</option>
-                      {(patients as any[]).map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium block mb-1.5">Date & Time</label>
-                    <input type="datetime-local" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
-                      className="w-full h-10 rounded-xl border border-border/60 px-3 text-sm bg-white" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium block mb-1.5">Notes (optional)</label>
-                    <textarea value={scheduleText} onChange={e => setScheduleText(e.target.value)}
-                      placeholder="Purpose of call, patient concerns…"
-                      className="w-full rounded-xl border border-border/60 p-3 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-sky-300" />
-                  </div>
-                  <Button className="w-full rounded-full h-11 gap-2"
-                    onClick={() => { toast({ title: "Call scheduled!", description: `Call confirmed for ${scheduleDate ? new Date(scheduleDate).toLocaleString("en-IN") : "selected time"}.` }); setScheduleText(""); setScheduleDate(""); }}>
-                    <Video className="w-4 h-4" />Confirm Schedule
-                  </Button>
-                </CardContent>
-              </Card>
-              <Card className="rounded-2xl border-border/50 shadow-sm bg-white">
-                <CardHeader><CardTitle className="text-sm font-semibold">Upcoming Calls</CardTitle></CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  <p className="italic">No upcoming calls scheduled. Use the form above to plan one.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { label: "Full Name", value: physicianMe?.fullName || storedName },
+                        { label: "Specialty", value: physicianMe?.specialty || storedSpecialty || "—" },
+                        { label: "Email", value: physicianMe?.email || "—" },
+                        { label: "Phone", value: physicianMe?.phone || "—" },
+                        { label: "Patients Assigned", value: (patients as any[]).length.toString() },
+                        { label: "High Risk Patients", value: highRisk.length.toString() },
+                      ].map(item => (
+                        <div key={item.label} className="bg-slate-50 rounded-xl p-3 border border-border/40">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{item.label}</p>
+                          <p className="text-sm font-semibold text-foreground">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -436,50 +522,40 @@ export default function PhysicianDashboard() {
       {selectedPatient && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setSelectedPatient(null)} />
-          <div className="relative w-full max-w-2xl bg-white shadow-2xl overflow-y-auto flex flex-col">
+          <div className="relative w-full max-w-2xl bg-white shadow-2xl flex flex-col">
             {/* Header */}
-            <div className="bg-gradient-to-r from-sky-700 to-blue-700 text-white p-6 flex items-start justify-between">
+            <div className="bg-gradient-to-r from-primary to-blue-600 text-white p-6 flex items-start justify-between shrink-0">
               <div>
                 <p className="text-lg font-bold">{selectedPatient.fullName}</p>
-                <p className="text-sky-200 text-sm">{selectedPatient.city} &middot; {formatGoal(selectedPatient.primaryGoal)}</p>
+                <p className="text-white/70 text-sm">{selectedPatient.city} · {formatGoal(selectedPatient.primaryGoal)}</p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <Badge className={`${PLAN_COLORS[selectedPatient.plan]} border text-xs capitalize`}>{selectedPatient.plan}</Badge>
                   <Badge className={`${RISK_COLORS[selectedPatient.riskLevel]} border text-xs capitalize`}>{selectedPatient.riskLevel} risk</Badge>
                 </div>
               </div>
-              <button onClick={() => setSelectedPatient(null)} className="text-white/70 hover:text-white mt-1">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Quick actions */}
-            <div className="flex gap-2 p-4 border-b border-border/40 bg-slate-50">
-              {selectedPatient.riskLevel !== "high" ? (
-                <Button size="sm" variant="outline" className="text-xs rounded-full text-rose-600 border-rose-200 hover:bg-rose-50 gap-1"
-                  onClick={() => escalateMut.mutate(selectedPatient.id)}>
-                  <ShieldAlert className="w-3 h-3" />Escalate
-                </Button>
-              ) : (
-                <Button size="sm" variant="outline" className="text-xs rounded-full text-emerald-600 border-emerald-200 hover:bg-emerald-50 gap-1"
-                  onClick={() => deescalateMut.mutate(selectedPatient.id)}>
-                  <ShieldCheck className="w-3 h-3" />De-escalate
-                </Button>
-              )}
-              <Button size="sm" variant="outline" className="text-xs rounded-full gap-1"
-                onClick={() => { setNav("schedule"); setSelectedPatient(null); }}>
-                <Video className="w-3 h-3" />Schedule Call
-              </Button>
-              <Button size="sm" variant="outline" className="text-xs rounded-full gap-1"
-                onClick={() => { setNav("messages"); setSelectedPatient(null); }}>
-                <MessageSquare className="w-3 h-3" />Message
-              </Button>
+              <div className="flex items-center gap-2">
+                {selectedPatient.riskLevel !== "high" ? (
+                  <Button size="sm" variant="outline" className="text-xs rounded-full bg-white/10 border-white/30 text-white hover:bg-white/20 gap-1"
+                    onClick={() => escalateMut.mutate(selectedPatient.id)}>
+                    <ShieldAlert className="w-3 h-3" />Escalate
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" className="text-xs rounded-full bg-white/10 border-white/30 text-white hover:bg-white/20 gap-1"
+                    onClick={() => deescalateMut.mutate(selectedPatient.id)}>
+                    <ShieldCheck className="w-3 h-3" />De-escalate
+                  </Button>
+                )}
+                <button onClick={() => setSelectedPatient(null)} className="text-white/70 hover:text-white ml-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-0 border-b border-border/40 bg-white px-4">
-              {(["profile", "checkins", "health", "notes"] as const).map(t => (
+            <div className="flex gap-0 border-b border-border/40 bg-white px-4 shrink-0">
+              {(["dashboard", "profile", "checkins", "notes"] as DetailTab[]).map(t => (
                 <button key={t} onClick={() => setDetailTab(t)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${detailTab === t ? "border-sky-600 text-sky-700" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${detailTab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
                   {t === "checkins" ? "Check-ins" : t}
                 </button>
               ))}
@@ -490,6 +566,11 @@ export default function PhysicianDashboard() {
                 <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
               ) : (
                 <>
+                  {/* Dashboard tab */}
+                  {detailTab === "dashboard" && (
+                    <PatientDashboardView patient={selectedPatient} detail={detail} />
+                  )}
+
                   {/* Profile tab */}
                   {detailTab === "profile" && (
                     <div className="space-y-4">
@@ -514,16 +595,6 @@ export default function PhysicianDashboard() {
                           </div>
                         ))}
                       </div>
-                      {detail?.plan && (
-                        <Card className="border-border/40 rounded-xl">
-                          <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Care Plan</CardTitle></CardHeader>
-                          <CardContent className="px-4 pb-4 space-y-3 text-xs text-muted-foreground">
-                            <div><p className="font-semibold text-foreground text-xs mb-1">🥗 Nutrition Plan</p><p>{detail.plan.nutritionPlan}</p></div>
-                            <div><p className="font-semibold text-foreground text-xs mb-1">🏃 Activity Plan</p><p>{detail.plan.activityPlan}</p></div>
-                            <div><p className="font-semibold text-foreground text-xs mb-1">🎯 Weekly Goals</p><p>{detail.plan.weeklyGoals}</p></div>
-                          </CardContent>
-                        </Card>
-                      )}
                     </div>
                   )}
 
@@ -531,7 +602,7 @@ export default function PhysicianDashboard() {
                   {detailTab === "checkins" && (
                     <div className="space-y-3">
                       {(!detail?.checkins || detail.checkins.length === 0) ? (
-                        <p className="text-muted-foreground text-sm text-center py-8">No check-ins recorded yet. Will be updated soon.</p>
+                        <p className="text-muted-foreground text-sm text-center py-8">No check-ins recorded yet.</p>
                       ) : detail.checkins.map((c: any) => (
                         <Card key={c.id} className="border-border/40 rounded-xl">
                           <CardContent className="p-4">
@@ -558,43 +629,6 @@ export default function PhysicianDashboard() {
                     </div>
                   )}
 
-                  {/* Health Data tab */}
-                  {detailTab === "health" && (
-                    <div className="space-y-5">
-                      {weightData.length > 0 ? (
-                        <Card className="border-border/40 rounded-xl">
-                          <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Weight Trend (kg)</CardTitle></CardHeader>
-                          <CardContent className="px-4 pb-4">
-                            <ResponsiveContainer width="100%" height={140}>
-                              <LineChart data={weightData}>
-                                <XAxis dataKey="date" tick={{ fontSize: 9 }} />
-                                <YAxis tick={{ fontSize: 9 }} />
-                                <Tooltip />
-                                <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={false} />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </CardContent>
-                        </Card>
-                      ) : <p className="text-muted-foreground text-sm text-center py-4">Weight data will appear here after check-ins.</p>}
-
-                      {glucoseData.length > 0 && (
-                        <Card className="border-border/40 rounded-xl">
-                          <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Blood Glucose (mg/dL)</CardTitle></CardHeader>
-                          <CardContent className="px-4 pb-4">
-                            <ResponsiveContainer width="100%" height={120}>
-                              <BarChart data={glucoseData}>
-                                <XAxis dataKey="date" tick={{ fontSize: 9 }} />
-                                <YAxis tick={{ fontSize: 9 }} />
-                                <Tooltip />
-                                <Bar dataKey="value" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-
                   {/* Notes tab */}
                   {detailTab === "notes" && (
                     <div className="space-y-4">
@@ -602,7 +636,7 @@ export default function PhysicianDashboard() {
                         <label className="text-sm font-medium">Add Clinical Note</label>
                         <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
                           placeholder="Enter your clinical notes, observations, or instructions…"
-                          className="w-full rounded-xl border border-border/60 p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-sky-300" />
+                          className="w-full rounded-xl border border-border/60 p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         <Button size="sm" className="rounded-full gap-2" disabled={!noteText.trim() || noteMut.isPending}
                           onClick={() => noteMut.mutate({ id: selectedPatient.id, content: noteText })}>
                           <FileText className="w-3 h-3" />

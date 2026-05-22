@@ -10,7 +10,7 @@ import { usePatientSignup } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { PatientSignupInputPrimaryGoal } from "@workspace/api-client-react";
-import { CheckCircle2, Clock, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, Clock, Eye, EyeOff, Users } from "lucide-react";
 import { useState } from "react";
 
 const passwordSchema = z.string()
@@ -134,16 +134,17 @@ export default function PatientSignup() {
             </Link>
           </div>
 
-          <div className="flex gap-3 mb-7">
+          <div className="flex gap-2 mb-7">
             {[
               { title: "Personalised Plans", desc: "Tailored to your biology." },
               { title: "Daily Support", desc: "Accountability every day." },
               { title: "Doctor-Led", desc: "Clinical oversight throughout." },
+              { title: "Coordinated", desc: "Care Team" },
             ].map((item) => (
-              <div key={item.title} className="flex-1 bg-primary/5 rounded-xl p-3 text-center">
+              <div key={item.title} className="flex-1 bg-primary/5 rounded-xl p-2.5 text-center">
                 <CheckCircle2 className="h-4 w-4 text-primary mx-auto mb-1" />
-                <p className="text-xs font-semibold text-foreground">{item.title}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</p>
+                <p className="text-xs font-semibold text-foreground leading-tight">{item.title}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{item.desc}</p>
               </div>
             ))}
           </div>

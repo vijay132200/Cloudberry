@@ -69,15 +69,10 @@ export default function PatientSignin() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-5">
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C</span>
-              </div>
-              <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>
-            </div>
+            <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Sign in to your patient portal</p>
+          <p className="text-muted-foreground mt-1 text-sm">Sign in to your Patient's Portal</p>
         </div>
 
         <Card className="border-border/60 shadow-lg bg-white rounded-2xl overflow-hidden">
@@ -116,12 +111,6 @@ export default function PatientSignin() {
                 {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
               </div>
 
-              <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 space-y-1">
-                <p className="text-xs text-blue-800 font-semibold">Demo Patient Accounts (password: demo123)</p>
-                <p className="text-xs text-blue-700">Comprehensive: 9876543210 &nbsp;·&nbsp; Premium: 9765432109</p>
-                <p className="text-xs text-blue-700">Basic: 9654321098 &nbsp;·&nbsp; New patient: 9321098765</p>
-              </div>
-
               <Button type="submit" className="w-full rounded-full h-12 text-base shadow-sm" disabled={loading}>
                 {loading ? "Signing in…" : "Sign In"}
               </Button>
@@ -135,8 +124,8 @@ export default function PatientSignin() {
           </CardFooter>
         </Card>
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Care team member?{" "}
-          <Link href="/physician/signin" className="text-primary hover:underline">Access staff portal →</Link>
+          Doctor?{" "}
+          <Link href="/physician/signin" className="text-primary hover:underline">Access Doctor's Portal →</Link>
         </p>
       </div>
     </div>

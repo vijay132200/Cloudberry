@@ -1,0 +1,158 @@
+The DATABASE_URL environment variable for the Neon PostgreSQL database has already been configured successfully in Replit.
+Now fully integrate the application backend with the Neon database and verify all database operations are working correctly.
+Requirements:
+Connect the entire application to the Neon PostgreSQL database using the existing DATABASE_URL.
+Verify the database connection is healthy and persistent.
+Ensure all schema tables are correctly created and mapped, including:
+users
+staff
+patients
+patient_plans
+patient_notes
+checkins
+metrics
+appointments
+leads
+tips
+any additional operational/auth tables
+Verify all CRUD operations work correctly:
+create
+read
+update
+delete
+Ensure all portals are fully database-driven:
+patient portal
+physician portal
+dietician portal
+caretaker portal
+operations portal
+Ensure all user actions persist permanently inside Neon:
+check-ins
+assessments
+metrics
+messages
+appointments
+uploads
+profile edits
+staff assignments
+lead forms
+support tickets
+care plans
+Remove any remaining frontend-only state logic or hardcoded demo analytics.
+Ensure dashboards load only real database data.
+Verify all role-based authentication and protected routes still work correctly.
+Verify all relationships and assignments work properly:
+patient ↔ physician
+patient ↔ dietician
+patient ↔ caretaker
+appointments ↔ assigned staff
+messages ↔ patient records
+Ensure all dashboard updates reflect database changes dynamically.
+Perform full end-to-end testing:
+sign in
+create/update records
+submit check-ins
+schedule appointments
+send messages
+assign care team
+update profiles
+verify dashboard updates
+Fix any broken ORM/schema/API/database synchronization issues automatically.
+Ensure no patient data is lost during reconnection or migration.
+Restart and verify the full application after successful Neon integration.
+The application should now function as a fully database-driven healthcare continuity-care platform using Neon PostgreSQL as the persistent production database.
+After you have done database integration Fix Vercel deployment for the frontend app in artifacts/cloudberry.
+
+Tasks:
+1. Add a vercel.json file inside artifacts/cloudberry
+2. Configure SPA fallback routing so all routes serve index.html
+3. Ensure Vite production build works correctly on Vercel
+4. Ensure output directory is dist
+5. Ensure homepage loads on root route "/"
+6. Commit and push changes to GitHub
+
+
+After fixing deployment make following changes to the website.
+-Create an about us section in the home page, it must display after programs and pricing section, it shall have buttons in top menu after programs and pricing, and in the footer menu also
+In about us, it shall be horizontal (can format the text according to yourself based on what looks good), the text are these three:
+Built around doctor trust
+Alumni of IIT M and INSEAD
+Kicking it off in Indore
+
+- Write "Connect with Us" in the top menu instead of "Get Started"
+
+- In the home page, below the text "Cloudberry combines medical guidance, nutrition, movement, and continuous coaching to help patients build healthier habits and achieve sustainable long-term results." Keep 2 button "For Patients" and "For Doctors" that  will lead to their respective sign up pages instead of "Get Started" and "Physian's Portal" buttons.
+
+- When someone clicks on connect with us, they shall get a pop up giving two options, "Are you a Patient?" and "Are you a Doctor?"
+
+- Remove a seperate page for doctor collaboration, whenever someone clicks on a button like that then it shall directly lead to the form
+
+- Fix alignment in "Why Most Plans Fall Apart" cards, the boxes in it are not properly aligned, maintains conistency in all
+
+- In phone, in "Why Most Plans Fall Apart" section, below the cards slider, Add dots below the 4 cards like in the above slider of images in the home page
+
+- Make "What we aim to Improve" in a shade of black
+
+- Make "Doctor-Led
+Clinical Oversight
+Coordinated
+Care Team
+Daily
+Accountability
+Personalized
+Nutrition & Movement"
+section in a shade of black
+
+- Make "Programs & Pricing" section in a shade of black
+
+- All the sections with shade of black in the home page must have a consistent shade of black
+
+- In the footer menu, make a connect with us header, below it keep "For Patients" and "For Doctors" buttons instead of patient portal and physician portal buttons
+
+- In the footer menu, below about us button, write Indore, Madhya Pradesh and Mumbai, Maharashtra
+
+- If a patient logs in but they are not yet approved in the operation portal, then show a pop up in the centre
+
+- Add My records tab in all patients dashboard, there patient can upload their reports,etc.
+
+- The basic plan dashboard must be exactly like in the first uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version
+
+- The basic plan dashboard must be exactly like in the second uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version
+
+- The basic plan dashboard must be exactly like in the third uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version
+
+- In weight show how much they lose
+
+- Post meal glucose shall be collected once in every 3 days
+
+- In doctor sign up, instead of "Partner with Cloudberry" write "Connect with Us" and after they click request collaboration, in the message it shall say 24 hours not 6 hours
+
+- Remove dietician and caretaker pages and login
+
+- When click on sign in, it shall be Patient's Portal not Patient Portal
+
+- In the patient sign up page, there are currently 3 cards add one more card beside the “Doctor Led” card
+New card content:
+Top text: “Coordinated”
+Bottom text: “Care Team”
+
+- In patient log in big C appears in the logo i dont want that just the text in black like it is in the home page
+
+- In doctor portal login page, all the text is according to care team, change it according to doctor, it is only for doctors only, it shall not be "Work Mail" keep "Mail" only and in the textbox below dont show you@cloudberryhealth keep it blank only, remove the big section on the left that covers a lot of part, only keep the form. The theme must be consistent according to the home page (Ignore the black sections part for referrence)
+
+- In the doctor portal,
+remove messages and schedule call completely and totally
+the theme and colors must be according to the theme in home page (ignore the black sections part), currently it is not
+Remove this escalation system completely
+Whenever a doctor clicks on a patient, then in the profile section they must be able to see the current full patient dashboard of that patient like the patient sees it, it must be visible completely
+Remove the health tab in each patient in the doctor portal
+
+- Add my profile tab in doctor portal to edit their personal details
+
+- In operations portal sign in page, remove the big section on the left side, keep only the form
+
+- In operations portal, whenever we click on any patient then there shall be one more tab and it shall be the first, that is the dashboard, in it the complete dashboard of that patient must be visible like it is in that patient's dashboard. The operations team must be able to edit things directly on that dashboard by viewing it, for example editing, this week's focus, insights, etc. directly.
+Remove appointments and metrics tab from particular patient in operations portal
+
+- in Patient Care Roster in operations portal each row must be Patient, program, consistency, date joined only 
+

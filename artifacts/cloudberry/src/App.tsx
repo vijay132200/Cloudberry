@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +10,6 @@ import HomePage from "@/pages/home";
 import RefundPolicyPage from "@/pages/refund-policy";
 import PrivacyPolicyPage from "@/pages/privacy-policy";
 import TermsPage from "@/pages/terms";
-import PhysicianPage from "@/pages/physician/index";
 import PhysicianSignupPage from "@/pages/physician/signup";
 import PhysicianSignin from "@/pages/physician/signin";
 import AboutPage from "@/pages/about";
@@ -40,12 +39,6 @@ import CoachPatientDetail from "@/pages/coach/patients/detail";
 // Physician Portal
 import PhysicianDashboard from "@/pages/physician/dashboard";
 
-// Dietician Portal
-import DieticianDashboard from "@/pages/dietician/dashboard";
-
-// Caretaker Portal
-import CaretakerDashboard from "@/pages/caretaker/dashboard";
-
 // Ops Portal
 import OpsDashboard from "@/pages/ops/dashboard";
 import OpsAnalytics from "@/pages/ops/analytics";
@@ -70,7 +63,7 @@ function Router() {
       <Route path="/refund-policy" component={RefundPolicyPage} />
       <Route path="/privacy-policy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsPage} />
-      <Route path="/physician" component={PhysicianPage} />
+      <Route path="/physician">{() => <Redirect to="/physician/signup" />}</Route>
       <Route path="/physician/signup" component={PhysicianSignupPage} />
 
       {/* Patient Portal */}
@@ -83,7 +76,7 @@ function Router() {
       <Route path="/patient/support" component={PatientSupport} />
       <Route path="/patient/settings" component={PatientSettings} />
 
-      {/* Staff Signin (shared for physician / dietician / caretaker) */}
+      {/* Staff Signin (shared for physician / staff) */}
       <Route path="/physician/signin" component={PhysicianSignin} />
       <Route path="/staff/signin" component={PhysicianSignin} />
       <Route path="/dietician/signin" component={PhysicianSignin} />
@@ -92,11 +85,9 @@ function Router() {
       {/* Physician Portal */}
       <Route path="/physician/dashboard" component={PhysicianDashboard} />
 
-      {/* Dietician Portal */}
-      <Route path="/dietician/dashboard" component={DieticianDashboard} />
-
-      {/* Caretaker Portal */}
-      <Route path="/caretaker/dashboard" component={CaretakerDashboard} />
+      {/* Legacy redirects for dietician/caretaker portals */}
+      <Route path="/dietician/dashboard">{() => <Redirect to="/physician/dashboard" />}</Route>
+      <Route path="/caretaker/dashboard">{() => <Redirect to="/physician/dashboard" />}</Route>
 
       {/* Legacy Coach Portal */}
       <Route path="/coach/signin" component={CoachSignin} />

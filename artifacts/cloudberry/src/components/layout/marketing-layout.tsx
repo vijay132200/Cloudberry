@@ -9,6 +9,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const [location] = useLocation();
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "Programs & Pricing", href: "/#pricing" },
+    { name: "About Us", href: "/#about" },
     { name: "FAQs", href: "/#faqs" },
   ];
 
@@ -65,11 +67,13 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 {link.name}
               </a>
             ))}
-            <Link href="/patient/signup">
-              <Button variant="outline" className="rounded-full shadow-sm border-primary/40 text-primary hover:bg-primary hover:text-white">
-                Get Started
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              onClick={() => setConnectOpen(true)}
+              className="rounded-full shadow-sm border-primary/40 text-primary hover:bg-primary hover:text-white"
+            >
+              Connect with Us
+            </Button>
             <Button
               onClick={() => setLoginOpen(true)}
               className="rounded-full shadow-sm"
@@ -107,11 +111,14 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
               {link.name}
             </a>
           ))}
-          <Link href="/patient/signup" onClick={() => setMobileMenuOpen(false)}>
-            <Button size="lg" className="mt-2 rounded-full w-full">
-              Get Started
-            </Button>
-          </Link>
+          <Button
+            size="lg"
+            variant="outline"
+            className="mt-2 rounded-full w-full border-primary/40 text-primary"
+            onClick={() => { setMobileMenuOpen(false); setConnectOpen(true); }}
+          >
+            Connect with Us
+          </Button>
           <Button
             size="lg"
             variant="outline"
@@ -129,7 +136,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
       <footer className="bg-foreground text-background py-12 md:py-16 mt-auto">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 lg:gap-12 items-start border-b border-white/10 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 lg:gap-12 items-start border-b border-white/10 pb-10">
             <div className="flex flex-col gap-4">
               <Link href="/" className="flex items-center gap-2">
                 <span className="font-sans text-xl font-bold tracking-tight leading-none text-background">Cloudberry</span>
@@ -139,15 +146,20 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
               </p>
             </div>
 
+            <div className="flex flex-col gap-3">
+              <h4 className="font-semibold text-white/90">Platform</h4>
+              <a href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs & Pricing</a>
+              <a href="/#about" className="text-white/60 hover:text-white text-sm transition-colors">About Us</a>
+              <p className="text-white/50 text-xs mt-1">Indore, Madhya Pradesh</p>
+              <p className="text-white/50 text-xs">Mumbai, Maharashtra</p>
+              <a href="/#faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</a>
+            </div>
+
             <div className="grid grid-cols-2 gap-8">
               <div className="flex flex-col gap-3">
-                <h4 className="font-semibold text-white/90">Platform</h4>
-                <a href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs & Pricing</a>
-                <a href="/#faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</a>
-                <div className="flex flex-col gap-2 mt-1">
-                  <Link href="/patient/signin" className="inline-flex items-center gap-1.5 bg-primary/80 hover:bg-primary text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Patient Portal →</Link>
-                  <Link href="/physician/signin" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">Physician's Portal →</Link>
-                </div>
+                <h4 className="font-semibold text-white/90">Connect with Us</h4>
+                <Link href="/patient/signup" className="inline-flex items-center gap-1.5 bg-primary/80 hover:bg-primary text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">For Patients →</Link>
+                <Link href="/physician/signup" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors w-fit">For Doctors →</Link>
               </div>
               <div className="flex flex-col gap-3">
                 <h4 className="font-semibold text-white/90">Legal</h4>
@@ -167,6 +179,50 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
 
+      {/* Connect with Us Modal */}
+      <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">Connect with Us</DialogTitle>
+            <p className="text-center text-sm text-muted-foreground mt-1">How would you like to connect?</p>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Link href="/patient/signup" onClick={() => setConnectOpen(false)}>
+              <div className="border rounded-2xl p-5 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <UserRound className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Are you a Patient?</span>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">Sign up to start your care journey with Cloudberry</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+            <Link href="/physician/signup" onClick={() => setConnectOpen(false)}>
+              <div className="border rounded-2xl p-5 hover:border-sky-400 hover:bg-sky-50/60 transition-all cursor-pointer group">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center shrink-0">
+                    <Stethoscope className="w-5 h-5 text-sky-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-base">Are you a Doctor?</span>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-sky-600 transition-colors" />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">Partner with Cloudberry to extend your clinical reach</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Login Modal */}
       <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
         <DialogContent className="sm:max-w-md">
@@ -183,7 +239,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Patient Portal</span>
+                      <span className="font-semibold text-base">Patient's Portal</span>
                       <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">Access your health dashboard, check-ins & progress</p>
@@ -199,10 +255,10 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-base">Physician's Portal</span>
+                      <span className="font-semibold text-base">Doctor's Portal</span>
                       <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-sky-600 transition-colors" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Physicians, dieticians & caretakers — manage patients & care plans</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Manage patients, view dashboards & clinical oversight</p>
                   </div>
                 </div>
               </div>
@@ -229,11 +285,9 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
 
       {/* Floating Mobile CTA */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-40 lg:hidden">
-        <Link href="/patient/signup">
-          <Button size="lg" className="w-full rounded-full shadow-lg text-md py-6">
-            Get Started →
-          </Button>
-        </Link>
+        <Button size="lg" className="w-full rounded-full shadow-lg text-md py-6" onClick={() => setConnectOpen(true)}>
+          Connect with Us →
+        </Button>
       </div>
     </div>
   );

@@ -160,6 +160,24 @@ router.patch("/patients/:id/plan", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+router.patch("/me", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
+    if (!staff || staff.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return; }
+    const { fullName, specialty, phone } = req.body ?? {};
+    const update: any = {};
+    if (typeof fullName === "string" && fullName.trim()) update.fullName = fullName.trim();
+    if (typeof specialty === "string") update.specialty = specialty.trim() || null;
+    if (typeof phone === "string") update.phone = phone.trim() || null;
+    if (Object.keys(update).length) {
+      await db.update(staffTable).set(update).where(eq(staffTable.id, parsed.userId));
+    }
+    res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 router.get("/dashboard", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
