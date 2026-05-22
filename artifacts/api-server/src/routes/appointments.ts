@@ -70,7 +70,7 @@ async function ownedAppointmentId(req: any, idStr: string) {
 router.patch("/:id/reschedule", async (req, res) => {
   try {
     const owned = await ownedAppointmentId(req, req.params.id);
-    if ("error" in owned) { res.status(owned.error).json({ error: "Not allowed" }); return; }
+    if ("error" in owned) { res.status(owned.error as number).json({ error: "Not allowed" }); return; }
     const { newDate, reason } = req.body ?? {};
     if (!newDate) { res.status(400).json({ error: "newDate required" }); return; }
     const [appt] = await db.update(appointmentsTable)
@@ -92,7 +92,7 @@ router.patch("/:id/reschedule", async (req, res) => {
 router.patch("/:id/cancel", async (req, res) => {
   try {
     const owned = await ownedAppointmentId(req, req.params.id);
-    if ("error" in owned) { res.status(owned.error).json({ error: "Not allowed" }); return; }
+    if ("error" in owned) { res.status(owned.error as number).json({ error: "Not allowed" }); return; }
     const [appt] = await db.update(appointmentsTable)
       .set({ status: "cancelled" })
       .where(eq(appointmentsTable.id, owned.id))
