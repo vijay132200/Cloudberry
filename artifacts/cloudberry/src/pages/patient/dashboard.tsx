@@ -10,8 +10,8 @@ import {
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea,
+  LineChart, Line, BarChart, Bar, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea, ReferenceLine,
 } from "recharts";
 import { Link } from "wouter";
 
@@ -120,84 +120,79 @@ function WeightCard({ weightSeries, weightChange, patient }: { weightSeries: any
   );
 }
 
-/* ─── Basic Consistency Card ─────────────────────────────── */
-function BasicConsistencyCard({ adherencePct, completedCount }: { adherencePct: number | null; completedCount: number }) {
-  return (
-    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
-      <CardContent className="p-5">
-        <div className="flex items-center gap-2 mb-3"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><h3 className="text-sm font-bold text-foreground">Behavioral Consistency</h3></div>
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-3xl font-extrabold text-foreground">{adherencePct ?? "—"}%</span>
-          <Badge variant="outline" className={`text-xs border ${adherenceLabelCls(adherencePct)}`}>{adherenceLabel(adherencePct)}</Badge>
-        </div>
-        <p className="text-xs text-muted-foreground mb-3">Based on:</p>
-        <div className="space-y-2">
-          {[
-            { icon: <HeartPulse className="w-3.5 h-3.5 text-indigo-600" />, label: "Sleep Quality" },
-            { icon: <Salad className="w-3.5 h-3.5 text-emerald-600" />, label: "Nutrition" },
-            { icon: <Dumbbell className="w-3.5 h-3.5 text-violet-600" />, label: "Activity" },
-          ].map(item => (
-            <div key={item.label} className="flex items-center gap-2 text-xs text-foreground/80">{item.icon}{item.label}</div>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/40">
-          <strong className="text-foreground">{completedCount} of 7 days</strong> met program goals
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
+/* ─── Unified Consistency Card (all plans) ───────────────── */
+function ConsistencyCard({ consistencyBreakdown }: { consistencyBreakdown: any }) {
+  const sleep = consistencyBreakdown?.sleep ?? 0;
+  const nutrition = consistencyBreakdown?.mealLogging ?? 0;
+  const activity = consistencyBreakdown?.activity ?? 0;
+  const overall = consistencyBreakdown
+    ? Math.round((sleep + nutrition + activity) / 3)
+    : null;
 
-/* ─── Comprehensive Consistency (progress bars) ──────────── */
-function ComprehensiveConsistencyCard({ sleepCount, mealCount, activityCount }: { sleepCount: number; mealCount: number; activityCount: number }) {
+  const scoreColor = overall === null ? "#94a3b8"
+    : overall >= 70 ? "#22c55e"
+    : overall >= 45 ? "#f59e0b"
+    : "#ef4444";
+  const scoreBg = overall === null ? "bg-slate-50 text-slate-500 border-slate-200"
+    : overall >= 70 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : overall >= 45 ? "bg-amber-50 text-amber-700 border-amber-200"
+    : "bg-rose-50 text-rose-700 border-rose-200";
+  const scoreLabel = overall === null ? "No data"
+    : overall >= 70 ? "Strong"
+    : overall >= 45 ? "Moderate"
+    : "Needs Work";
+
   const bars = [
-    { label: "Sleep Quality", count: sleepCount, color: "bg-indigo-500" },
-    { label: "Nutrition", count: mealCount, color: "bg-emerald-500" },
-    { label: "Activity", count: activityCount, color: "bg-violet-500" },
+    { icon: <HeartPulse className="w-3.5 h-3.5 text-indigo-500" />, label: "Sleep", value: sleep, color: "bg-indigo-500" },
+    { icon: <Salad className="w-3.5 h-3.5 text-emerald-600" />, label: "Nutrition", value: nutrition, color: "bg-emerald-500" },
+    { icon: <Dumbbell className="w-3.5 h-3.5 text-violet-600" />, label: "Activity", value: activity, color: "bg-violet-500" },
   ];
+
   return (
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
       <CardContent className="p-5">
-        <div className="flex items-center gap-2 mb-4"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><h3 className="text-sm font-bold text-foreground">Behavioral Consistency</h3></div>
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <h3 className="text-sm font-bold text-foreground">Behavioral Consistency</h3>
+        </div>
+
+        {/* Overall score */}
+        <div className="flex items-end gap-3 mb-4 pb-4 border-b border-border/40">
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Overall Score</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-extrabold leading-none" style={{ color: scoreColor }}>
+                {overall ?? "—"}
+              </span>
+              <span className="text-sm text-muted-foreground">/100</span>
+            </div>
+          </div>
+          <Badge variant="outline" className={`text-xs border mb-0.5 ${scoreBg}`}>{scoreLabel}</Badge>
+        </div>
+
+        {/* Individual metric bars */}
         <div className="space-y-3">
           {bars.map(b => (
             <div key={b.label}>
-              <div className="flex justify-between text-xs mb-1"><span className="text-foreground/80">{b.label}</span><span className="font-semibold text-foreground">{b.count}/7</span></div>
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="flex items-center gap-1.5 text-foreground/80 font-medium">{b.icon}{b.label}</span>
+                <span className="font-bold text-foreground tabular-nums">
+                  {b.value}<span className="text-muted-foreground font-normal text-[10px]">/100</span>
+                </span>
+              </div>
               <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className={`h-full rounded-full ${b.color}`} style={{ width: `${(b.count / 7) * 100}%` }} />
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${b.color}`}
+                  style={{ width: `${b.value}%` }}
+                />
               </div>
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-/* ─── Premium Consistency (donut chart) ──────────────────── */
-function PremiumConsistencyCard({ adherencePct }: { adherencePct: number | null }) {
-  const pct = adherencePct ?? 0;
-  return (
-    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
-      <CardContent className="p-5">
-        <div className="flex items-center gap-2 mb-3"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><h3 className="text-sm font-bold text-foreground">Behavioral Consistency</h3></div>
-        <div className="flex items-center justify-center gap-5">
-          <div className="relative">
-            <PieChart width={110} height={110}>
-              <Pie data={[{ value: pct }, { value: 100 - pct }]} cx="50%" cy="50%"
-                innerRadius={35} outerRadius={52} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
-                <Cell fill="#22c55e" /><Cell fill="#e5e7eb" />
-              </Pie>
-            </PieChart>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xl font-extrabold text-foreground">{pct}%</span>
-            </div>
-          </div>
-          <div>
-            <Badge variant="outline" className={`text-xs border ${adherenceLabelCls(adherencePct)}`}>{adherenceLabel(adherencePct)}</Badge>
-            <p className="text-xs text-muted-foreground mt-2">7-day adherence</p>
-          </div>
-        </div>
+        <p className="text-[10px] text-muted-foreground mt-3 pt-3 border-t border-border/40">
+          Score = average of Sleep, Nutrition & Activity · last 7 days
+        </p>
       </CardContent>
     </Card>
   );
@@ -249,7 +244,7 @@ function GlucoseCard({ glucoseSeries, avgGlucose, compact }: { glucoseSeries: an
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2"><Droplets className="w-4 h-4 text-rose-500" /><h3 className="text-sm font-bold text-foreground">Fasting Glucose Trend</h3></div>
+          <div className="flex items-center gap-2"><Droplets className="w-4 h-4 text-rose-500" /><h3 className="text-sm font-bold text-foreground">Glucose Readings</h3></div>
           {avgGlucose !== null && (
             <Badge variant="outline" className={`text-xs border ${improving ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
               {improving ? "In Range" : "Above Range"}
@@ -258,24 +253,50 @@ function GlucoseCard({ glucoseSeries, avgGlucose, compact }: { glucoseSeries: an
         </div>
         {avgGlucose !== null && <p className="text-xs text-muted-foreground mb-2">7-day avg: <strong className="text-foreground">{avgGlucose} mg/dL</strong></p>}
         {glucoseSeries.length > 1 ? (
-          <ResponsiveContainer width="100%" height={compact ? 90 : 120}>
-            <LineChart data={glucoseSeries}>
-              <ReferenceArea y1={80} y2={120} fill="#d1fae5" fillOpacity={0.4} />
-              <ReferenceArea y1={120} y2={140} fill="#fef3c7" fillOpacity={0.4} />
+          <ResponsiveContainer width="100%" height={compact ? 110 : 140}>
+            <LineChart data={glucoseSeries} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+              <ReferenceArea y1={80} y2={100} fill="#d1fae5" fillOpacity={0.45} />
+              <ReferenceArea y1={100} y2={140} fill="#fef3c7" fillOpacity={0.35} />
               <ReferenceArea y1={140} y2={200} fill="#fee2e2" fillOpacity={0.3} />
+              {/* Normal fasting threshold */}
+              <ReferenceLine
+                y={100}
+                stroke="#16a34a"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                label={{ value: "Normal fasting (100)", position: "insideTopRight", fill: "#16a34a", fontSize: 9 }}
+              />
+              {/* Post-meal target threshold */}
+              <ReferenceLine
+                y={140}
+                stroke="#d97706"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                label={{ value: "Post-meal target (140)", position: "insideTopRight", fill: "#d97706", fontSize: 9 }}
+              />
               <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
-              <YAxis tick={{ fontSize: 9 }} domain={[60, 180]} width={30} />
-              <Tooltip formatter={(v: number) => [`${Number(v).toFixed(0)} mg/dL`, "Glucose"]} labelFormatter={fmt} />
-              <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+              <YAxis tick={{ fontSize: 9 }} domain={[60, 190]} width={30} />
+              <Tooltip
+                formatter={(v: number) => [`${Number(v).toFixed(0)} mg/dL`, "Fasting glucose"]}
+                labelFormatter={fmt}
+              />
+              <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         ) : <div className={`${compact ? "h-20" : "h-28"} flex items-center justify-center text-xs text-muted-foreground`}>Not enough glucose data yet</div>}
-        <div className="flex gap-3 mt-2 pt-2 border-t border-border/40">
-          {[{ color: "bg-emerald-200", label: "80–120" }, { color: "bg-amber-200", label: "120–140" }, { color: "bg-rose-200", label: "140+" }].map(z => (
-            <span key={z.label} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <span className={`w-2.5 h-2.5 rounded-sm ${z.color}`} />{z.label}
-            </span>
-          ))}
+        <div className="flex flex-wrap gap-3 mt-2 pt-2 border-t border-border/40">
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-200" />Normal (≤100)
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="w-2.5 h-2.5 rounded-sm bg-amber-200" />Elevated (100–140)
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="w-2.5 h-2.5 rounded-sm bg-rose-200" />High (&gt;140)
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
+            <span className="inline-block w-6 border-t-2 border-dashed border-amber-600" />Post-meal limit
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -642,7 +663,7 @@ export default function PatientDashboard() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <WeightCard weightSeries={weightSeries} weightChange={weightChange} patient={dash.patient} />
-                <PremiumConsistencyCard adherencePct={adherencePct} />
+                <ConsistencyCard consistencyBreakdown={consistencyBreakdown} />
                 <EnergyCard energySeries={energySeries} />
               </div>
             </div>
@@ -743,10 +764,7 @@ export default function PatientDashboard() {
             {/* Row 2: Metrics */}
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${plan === "comprehensive" && glucoseSeries.length > 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-4`}>
               <WeightCard weightSeries={weightSeries} weightChange={weightChange} patient={dash.patient} />
-              {plan === "basic"
-                ? <BasicConsistencyCard adherencePct={adherencePct} completedCount={completedCount} />
-                : <ComprehensiveConsistencyCard sleepCount={sleepCount} mealCount={mealCount} activityCount={activityCount} />
-              }
+              <ConsistencyCard consistencyBreakdown={consistencyBreakdown} />
               <EnergyCard energySeries={energySeries} />
               {plan === "comprehensive" && glucoseSeries.length > 0 && (
                 <GlucoseCard glucoseSeries={glucoseSeries} avgGlucose={avgGlucose} compact />
