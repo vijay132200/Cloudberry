@@ -1,0 +1,63 @@
+The DATABASE_URL environment variable for the Neon PostgreSQL database has already been configured successfully in Replit.
+Now fully integrate the application backend with the Neon database and verify all database operations are working correctly.
+Requirements:
+1. Connect the entire application to the Neon PostgreSQL database using the existing DATABASE_URL.
+2. Verify the database connection is healthy and persistent.
+3. Ensure all schema tables are correctly created and mapped, including:
+* users
+* staff
+* patients
+* patient_plans
+* patient_notes
+* checkins
+* metrics
+* appointments
+* leads
+* tips
+* any additional operational/auth tables
+4. Verify all CRUD operations work correctly:
+* create
+* read
+* update
+* delete
+5. Ensure all portals are fully database-driven:
+* patient portal
+* physician portal
+* dietician portal
+* caretaker portal
+* operations portal
+6. Ensure all user actions persist permanently inside Neon:
+* check-ins
+* assessments
+* metrics
+* messages
+* appointments
+* uploads
+* profile edits
+* staff assignments
+* lead forms
+* support tickets
+* care plans
+7. Remove any remaining frontend-only state logic or hardcoded demo analytics.
+8. Ensure dashboards load only real database data.
+9. Verify all role-based authentication and protected routes still work correctly.
+10. Verify all relationships and assignments work properly:
+* patient ↔ physician
+* patient ↔ dietician
+* patient ↔ caretaker
+* appointments ↔ assigned staff
+* messages ↔ patient records
+11. Ensure all dashboard updates reflect database changes dynamically.
+12. Perform full end-to-end testing:
+* sign in
+* create/update records
+* submit check-ins
+* schedule appointments
+* send messages
+* assign care team
+* update profiles
+* verify dashboard updates
+13. Fix any broken ORM/schema/API/database synchronization issues automatically.
+14. Ensure no patient data is lost during reconnection or migration.
+15. Restart and verify the full application after successful Neon integration.
+The application should now function as a fully database-driven healthcare continuity-care platform using Neon PostgreSQL as the persistent production database.

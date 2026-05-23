@@ -50,18 +50,20 @@ Four distinct role-based experiences:
 
 ## Demo credentials
 
-All staff passwords: `demo123`
+All passwords: `demo123`
 
 | Role | Login | Name |
 |------|-------|------|
 | Patient | 9876543210 (phone) | Rahul Sharma |
-| Ops | ops@cloudberry.health | Neha Iyer |
-| Physician | physician@cloudberry.health | Dr. Arjun Mehta |
-| Dietician | dietician@cloudberry.health | Priya Sharma |
-| Caretaker | caretaker@cloudberry.health | Rajesh Kumar |
-| Coach | priya@cloudberry.health | Priya Nair |
+| Patient (diabetic) | 9765432109 (phone) | Ananya Patel |
+| Ops | ops@cloudberry.health | Priya Nair |
+| Ops 2 | ops2@cloudberry.health | Arjun Kapoor |
+| Physician | dr.mehta@cloudberry.health | Dr. Sneha Mehta |
+| Physician 2 | dr.raj@cloudberry.health | Dr. Raj Patel |
+| Dietician | priya.diet@cloudberry.health | Priya Sharma |
+| Caretaker | ranjit.care@cloudberry.health | Ranjit Kumar |
 
-Patient sign-in uses phone number; staff portals use email. The main demo patient (Rahul Sharma, phone 9876543210) has 30 days of check-in history, weight/glucose metrics, a care plan, and an upcoming appointment.
+Patient sign-in uses phone number; all staff portals use email at `/physician/signin`. The main demo patient (Rahul Sharma, phone 9876543210) has check-in history, weight metrics, a care plan, and upcoming appointments. Ananya Patel (diabetes_reversal goal) has glucose metric series visible in charts.
 
 ## User preferences
 

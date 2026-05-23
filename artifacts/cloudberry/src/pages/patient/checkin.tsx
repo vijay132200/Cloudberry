@@ -110,7 +110,7 @@ export default function CheckinPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const plan = getPlan();
-  const storedName = localStorage.getItem("cloudberry_name") || "Rahul Sharma";
+  const storedName = localStorage.getItem("cloudberry_name") || "there";
   const firstName = storedName.split(" ")[0];
 
   const [nutrition, setNutrition] = useState(0);
@@ -119,6 +119,7 @@ export default function CheckinPage() {
   const [energy, setEnergy] = useState(0);
   const [sleepQ, setSleepQ] = useState(0);
   const [glucose, setGlucose] = useState("");
+  const [postGlucose, setPostGlucose] = useState("");
   const [mealPhoto, setMealPhoto] = useState<string | null>(null);
   const [hardest, setHardest] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -159,7 +160,10 @@ export default function CheckinPage() {
           energyLevel,
           mood: energy >= 70 ? "good" : "neutral",
           glucoseReading: glucose ? Number(glucose) : undefined,
-          notes: hardest.length > 0 ? `Hardest today: ${hardest.join(", ")}` : undefined,
+          notes: [
+            hardest.length > 0 ? `Hardest today: ${hardest.join(", ")}` : null,
+            postGlucose ? `Post-meal glucose: ${postGlucose} mg/dL` : null,
+          ].filter(Boolean).join(". ") || undefined,
         }),
       });
       localStorage.setItem("cloudberry_first_checkin_done", "1");
@@ -317,7 +321,7 @@ export default function CheckinPage() {
             <div className="bg-blue-50/60 border border-blue-100 rounded-xl px-3 py-2.5">
               <p className="text-xs text-blue-700 font-medium">Please share your post meal glucose reading today <span className="font-normal opacity-80">(if available)</span></p>
               <div className="relative max-w-[160px] mt-1.5">
-                <input type="number" placeholder="e.g. 132"
+                <input type="number" placeholder="e.g. 132" value={postGlucose} onChange={e => setPostGlucose(e.target.value)}
                   className="flex h-9 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 pr-14 text-sm outline-none focus:ring-2 focus:ring-blue-300" />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">mg/dL</span>
               </div>

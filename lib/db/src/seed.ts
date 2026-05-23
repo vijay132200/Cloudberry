@@ -4,7 +4,7 @@ import { db } from "./index";
 import {
   usersTable, staffTable, patientsTable,
   checkinsTable, appointmentsTable, metricsTable, patientPlansTable,
-  patientNotesTable,
+  patientNotesTable, tipsTable,
 } from "./schema";
 
 function hash(password: string) {
@@ -24,6 +24,7 @@ async function seed() {
 
   // ── WIPE existing data (dev only) ──────────────────────────────────────
   console.log("Clearing existing data...");
+  await db.delete(tipsTable);
   await db.delete(metricsTable);
   await db.delete(appointmentsTable);
   await db.delete(checkinsTable);
@@ -147,7 +148,7 @@ async function seed() {
       const d = new Date(); d.setDate(d.getDate() - i);
       const ds = d.toISOString().split("T")[0];
       if (isMetabolic) {
-        metricValues.push({ patientId: patient.id, type: "fasting_glucose", value: Number((glucoseBase - i * 0.6 + (Math.random() * 8 - 4)).toFixed(1)), date: ds });
+        metricValues.push({ patientId: patient.id, type: "glucose", value: Number((glucoseBase - i * 0.6 + (Math.random() * 8 - 4)).toFixed(1)), date: ds });
       }
       metricValues.push({ patientId: patient.id, type: "sleep_hours", value: Number((5.5 + Math.random() * 3).toFixed(1)), date: ds });
       metricValues.push({ patientId: patient.id, type: "hunger_score", value: Math.floor(1 + Math.random() * 5), date: ds });
@@ -167,6 +168,28 @@ async function seed() {
     await db.insert(appointmentsTable).values(apptValues);
     console.log(`  ✔ ${p.fullName} (${p.plan}, ${checkinCount} check-ins)`);
   }
+
+  // ── TIPS ────────────────────────────────────────────────────────────────
+  console.log("\nSeeding tips...");
+  const tipsData = [
+    { title: "Stay Hydrated", body: "Drink at least 8–10 glasses of water daily. Dehydration can mimic hunger and slow metabolism.", category: "nutrition" },
+    { title: "Eat Protein at Every Meal", body: "Include a palm-sized portion of protein (eggs, dal, paneer, chicken) at every meal to stay full longer and protect muscle mass.", category: "nutrition" },
+    { title: "Chew Slowly", body: "Eating slowly gives your brain time to register fullness. Aim for 20–25 chews per bite to reduce overeating.", category: "nutrition" },
+    { title: "Don't Skip Breakfast", body: "A balanced breakfast with protein and fibre sets the metabolic tone for the day. Skipping it often leads to cravings by noon.", category: "nutrition" },
+    { title: "Walk After Meals", body: "A 10-minute walk after each meal significantly improves post-meal glucose levels and aids digestion.", category: "fitness" },
+    { title: "Strength Train Twice a Week", body: "Resistance training builds muscle which burns more calories at rest. Even bodyweight exercises at home make a big difference.", category: "fitness" },
+    { title: "Track Your Steps", body: "Aim for 8,000–10,000 steps per day. Use your phone's pedometer or a basic fitness band to stay accountable.", category: "fitness" },
+    { title: "Prioritise Sleep", body: "Poor sleep raises cortisol and hunger hormones (ghrelin). Aim for 7–8 hours. Consistent sleep times matter more than duration alone.", category: "lifestyle" },
+    { title: "Manage Stress Daily", body: "Chronic stress spikes cortisol, which promotes fat storage. Even 5 minutes of deep breathing or a short walk helps reset your system.", category: "lifestyle" },
+    { title: "Limit Late-Night Eating", body: "Your metabolism slows at night. Try to finish dinner 2–3 hours before bedtime to improve fat burning and sleep quality.", category: "lifestyle" },
+    { title: "Read Food Labels", body: "Hidden sugars appear under 60+ names (dextrose, maltose, fructose syrup). Check the ingredients list, not just the 'sugar' figure.", category: "nutrition" },
+    { title: "Control Portions with Your Hand", body: "Fist = carbs, palm = protein, thumb = fats. This simple visual guide works anywhere without weighing food.", category: "nutrition" },
+    { title: "Replace Refined Carbs", body: "Swap white rice/bread for millets, oats, or whole wheat. They digest slower, keeping glucose levels stable for longer.", category: "nutrition" },
+    { title: "Stay Consistent on Weekends", body: "Weekend dietary slip-ups erase most weekday progress. Plan one enjoyable meal, not an entire day off the plan.", category: "lifestyle" },
+    { title: "Celebrate Non-Scale Wins", body: "Better sleep, more energy, and improved mood are signs your metabolism is healing — even if the scale hasn't moved yet.", category: "lifestyle" },
+  ];
+  await db.insert(tipsTable).values(tipsData);
+  console.log(`  ✔ ${tipsData.length} tips seeded`);
 
   console.log("\n✅ Seed complete!");
   console.log("\n─── Demo Credentials (password: demo123 for ALL accounts) ───");
