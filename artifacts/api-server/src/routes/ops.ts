@@ -444,6 +444,7 @@ router.get("/patients/:id/dashboard", async (req, res) => {
     const recent7 = [...allCheckins].slice(0, 7).reverse();
     const energySeries = recent7.map(c => ({
       date: c.createdAt.toISOString().slice(0, 10),
+      dow: new Date(c.createdAt).toLocaleDateString("en-US", { weekday: "short" }),
       value: energyMap[c.energyLevel?.toLowerCase()] ?? 2,
       label: c.energyLevel,
     }));
@@ -493,16 +494,14 @@ router.get("/patients/:id/dashboard", async (req, res) => {
     const carePlan = planRow ? { nutritionPlan: planRow.nutritionPlan, activityPlan: planRow.activityPlan, weeklyGoals: planRow.weeklyGoals } : null;
 
     const hasEnoughData = allCheckins.length >= 5;
-    let insights: Array<{ kind: string; title: string; body: string }> | null = null;
-    if (hasEnoughData) {
-      insights = [];
-      const lowE = last7.filter(c => energyMap[c.energyLevel?.toLowerCase()] === 1).length;
-      const skipped = last7.filter(c => !c.activityCompleted).length;
-      if (lowE >= 2) insights.push({ kind: "challenge", title: "Energy dip pattern", body: `Low energy on ${lowE} of last 7 days.` });
-      if (weightChange !== null && weightChange < 0) insights.push({ kind: "positive", title: "Weight trending down", body: `Down ${Math.abs(weightChange).toFixed(1)} kg over recorded period.` });
-      if (skipped >= 3) insights.push({ kind: "focus", title: "Activity consistency", body: `Activity completed ${7 - skipped}/7 days.` });
-      if (avgGlucose !== null && avgGlucose < 120) insights.push({ kind: "positive", title: "Glucose in healthy range", body: `7-day avg ${avgGlucose} mg/dL.` });
-      if (insights.length === 0) insights = null;
+
+    // Ops content — fetch most recent ops_content note for this patient
+    const [opsNote] = await db.select().from(patientNotesTable)
+      .where(and(eq(patientNotesTable.patientId, patient.id), eq(patientNotesTable.category, "ops_content")))
+      .orderBy(desc(patientNotesTable.createdAt)).limit(1);
+    let opsContent: any = null;
+    if (opsNote) {
+      try { opsContent = JSON.parse(opsNote.content); } catch { opsContent = null; }
     }
 
     res.json({
@@ -513,8 +512,57 @@ router.get("/patients/:id/dashboard", async (req, res) => {
       weightSeries, glucoseSeries, energySeries,
       adherence7Day, adherencePct, consistencyBreakdown,
       streak, checkinDoneToday, weightChange, avgGlucose, timeInRange,
-      nextAppointment, carePlan, insights, hasEnoughData, totalCheckins,
+      nextAppointment, carePlan, opsContent, hasEnoughData, totalCheckins,
     });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/ops/patients/:id/content
+router.get("/patients/:id/content", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const [note] = await db.select().from(patientNotesTable)
+      .where(and(eq(patientNotesTable.patientId, patientId), eq(patientNotesTable.category, "ops_content")))
+      .orderBy(desc(patientNotesTable.createdAt)).limit(1);
+    if (!note) { res.json(null); return; }
+    try { res.json(JSON.parse(note.content)); } catch { res.json(null); }
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/patients/:id/content
+router.post("/patients/:id/content", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const content = req.body;
+    const existing = await db.select({ id: patientNotesTable.id }).from(patientNotesTable)
+      .where(and(eq(patientNotesTable.patientId, patientId), eq(patientNotesTable.category, "ops_content")));
+    for (const row of existing) {
+      await db.delete(patientNotesTable).where(eq(patientNotesTable.id, row.id));
+    }
+    await db.insert(patientNotesTable).values({
+      patientId, coachId: auth.staffId,
+      content: JSON.stringify(content),
+      category: "ops_content",
+    });
+    res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// PATCH /api/ops/patients/:id/plan
+router.patch("/patients/:id/plan", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const { nutritionPlan, activityPlan, weeklyGoals } = req.body;
+    const [existing] = await db.select().from(patientPlansTable).where(eq(patientPlansTable.patientId, patientId)).limit(1);
+    if (existing) {
+      await db.update(patientPlansTable).set({ nutritionPlan, activityPlan, weeklyGoals }).where(eq(patientPlansTable.patientId, patientId));
+    } else {
+      await db.insert(patientPlansTable).values({ patientId, nutritionPlan, activityPlan, weeklyGoals });
+    }
+    res.json({ ok: true });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

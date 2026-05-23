@@ -61,7 +61,7 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 type NavTab = "patients" | "profile";
-type DetailTab = "dashboard" | "profile" | "checkins" | "notes";
+type DetailTab = "dashboard" | "profile" | "checkins";
 
 function formatGoal(g: string) {
   return g?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) ?? "—";
@@ -666,7 +666,7 @@ export default function PhysicianDashboard() {
 
             {/* Tabs */}
             <div className="flex gap-0 border-b border-border/40 bg-white px-4 shrink-0">
-              {(["dashboard", "profile", "checkins", "notes"] as DetailTab[]).map(t => (
+              {(["dashboard", "profile", "checkins"] as DetailTab[]).map(t => (
                 <button key={t} onClick={() => setDetailTab(t)}
                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${detailTab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
                   {t === "checkins" ? "Check-ins" : t}
@@ -750,37 +750,6 @@ export default function PhysicianDashboard() {
                 </div>
               )}
 
-              {/* Notes tab */}
-              {detailTab === "notes" && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Add Clinical Note</label>
-                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
-                      placeholder="Enter your clinical notes, observations, or instructions…"
-                      className="w-full rounded-xl border border-border/60 p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                    <Button size="sm" className="rounded-full gap-2" disabled={!noteText.trim() || noteMut.isPending}
-                      onClick={() => noteMut.mutate({ id: selectedPatient.id, content: noteText })}>
-                      <FileText className="w-3 h-3" />
-                      {noteMut.isPending ? "Saving…" : "Save Note"}
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Previous Notes</p>
-                    {detailLoading ? (
-                      <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-                    ) : (!detail?.notes || detail.notes.length === 0) ? (
-                      <p className="text-xs text-muted-foreground italic">No clinical notes yet.</p>
-                    ) : detail.notes.map((n: any) => (
-                      <Card key={n.id} className="border-border/40 rounded-xl">
-                        <CardContent className="p-3">
-                          <p className="text-xs text-muted-foreground mb-1">{new Date(n.createdAt).toLocaleString("en-IN")}</p>
-                          <p className="text-sm">{n.content}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

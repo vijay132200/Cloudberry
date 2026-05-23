@@ -157,6 +157,7 @@ router.get("/me/dashboard", async (req, res) => {
     const recent7 = [...allCheckins].slice(0, 7).reverse();
     const energySeries = recent7.map(c => ({
       date: c.createdAt.toISOString().slice(0, 10),
+      dow: new Date(c.createdAt).toLocaleDateString("en-US", { weekday: "short" }),
       value: energyMap[c.energyLevel?.toLowerCase()] ?? 2,
       label: c.energyLevel,
     }));
@@ -266,35 +267,16 @@ router.get("/me/dashboard", async (req, res) => {
       weeklyGoals: planRow.weeklyGoals,
     } : null;
 
-    // Insights — only if enough data (>= 5 check-ins AND care assigned)
-    const hasEnoughData = allCheckins.length >= 5;
-    let insights: Array<{ kind: string; title: string; body: string }> | null = null;
-    if (hasEnoughData && careAssigned) {
-      insights = [];
-      const lowEnergyDays = last7.filter(c => energyMap[c.energyLevel?.toLowerCase()] === 1).length;
-      const skippedActivity = last7.filter(c => !c.activityCompleted).length;
-      if (lowEnergyDays >= 2) insights.push({
-        kind: "challenge",
-        title: "Energy dip pattern",
-        body: `Low energy reported on ${lowEnergyDays} of the last 7 days. Sleep & dinner timing are common drivers.`,
-      });
-      if (weightChange !== null && weightChange < 0) insights.push({
-        kind: "positive",
-        title: "Weight trending down",
-        body: `Down ${Math.abs(weightChange).toFixed(1)} kg over your recorded period — consistency is paying off.`,
-      });
-      if (skippedActivity >= 3) insights.push({
-        kind: "focus",
-        title: "Activity consistency",
-        body: `Activity completed on ${7 - skippedActivity} of 7 days. A short post-dinner walk is the easiest win.`,
-      });
-      if (avgGlucose !== null && avgGlucose < 120) insights.push({
-        kind: "positive",
-        title: "Glucose in healthy range",
-        body: `7-day average ${avgGlucose} mg/dL. Keep current meal timing.`,
-      });
-      if (insights.length === 0) insights = null;
+    // Ops content — fetch most recent ops_content note for this patient
+    const [opsNote] = await db.select().from(patientNotesTable)
+      .where(and(eq(patientNotesTable.patientId, patient.id), eq(patientNotesTable.category, "ops_content")))
+      .orderBy(desc(patientNotesTable.createdAt)).limit(1);
+    let opsContent: any = null;
+    if (opsNote) {
+      try { opsContent = JSON.parse(opsNote.content); } catch { opsContent = null; }
     }
+
+    const hasEnoughData = allCheckins.length >= 5;
 
     res.json({
       patient: {
@@ -329,7 +311,7 @@ router.get("/me/dashboard", async (req, res) => {
       messages,
       nextAppointment,
       carePlan,
-      insights,
+      opsContent,
       hasEnoughData,
       totalCheckins,
     });

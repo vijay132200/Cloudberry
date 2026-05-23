@@ -1,0 +1,26 @@
+-Make changes in the The basic plan dashboard, the basic plan dashboard must be exactly like in the first uploaded image, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real.  Adjust things accordingly for the mobile version. The energy graph shall show day wise since it is collected daily.Dont add the  bell icon.behavioural conistency shall include sleep, nutrition, and actvity and score must be calculated based on that
+Display overall consistency
+
+
+-Make changes in the The comprehensive plan dashboard, the premium plan dashboard must be exactly like in the first uploaded image, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real.  Adjust things accordingly for the mobile version. The energy graph shall show day wise since it is collected daily.Dont add the bell icon. behavioural conistency shall include sleep, nutrition, and actvity and score must be calculated based on that
+Display overall consistency.
+
+
+-Make changes in the The premium plan dashboard, the premium plan dashboard must be exactly like in the first uploaded image, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real.  Adjust things accordingly for the mobile version. The energy graph shall show day wise since it is collected daily.Dont add the bell icon.behavioural conistency shall include sleep, nutrition, and actvity and score must be calculated based on that
+Display overall consistency
+
+-Post meal glucose shall be collected once in every 3 days
+
+-Maintain conistency of design in all the three patient dashboards
+
+- In operations portal, whenever we click on any patient then there shall be one more tab and it shall be the first, that is the dashboard, in it the complete dashboard of that patient must be visible like it is in that patient's dashboard. It must be completely the same as that particular patient looks at their dashboard, it must be the 100% same the same sections, data, graphs, everything. Each and every section must be there in that dashboard that is in the patient dashboard. All the sections according to what plan the patient has taken must be visible.
+
+- In the operation portal, when clicked on any patient, add one more tab, where operations team must be able to edit and write this week's focus, insights, next coach review, weekly inisghts, etc. and the same must be displayed on the patient's dashboard. Like if the operations team writes "you are having a good diet" in the insights then in the patient dashboard in the insights section it must appear the same . Add all the editing part in that tab. The editing part must be according to the plan (basic, comprehensive, premium).
+Care plan must be editable and the edits must be displayed in the dashboard.
+Remove notes tab.
+Give option to edit the coach review, coach review means call with the care agent and nobody else.
+Remember each and every insight must be only given by the operations team through operation portal, i want no static/fake info.
+
+- In the doctor portal,
+Whenever a doctor clicks on a patient, then in the profile section they must be able to see the current full patient dashboard of that patient like the patient sees it, it must be visible completely. It must be completely the same as that particular patient looks at their dashboard, it must be the 100% same the same sections, data, graphs, everything. Each and every section must be there in that dashboard that is in the patient dashboard.
+Remove the notes tab

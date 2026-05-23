@@ -109,7 +109,7 @@ function exportCSV(patients: any[]) {
 }
 
 type TabType = "pending" | "patients" | "registrations" | "leads" | "staff" | "credentials";
-type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "notes" | "plan";
+type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan";
 
 /* ── Appointment Scheduler ────────────────────────────────────────── */
 function AppointmentScheduler({ patient, detail, staff, onRefresh }: { patient: any; detail: any; staff: any[]; onRefresh: () => void }) {
@@ -362,10 +362,10 @@ function PatientDetailPanel({
 
         {/* Tabs */}
         <div className="flex border-b px-5 overflow-x-auto shrink-0">
-          {(["dashboard", "profile", "checkins", "team", "notes", "plan"] as DetailTab[]).map(t => (
+          {(["dashboard", "profile", "checkins", "team", "content", "plan"] as DetailTab[]).map(t => (
             <button key={t} onClick={() => setDetailTab(t)}
               className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors capitalize ${detailTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t === "checkins" ? "Check-ins" : t === "team" ? "Care Team" : t === "plan" ? "Care Plan" : t}
+              {t === "checkins" ? "Check-ins" : t === "team" ? "Care Team" : t === "plan" ? "Care Plan" : t === "content" ? "Care Content" : t}
             </button>
           ))}
         </div>
@@ -474,17 +474,16 @@ function PatientDetailPanel({
                       </Card>
                     )}
 
-                    {/* Insights */}
-                    {d.insights?.length > 0 && (
+                    {/* Ops Content Summary */}
+                    {d.opsContent && (
                       <Card className="border-border">
-                        <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Weekly Insights</CardTitle></CardHeader>
+                        <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5 text-primary" /> Care Content Published</CardTitle></CardHeader>
                         <CardContent className="pb-3 space-y-2">
-                          {d.insights.map((ins: any, i: number) => (
-                            <div key={i} className={`rounded-lg p-2.5 text-xs ${ins.kind === "positive" ? "bg-emerald-50 border border-emerald-200" : ins.kind === "challenge" ? "bg-rose-50 border border-rose-200" : "bg-blue-50 border border-blue-200"}`}>
-                              <p className="font-semibold text-foreground mb-0.5">{ins.title}</p>
-                              <p className="text-muted-foreground">{ins.body}</p>
-                            </div>
-                          ))}
+                          {d.opsContent.weeklyMessage && <p className="text-xs text-foreground italic">"{d.opsContent.weeklyMessage}"</p>}
+                          {(d.opsContent.insights || []).length > 0 && (
+                            <div className="text-xs text-muted-foreground">{d.opsContent.insights.length} insight(s) published · {(d.opsContent.thisWeekFocus || []).length} focus item(s)</div>
+                          )}
+                          <button className="text-xs text-primary underline" onClick={() => setDetailTab("content")}>Edit care content →</button>
                         </CardContent>
                       </Card>
                     )}
@@ -682,59 +681,16 @@ function PatientDetailPanel({
             </div>
           )}
 
-          {/* Notes */}
-          {!isLoading && detailTab === "notes" && (
-            <div className="space-y-4">
-              {/* Add note */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground">Add Clinical Note</label>
-                <Textarea value={noteText} onChange={e => setNoteText(e.target.value)}
-                  placeholder="Enter observation, instruction, or clinical note..."
-                  className="text-xs min-h-[80px] resize-none rounded-xl" />
-                <Button size="sm" className="w-full rounded-xl text-xs" onClick={addNote} disabled={submittingNote || !noteText.trim()}>
-                  <Plus className="w-3 h-3 mr-1" /> {submittingNote ? "Adding..." : "Add Note"}
-                </Button>
-              </div>
-
-              {/* Notes list */}
-              <div className="space-y-2">
-                {(!detail?.notes || detail.notes.length === 0) ? (
-                  <div className="text-center text-muted-foreground text-sm py-6">No notes yet.</div>
-                ) : detail.notes.map((n: any, i: number) => (
-                  <div key={n.id ?? i} className="border border-border/50 rounded-xl p-3 space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                      <Badge variant="outline" className="text-[10px] capitalize">{n.category || "ops"}</Badge>
-                      <span>{new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}</span>
-                    </div>
-                    <p className="text-xs text-foreground leading-relaxed">{n.content}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Care Content Editor */}
+          {!isLoading && detailTab === "content" && (
+            <OpsContentEditor patient={p} />
           )}
 
 
           {/* Care Plan */}
           {!isLoading && detailTab === "plan" && (
             <div className="space-y-4">
-              {detail?.nutritionPlan ? (
-                <>
-                  <Card className="border-border">
-                    <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Salad className="w-3.5 h-3.5 text-emerald-500" /> Nutrition Plan</CardTitle></CardHeader>
-                    <CardContent className="pb-4"><p className="text-xs text-foreground leading-relaxed">{detail.nutritionPlan}</p></CardContent>
-                  </Card>
-                  <Card className="border-border">
-                    <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Activity className="w-3.5 h-3.5 text-sky-500" /> Activity Plan</CardTitle></CardHeader>
-                    <CardContent className="pb-4"><p className="text-xs text-foreground leading-relaxed">{detail.activityPlan}</p></CardContent>
-                  </Card>
-                  <Card className="border-border">
-                    <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Target className="w-3.5 h-3.5 text-primary" /> Weekly Goals</CardTitle></CardHeader>
-                    <CardContent className="pb-4"><p className="text-xs text-foreground leading-relaxed">{detail.weeklyGoals}</p></CardContent>
-                  </Card>
-                </>
-              ) : (
-                <div className="text-center text-muted-foreground text-sm py-10">No care plan on record.</div>
-              )}
+              <OpsPlanEditor patient={p} detail={detail} />
 
               {/* Appointments */}
               {detail?.appointments?.length > 0 && (
@@ -757,6 +713,213 @@ function PatientDetailPanel({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Ops Content Editor ──────────────────────────────────────────── */
+const EMPTY_CONTENT = {
+  thisWeekFocus: [{ icon: "salad", text: "" }, { icon: "walk", text: "" }],
+  insights: [
+    { kind: "challenge", title: "", body: "" },
+    { kind: "positive", title: "", body: "" },
+    { kind: "recommended", title: "", body: "" },
+  ],
+  coachReview: { date: "", time: "", duration: "30 min", providerName: "", focusAreas: [] as string[] },
+  weeklyMessage: "",
+};
+
+function OpsContentEditor({ patient }: { patient: any }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data: content, isLoading } = useQuery({
+    queryKey: ["ops-patient-content", patient.id],
+    queryFn: () => fetchJson(`/ops/patients/${patient.id}/content`),
+    staleTime: 30000,
+  });
+  const [form, setForm] = useState<any>(null);
+  useEffect(() => {
+    if (content !== undefined && form === null) {
+      setForm(content ? JSON.parse(JSON.stringify(content)) : JSON.parse(JSON.stringify(EMPTY_CONTENT)));
+    }
+  }, [content]);
+
+  const save = useMutation({
+    mutationFn: () => postJson(`/ops/patients/${patient.id}/content`, form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops-patient-content", patient.id] });
+      qc.invalidateQueries({ queryKey: ["ops-patient-dashboard", patient.id] });
+      toast({ title: "Care content saved", description: "Patient dashboard will reflect the updated content." });
+    },
+    onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+  });
+
+  if (isLoading || !form) return <div className="text-sm text-muted-foreground text-center py-8">Loading care content...</div>;
+
+  const setFocus = (idx: number, field: string, value: string) => {
+    const arr = [...(form.thisWeekFocus || [])];
+    arr[idx] = { ...arr[idx], [field]: value };
+    setForm({ ...form, thisWeekFocus: arr });
+  };
+  const setInsight = (idx: number, field: string, value: string) => {
+    const arr = [...(form.insights || [])];
+    arr[idx] = { ...arr[idx], [field]: value };
+    setForm({ ...form, insights: arr });
+  };
+  const setCR = (field: string, value: any) => setForm({ ...form, coachReview: { ...form.coachReview, [field]: value } });
+
+  const kindCls: Record<string, string> = {
+    challenge: "bg-rose-50 border-rose-200",
+    positive: "bg-emerald-50 border-emerald-200",
+    recommended: "bg-blue-50 border-blue-200",
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+        This content appears directly on the patient's dashboard. Fill in all sections and save when ready.
+      </div>
+
+      {/* This Week's Focus */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">This Week's Focus</h3>
+        {(form.thisWeekFocus || []).map((item: any, i: number) => (
+          <div key={i} className="flex gap-2">
+            <Select value={item.icon} onValueChange={v => setFocus(i, "icon", v)}>
+              <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[["salad","🥗 Meal"],["walk","🚶 Walk"],["sleep","😴 Sleep"],["water","💧 Water"],["medicine","💊 Medicine"]].map(([v,l]) => (
+                  <SelectItem key={v} value={v}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input value={item.text} onChange={e => setFocus(i, "text", e.target.value)}
+              placeholder={`Focus item ${i + 1}`} className="h-8 text-xs flex-1" />
+            <Button size="sm" variant="ghost" className="h-8 px-2 text-rose-500 hover:text-rose-700" onClick={() => {
+              setForm({ ...form, thisWeekFocus: (form.thisWeekFocus || []).filter((_: any, j: number) => j !== i) });
+            }}><X className="w-3 h-3" /></Button>
+          </div>
+        ))}
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() =>
+          setForm({ ...form, thisWeekFocus: [...(form.thisWeekFocus || []), { icon: "walk", text: "" }] })}>
+          + Add Focus Item
+        </Button>
+      </div>
+
+      {/* Weekly Insights */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">Weekly Insights</h3>
+        {(form.insights || []).map((ins: any, i: number) => (
+          <div key={i} className={`rounded-xl border p-3 space-y-2 ${kindCls[ins.kind] || "bg-muted/40 border-border"}`}>
+            <div className="flex gap-2 items-center">
+              <Select value={ins.kind} onValueChange={v => setInsight(i, "kind", v)}>
+                <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="challenge">Challenge</SelectItem>
+                  <SelectItem value="positive">Positive</SelectItem>
+                  <SelectItem value="recommended">Recommended</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input value={ins.title} onChange={e => setInsight(i, "title", e.target.value)}
+                placeholder="Insight title" className="h-7 text-xs flex-1" />
+            </div>
+            <Textarea value={ins.body} onChange={e => setInsight(i, "body", e.target.value)}
+              placeholder="Insight detail..." className="text-xs min-h-[50px] resize-none" />
+          </div>
+        ))}
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() =>
+          setForm({ ...form, insights: [...(form.insights || []), { kind: "recommended", title: "", body: "" }] })}>
+          + Add Insight
+        </Button>
+      </div>
+
+      {/* Coach Review */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">Coach Review Details</h3>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "Date", type: "date", field: "date", val: form.coachReview?.date || "" },
+            { label: "Time", type: "time", field: "time", val: form.coachReview?.time || "" },
+            { label: "Duration", type: "text", field: "duration", val: form.coachReview?.duration || "", ph: "e.g. 30 min" },
+            { label: "Provider Name", type: "text", field: "providerName", val: form.coachReview?.providerName || "", ph: "Dr. Name" },
+          ].map(f => (
+            <div key={f.field} className="space-y-0.5">
+              <label className="text-[10px] text-muted-foreground">{f.label}</label>
+              <Input type={f.type} value={f.val} placeholder={(f as any).ph}
+                onChange={e => setCR(f.field, e.target.value)} className="h-8 text-xs" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-0.5">
+          <label className="text-[10px] text-muted-foreground">Focus Areas (one per line)</label>
+          <Textarea
+            value={(form.coachReview?.focusAreas || []).join("\n")}
+            onChange={e => setCR("focusAreas", e.target.value.split("\n"))}
+            placeholder={"Dinner consistency\nEvening cravings\nActivity completion"}
+            className="text-xs min-h-[70px] resize-none" />
+        </div>
+      </div>
+
+      {/* Motivational Message */}
+      <div className="space-y-1">
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wide">Motivational Message</h3>
+        <Textarea value={form.weeklyMessage || ""}
+          onChange={e => setForm({ ...form, weeklyMessage: e.target.value })}
+          placeholder="A short motivational message for the patient..."
+          className="text-xs min-h-[70px] resize-none" />
+      </div>
+
+      <Button className="w-full rounded-xl" onClick={() => save.mutate()} disabled={save.isPending}>
+        {save.isPending ? "Saving..." : "Save Care Content to Dashboard"}
+      </Button>
+    </div>
+  );
+}
+
+/* ── Ops Plan Editor ─────────────────────────────────────────────── */
+function OpsPlanEditor({ patient, detail }: { patient: any; detail: any }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [nutrition, setNutrition] = useState(detail?.nutritionPlan || "");
+  const [activity, setActivity] = useState(detail?.activityPlan || "");
+  const [goals, setGoals] = useState(detail?.weeklyGoals || "");
+
+  useEffect(() => {
+    setNutrition(detail?.nutritionPlan || "");
+    setActivity(detail?.activityPlan || "");
+    setGoals(detail?.weeklyGoals || "");
+  }, [detail?.nutritionPlan, detail?.activityPlan, detail?.weeklyGoals]);
+
+  const save = useMutation({
+    mutationFn: () => patchJson(`/ops/patients/${patient.id}/plan`, { nutritionPlan: nutrition, activityPlan: activity, weeklyGoals: goals }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops-patient-detail", patient.id] });
+      qc.invalidateQueries({ queryKey: ["ops-patient-dashboard", patient.id] });
+      toast({ title: "Care plan updated", description: "Changes saved successfully." });
+    },
+    onError: () => toast({ title: "Failed to save plan", variant: "destructive" }),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Salad className="w-3.5 h-3.5 text-emerald-500" /> Nutrition Plan</label>
+        <Textarea value={nutrition} onChange={e => setNutrition(e.target.value)}
+          placeholder="Describe the nutrition plan..." className="text-xs min-h-[80px] resize-none rounded-xl" />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Activity className="w-3.5 h-3.5 text-sky-500" /> Activity Plan</label>
+        <Textarea value={activity} onChange={e => setActivity(e.target.value)}
+          placeholder="Describe the activity plan..." className="text-xs min-h-[80px] resize-none rounded-xl" />
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Target className="w-3.5 h-3.5 text-primary" /> Weekly Goals</label>
+        <Textarea value={goals} onChange={e => setGoals(e.target.value)}
+          placeholder="List the weekly goals..." className="text-xs min-h-[60px] resize-none rounded-xl" />
+      </div>
+      <Button className="w-full rounded-xl" onClick={() => save.mutate()} disabled={save.isPending}>
+        {save.isPending ? "Saving..." : "Save Care Plan"}
+      </Button>
     </div>
   );
 }

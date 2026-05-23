@@ -214,22 +214,29 @@ function EnergyCard({ energySeries }: { energySeries: any[] }) {
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2"><Flame className="w-4 h-4 text-amber-500" /><h3 className="text-sm font-bold text-foreground">Energy & Wellbeing</h3></div>
+          <div className="flex items-center gap-2"><Flame className="w-4 h-4 text-amber-500" /><h3 className="text-sm font-bold text-foreground">Energy & Daily Wellbeing</h3></div>
           {last?.label && <Badge variant="outline" className={`text-xs border capitalize ${labelCls}`}>{last.label}</Badge>}
         </div>
         <p className="text-[10px] text-muted-foreground mb-2">Self-reported · last 7 check-ins</p>
         {energySeries.length > 0 ? (
-          <ResponsiveContainer width="100%" height={90}>
+          <ResponsiveContainer width="100%" height={100}>
             <BarChart data={energySeries} barCategoryGap="30%">
-              <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
+              <XAxis dataKey="dow" tick={{ fontSize: 9 }} />
               <YAxis tick={false} domain={[0, 3]} hide />
-              <Tooltip formatter={(v: number) => [v === 3 ? "High" : v === 2 ? "Moderate" : "Low", "Energy"]} labelFormatter={fmt} />
-              <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+              <Tooltip formatter={(v: number) => [v === 3 ? "High" : v === 2 ? "Moderate" : "Low", "Energy"]} labelFormatter={(_label: string, payload: any[]) => payload?.[0]?.payload?.date ? fmt(payload[0].payload.date) : ""} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {energySeries.map((e: any, i: number) => <Cell key={i} fill={energyColor(e.value)} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         ) : <div className="h-20 flex items-center justify-center text-xs text-muted-foreground">No energy data yet</div>}
+        <div className="flex justify-between mt-1">
+          {energySeries.map((e: any, i: number) => (
+            <span key={i} className="text-[9px] text-muted-foreground capitalize" style={{ width: "14.28%", textAlign: "center" }}>
+              {e.label ? (e.label.length > 3 ? e.label.slice(0, 3) : e.label) : ""}
+            </span>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -275,23 +282,26 @@ function GlucoseCard({ glucoseSeries, avgGlucose, compact }: { glucoseSeries: an
   );
 }
 
-/* ─── Insights Card (Basic/Comprehensive) ────────────────── */
-function InsightsCard({ insights, careAssigned, hasEnoughData }: { insights: any[]; careAssigned: boolean; hasEnoughData: boolean }) {
+/* ─── Ops Insights Card (from care team only) ────────────── */
+function OpsInsightsCard({ opsContent }: { opsContent: any }) {
+  const insights: any[] = opsContent?.insights || [];
   const kindMap: Record<string, { bg: string; label: string }> = {
     challenge: { bg: "bg-rose-50 border-rose-200", label: "Observed Challenge" },
-    positive: { bg: "bg-emerald-50 border-emerald-200", label: "Positive Correlation" },
-    focus: { bg: "bg-blue-50 border-blue-200", label: "Recommended Focus" },
+    positive: { bg: "bg-emerald-50 border-emerald-200", label: "Positive Note" },
+    recommended: { bg: "bg-blue-50 border-blue-200", label: "Recommended Focus" },
   };
   return (
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
       <CardContent className="p-5">
-        <div className="flex items-center gap-2 mb-4"><HeartPulse className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Weekly Insights</h3></div>
-        {(!hasEnoughData || !careAssigned || insights.length === 0) ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            {!hasEnoughData ? "Keep checking in! Insights will appear after 5 check-ins."
-              : !careAssigned ? "Insights appear once your care team is assigned."
-              : "No specific insights this week — keep it up!"}
-          </p>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2"><HeartPulse className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Weekly Insights</h3></div>
+          <span className="text-[10px] text-muted-foreground bg-slate-50 border border-border/40 rounded-full px-2 py-0.5">From your care team</span>
+        </div>
+        {insights.length === 0 ? (
+          <div className="text-center py-6 space-y-2">
+            <HeartPulse className="w-8 h-8 text-muted-foreground/30 mx-auto" />
+            <p className="text-sm text-muted-foreground">Your care team will publish insights for this week soon.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {insights.slice(0, 3).map((ins: any, i: number) => {
@@ -312,23 +322,31 @@ function InsightsCard({ insights, careAssigned, hasEnoughData }: { insights: any
 }
 
 /* ─── Premium Insights Card ──────────────────────────────── */
-function PremiumInsightsCard({ insights, carePlan, avgGlucose, glucoseVariability }: {
-  insights: any[]; carePlan: any; avgGlucose: number | null; glucoseVariability: number | null;
+function PremiumInsightsCard({ opsContent, avgGlucose, glucoseVariability }: {
+  opsContent: any; avgGlucose: number | null; glucoseVariability: number | null;
 }) {
-  const primary = insights.find(i => i.kind === "positive") || insights[0];
-  const focuses = insights.filter(i => i.kind === "focus" || i.kind === "challenge").slice(0, 2);
+  const insights: any[] = opsContent?.insights || [];
+  const primary = insights.find((i: any) => i.kind === "positive") || insights[0];
+  const focuses = insights.filter((i: any) => i.kind === "recommended" || i.kind === "challenge").slice(0, 2);
   return (
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
       <CardContent className="p-5 space-y-4">
-        <div className="flex items-center gap-2"><HeartPulse className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Daily Insights</h3></div>
-        {primary && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><HeartPulse className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Daily Insights</h3></div>
+          <span className="text-[10px] text-muted-foreground bg-slate-50 border border-border/40 rounded-full px-2 py-0.5">From your care team</span>
+        </div>
+        {primary ? (
           <div className="bg-primary/5 rounded-xl p-3">
             <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-1">Interpreted Insight</p>
             <p className="text-xs font-semibold text-foreground mb-0.5">{primary.title}</p>
             <p className="text-xs text-muted-foreground leading-relaxed">{primary.body}</p>
           </div>
+        ) : (
+          <div className="text-center py-4">
+            <HeartPulse className="w-7 h-7 text-muted-foreground/30 mx-auto mb-1" />
+            <p className="text-sm text-muted-foreground">Your care team will publish insights soon.</p>
+          </div>
         )}
-        {!primary && <p className="text-sm text-muted-foreground text-center py-2">Keep checking in for personalized insights.</p>}
         {focuses.length > 0 && (
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Recommended Focus</p>
@@ -367,9 +385,32 @@ function PremiumInsightsCard({ insights, carePlan, avgGlucose, glucoseVariabilit
 }
 
 /* ─── Next Review Card ───────────────────────────────────── */
-function NextReviewCard({ nextAppointment, totalCheckins, checkinCount, careTeam, isPremium }: {
-  nextAppointment: any; totalCheckins: number; checkinCount: number; careTeam: any; isPremium?: boolean;
+function NextReviewCard({ nextAppointment, totalCheckins, checkinCount, careTeam, isPremium, opsContent }: {
+  nextAppointment: any; totalCheckins: number; checkinCount: number; careTeam: any; isPremium?: boolean; opsContent?: any;
 }) {
+  const cr = opsContent?.coachReview;
+  const focusAreas: string[] = cr?.focusAreas?.length > 0
+    ? cr.focusAreas
+    : (nextAppointment?.notes ? nextAppointment.notes.split(/[\n\r•]/).filter(Boolean).slice(0, 4).map((s: string) => s.trim()) : []);
+
+  const reviewDate = cr?.date
+    ? new Date(cr.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })
+    : nextAppointment
+    ? new Date(nextAppointment.scheduledAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })
+    : null;
+
+  const reviewTime = cr?.time
+    ? (() => {
+        const [h, m] = cr.time.split(":");
+        const d = new Date(); d.setHours(parseInt(h), parseInt(m));
+        return d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) + (cr.duration ? ` · ${cr.duration}` : "");
+      })()
+    : nextAppointment
+    ? new Date(nextAppointment.scheduledAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }) + (nextAppointment.careTeamMember ? ` · with ${nextAppointment.careTeamMember}` : "")
+    : null;
+
+  const providerName = cr?.providerName || nextAppointment?.careTeamMember || null;
+
   return (
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
       <CardContent className="p-5">
@@ -377,24 +418,20 @@ function NextReviewCard({ nextAppointment, totalCheckins, checkinCount, careTeam
           <CalendarDays className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-bold text-foreground">{isPremium ? "Next Comprehensive Review" : "Next Coach Review"}</h3>
         </div>
-        {nextAppointment ? (
+        {reviewDate ? (
           <div className="space-y-3">
             <div className="bg-primary/5 rounded-xl p-3">
-              <p className="text-sm font-semibold text-foreground">
-                {new Date(nextAppointment.scheduledAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(nextAppointment.scheduledAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
-                {nextAppointment.careTeamMember && ` · with ${nextAppointment.careTeamMember}`}
-              </p>
+              <p className="text-sm font-semibold text-foreground">{reviewDate}</p>
+              {reviewTime && <p className="text-xs text-muted-foreground mt-0.5">{reviewTime}</p>}
+              {providerName && <p className="text-xs text-muted-foreground">with {providerName}</p>}
             </div>
-            {nextAppointment.notes && (
+            {focusAreas.length > 0 && (
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Focus Areas</p>
                 <div className="space-y-1">
-                  {nextAppointment.notes.split(/[\n\r•]/).filter(Boolean).slice(0, 4).map((note: string, i: number) => (
+                  {focusAreas.map((area: string, i: number) => (
                     <div key={i} className="flex items-start gap-1.5 text-xs text-foreground/80">
-                      <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />{note.trim()}
+                      <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />{area}
                     </div>
                   ))}
                 </div>
@@ -404,22 +441,22 @@ function NextReviewCard({ nextAppointment, totalCheckins, checkinCount, careTeam
         ) : (
           <div className="bg-slate-50 rounded-xl p-4 text-center">
             <CalendarDays className="w-6 h-6 text-muted-foreground/40 mx-auto mb-1.5" />
-            <p className="text-xs text-muted-foreground">No upcoming review scheduled</p>
+            <p className="text-xs text-muted-foreground">Your care team will schedule your next review soon.</p>
           </div>
         )}
         {(careTeam?.physician || careTeam?.dietician || careTeam?.caretaker) && (
           <div className="mt-3 pt-3 border-t border-border/40">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Your Care Team</p>
             <div className="space-y-1.5">
-              {careTeam.physician && <div className="flex items-center gap-2 text-xs"><Stethoscope className="w-3 h-3 text-sky-600" /><span className="text-foreground">{careTeam.physician.name}</span><span className="text-muted-foreground">Physician</span></div>}
-              {careTeam.dietician && <div className="flex items-center gap-2 text-xs"><Salad className="w-3 h-3 text-emerald-600" /><span className="text-foreground">{careTeam.dietician.name}</span><span className="text-muted-foreground">Dietician</span></div>}
-              {careTeam.caretaker && <div className="flex items-center gap-2 text-xs"><User className="w-3 h-3 text-violet-600" /><span className="text-foreground">{careTeam.caretaker.name}</span><span className="text-muted-foreground">Care Coordinator</span></div>}
+              {careTeam.physician && <div className="flex items-center gap-2 text-xs"><Stethoscope className="w-3 h-3 text-sky-600" /><span className="text-foreground">{careTeam.physician.name}</span><span className="text-muted-foreground ml-1">Physician</span></div>}
+              {careTeam.dietician && <div className="flex items-center gap-2 text-xs"><Salad className="w-3 h-3 text-emerald-600" /><span className="text-foreground">{careTeam.dietician.name}</span><span className="text-muted-foreground ml-1">Dietician</span></div>}
+              {careTeam.caretaker && <div className="flex items-center gap-2 text-xs"><User className="w-3 h-3 text-violet-600" /><span className="text-foreground">{careTeam.caretaker.name}</span><span className="text-muted-foreground ml-1">Care Coordinator</span></div>}
             </div>
           </div>
         )}
         <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/40">
-          Patient responded to <strong className="text-foreground">{checkinCount} of 7</strong> check-ins this week
-          {totalCheckins > 0 && <span> · {totalCheckins} total</span>}
+          You responded to <strong className="text-foreground">{checkinCount} of 7</strong> check-ins this week
+          {totalCheckins > 0 && <span> · {totalCheckins} total check-ins</span>}
         </p>
       </CardContent>
     </Card>
@@ -435,12 +472,6 @@ export default function PatientDashboard() {
     staleTime: 60_000,
     retry: 1,
   });
-
-  const focusItems = useMemo(() => {
-    const goals = dash?.carePlan?.weeklyGoals;
-    if (!goals) return [];
-    return goals.split(/[\n\r•\-]/).map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
-  }, [dash?.carePlan?.weeklyGoals]);
 
   const glucoseVariability = useMemo(() => {
     const vals = (dash?.glucoseSeries || []).map((g: any) => g.value);
@@ -479,7 +510,7 @@ export default function PatientDashboard() {
   const glucoseSeries: any[] = dash.glucoseSeries || [];
   const energySeries: any[] = dash.energySeries || [];
   const consistencyBreakdown = dash.consistencyBreakdown || {};
-  const insights: any[] = dash.insights || [];
+  const opsContent = dash.opsContent ?? null;
   const carePlan = dash.carePlan;
   const weightChange: number | null = dash.weightChange ?? null;
   const avgGlucose: number | null = dash.avgGlucose ?? null;
@@ -568,21 +599,16 @@ export default function PatientDashboard() {
                       </div>
                     )}
                   </div>
-                  {(focusItems.length > 0 || carePlan?.nutritionPlan) && (
-                    <div className="bg-white/10 rounded-xl p-3 space-y-1.5 flex-1">
-                      <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">Today's Focus</p>
-                      {focusItems.length > 0 ? focusItems.map((item: string, i: number) => (
-                        <div key={i} className="flex items-start gap-1.5 text-xs text-white/90">
-                          <CheckCircle2 className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{item}
-                        </div>
-                      )) : (
-                        <>
-                          {carePlan?.nutritionPlan && <div className="flex items-start gap-1.5 text-xs text-white/90"><Salad className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{carePlan.nutritionPlan.slice(0, 90)}</div>}
-                          {carePlan?.activityPlan && <div className="flex items-start gap-1.5 text-xs text-white/90"><Footprints className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{carePlan.activityPlan.slice(0, 90)}</div>}
-                        </>
-                      )}
-                    </div>
-                  )}
+                  <div className="bg-white/10 rounded-xl p-3 space-y-1.5 flex-1">
+                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">This Week's Focus</p>
+                    {(opsContent?.thisWeekFocus || []).length > 0 ? (opsContent.thisWeekFocus as any[]).map((item: any, i: number) => (
+                      <div key={i} className="flex items-start gap-1.5 text-xs text-white/90">
+                        <CheckCircle2 className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{item.text}
+                      </div>
+                    )) : (
+                      <p className="text-xs text-white/60 italic">Your care team will set your weekly focus soon.</p>
+                    )}
+                  </div>
                 </div>
                 {/* Adherence with stats */}
                 <div className="lg:col-span-3 bg-white rounded-2xl border border-border/50 p-5">
@@ -641,8 +667,8 @@ export default function PatientDashboard() {
                 <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Daily Insights & Care Review</h2>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <PremiumInsightsCard insights={insights} carePlan={carePlan} avgGlucose={avgGlucose} glucoseVariability={glucoseVariability} />
-                <NextReviewCard nextAppointment={dash.nextAppointment} totalCheckins={dash.totalCheckins ?? 0} checkinCount={checkinCount} careTeam={dash.careTeam} isPremium />
+                <PremiumInsightsCard opsContent={opsContent} avgGlucose={avgGlucose} glucoseVariability={glucoseVariability} />
+                <NextReviewCard nextAppointment={dash.nextAppointment} totalCheckins={dash.totalCheckins ?? 0} checkinCount={checkinCount} careTeam={dash.careTeam} isPremium opsContent={opsContent} />
               </div>
             </div>
 
@@ -693,13 +719,16 @@ export default function PatientDashboard() {
                     </div>
                   )}
                 </div>
-                {(carePlan?.nutritionPlan || carePlan?.activityPlan) && (
-                  <div className="bg-white/10 rounded-xl p-3 space-y-2">
-                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">This Week's Focus</p>
-                    {carePlan.nutritionPlan && <div className="flex items-start gap-2 text-xs text-white/90"><Salad className="w-3.5 h-3.5 text-white/60 shrink-0 mt-0.5" /><span>{carePlan.nutritionPlan.slice(0, 100)}</span></div>}
-                    {carePlan.activityPlan && <div className="flex items-start gap-2 text-xs text-white/90"><Footprints className="w-3.5 h-3.5 text-white/60 shrink-0 mt-0.5" /><span>{carePlan.activityPlan.slice(0, 100)}</span></div>}
-                  </div>
-                )}
+                <div className="bg-white/10 rounded-xl p-3 space-y-2">
+                  <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">This Week's Focus</p>
+                  {(opsContent?.thisWeekFocus || []).length > 0 ? (opsContent.thisWeekFocus as any[]).map((item: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2 text-xs text-white/90">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white/50 shrink-0 mt-0.5" /><span>{item.text}</span>
+                    </div>
+                  )) : (
+                    <p className="text-xs text-white/60 italic">Your care team will set your weekly focus soon.</p>
+                  )}
+                </div>
               </div>
 
               <div className="bg-white rounded-2xl border border-border/50 p-5">
@@ -726,8 +755,8 @@ export default function PatientDashboard() {
 
             {/* Row 3: Insights + Review */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <InsightsCard insights={insights} careAssigned={dash.careAssigned ?? false} hasEnoughData={dash.hasEnoughData ?? true} />
-              <NextReviewCard nextAppointment={dash.nextAppointment} totalCheckins={dash.totalCheckins ?? 0} checkinCount={checkinCount} careTeam={dash.careTeam} />
+              <OpsInsightsCard opsContent={opsContent} />
+              <NextReviewCard nextAppointment={dash.nextAppointment} totalCheckins={dash.totalCheckins ?? 0} checkinCount={checkinCount} careTeam={dash.careTeam} opsContent={opsContent} />
             </div>
           </div>
         )}
