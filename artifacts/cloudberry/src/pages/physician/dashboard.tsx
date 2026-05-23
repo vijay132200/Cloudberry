@@ -9,9 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, Search, LogOut, ChevronRight, Activity, TrendingDown,
   FileText, CheckCircle2, HeartPulse, Stethoscope, X, Clock,
-  Target, User, RefreshCw, Save, AlertTriangle,
+  Target, User, RefreshCw, Save, CalendarDays, Scale, Flame,
+  Salad, Footprints, Dumbbell, MinusCircle, XCircle, Droplets,
+  Star,
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea,
+} from "recharts";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = `${BASE}/api`;
@@ -70,108 +75,255 @@ function relativeDays(iso: string | null) {
   return `${diff}d ago`;
 }
 
-/* ── Patient Dashboard (read-only) ─────────────────────────── */
-function PatientDashboardView({ patient, detail }: { patient: any; detail: any }) {
-  const weightData = detail?.metrics?.filter((m: any) => m.type === "weight").slice(0, 8).reverse() ?? [];
-  const glucoseData = detail?.metrics?.filter((m: any) => m.type === "fasting_glucose").slice(0, 10).reverse() ?? [];
-  const checkins = detail?.checkins ?? [];
-  const recentCheckins = checkins.slice(0, 5);
-  const adherencePct = checkins.length
-    ? Math.round((checkins.filter((c: any) => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "all_meals" || c.mealsFollowed === "most_meals").length / checkins.length) * 100)
-    : null;
+function fmt(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function adherenceLabel(pct: number | null) {
+  if (pct === null || pct === undefined) return "—";
+  if (pct >= 80) return "Strong";
+  if (pct >= 60) return "Moderate";
+  return "Needs Work";
+}
+function adherenceLabelCls(pct: number | null) {
+  if (!pct) return "bg-slate-50 text-slate-600 border-slate-200";
+  if (pct >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (pct >= 60) return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-rose-50 text-rose-700 border-rose-200";
+}
+function energyColor(v: number) {
+  if (v >= 3) return "#22c55e";
+  if (v >= 2) return "#f59e0b";
+  return "#ef4444";
+}
+
+/* ── Full Patient Dashboard (physician view) ─────────────── */
+function PhysicianPatientDashboard({ patient, dashData }: { patient: any; dashData: any }) {
+  const d = dashData;
+  const adherence7Day: any[] = d.adherence7Day || [];
+  const adherencePct: number | null = d.adherencePct ?? null;
+  const weightSeries: any[] = d.weightSeries || [];
+  const glucoseSeries: any[] = d.glucoseSeries || [];
+  const energySeries: any[] = d.energySeries || [];
+  const consistencyBreakdown = d.consistencyBreakdown || {};
+  const insights: any[] = d.insights || [];
+  const weightChange: number | null = d.weightChange ?? null;
+  const avgGlucose: number | null = d.avgGlucose ?? null;
+  const streak: number = d.streak ?? 0;
+  const completedCount = adherence7Day.filter((day: any) => day.completed === true).length;
+  const checkinCount = adherence7Day.filter((day: any) => day.completed !== null).length;
+  const sleepCount = Math.round(((consistencyBreakdown.sleep ?? 0) / 100) * 7);
+  const mealCount = Math.round(((consistencyBreakdown.mealLogging ?? 0) / 100) * 7);
+  const activityCount = Math.round(((consistencyBreakdown.activity ?? 0) / 100) * 7);
+  const lost = weightChange !== null && weightChange < 0;
 
   return (
     <div className="space-y-5">
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Header stats */}
+      <div className="grid grid-cols-4 gap-2">
         {[
-          { label: "Plan", value: patient.plan?.charAt(0).toUpperCase() + patient.plan?.slice(1), icon: <Target className="w-4 h-4 text-primary" /> },
-          { label: "Week", value: `Week ${patient.weekNumber ?? "—"}`, icon: <Clock className="w-4 h-4 text-amber-500" /> },
-          { label: "Adherence", value: adherencePct !== null ? `${adherencePct}%` : `${patient.adherencePct ?? "—"}%`, icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
+          { label: "Plan", value: patient.plan ? patient.plan.charAt(0).toUpperCase() + patient.plan.slice(1) : "—" },
+          { label: "Week", value: `Week ${patient.weekNumber ?? "—"}` },
+          { label: "Adherence", value: `${adherencePct ?? "—"}%` },
+          { label: "Check-ins", value: `${checkinCount}/7` },
         ].map(s => (
-          <div key={s.label} className="bg-slate-50 border border-border/40 rounded-xl p-3 flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">{s.icon}<p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p></div>
-            <p className="font-bold text-foreground text-base">{s.value}</p>
+          <div key={s.label} className="bg-muted/40 rounded-xl p-2.5 text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{s.label}</p>
+            <p className="font-bold text-foreground text-sm">{s.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Weight chart */}
+      {/* Streak */}
+      {streak > 0 && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <Star className="w-4 h-4 text-amber-500" />
+          <p className="text-xs font-semibold text-amber-800">{streak}-day streak — consistency is building!</p>
+        </div>
+      )}
+
+      {/* 7-day adherence grid */}
       <Card className="border-border/40 rounded-xl">
-        <CardHeader className="pb-2 pt-4 px-4 flex-row items-center gap-2">
-          <TrendingDown className="w-4 h-4 text-sky-500" />
-          <CardTitle className="text-sm">Weight Trend (kg)</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary" />Weekly Adherence</CardTitle>
+            {adherencePct !== null && <span className="text-sm font-bold text-primary">{adherencePct}% this week</span>}
+          </div>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          {weightData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={130}>
-              <LineChart data={weightData}>
-                <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={(d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} />
-                <YAxis tick={{ fontSize: 9 }} />
-                <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} />
-                <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : <p className="text-xs text-muted-foreground text-center py-6">No weight data recorded yet.</p>}
+          <div className="flex justify-between gap-1 mb-2">
+            {adherence7Day.map((day: any, i: number) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${day.completed === true ? "bg-emerald-50 border-emerald-400" : day.completed === false ? "bg-rose-50 border-rose-300" : "bg-slate-100 border-slate-200"}`}>
+                  {day.completed === true ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : day.completed === false ? <XCircle className="w-3.5 h-3.5 text-rose-400" /> : <MinusCircle className="w-3.5 h-3.5 text-slate-400" />}
+                </div>
+                <span className="text-[10px] text-muted-foreground">{day.dow}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" />Met goals</span>
+            <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-rose-400" />Not met</span>
+            <span className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-slate-400" />No data</span>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Glucose chart — show only if premium or data exists */}
-      {(patient.plan === "premium" || glucoseData.length > 0) && (
+      {/* Behavioral Consistency */}
+      <Card className="border-border/40 rounded-xl">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" />Behavioral Consistency</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-3">
+          {[
+            { label: "Sleep Quality", count: sleepCount, color: "bg-indigo-500" },
+            { label: "Nutrition", count: mealCount, color: "bg-emerald-500" },
+            { label: "Activity", count: activityCount, color: "bg-violet-500" },
+          ].map(b => (
+            <div key={b.label}>
+              <div className="flex justify-between text-xs mb-1"><span className="text-foreground/80">{b.label}</span><span className="font-semibold text-foreground">{b.count}/7</span></div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className={`h-full rounded-full ${b.color}`} style={{ width: `${(b.count / 7) * 100}%` }} />
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Weight trend */}
+      {weightSeries.length > 1 && (
         <Card className="border-border/40 rounded-xl">
-          <CardHeader className="pb-2 pt-4 px-4 flex-row items-center gap-2">
-            <Activity className="w-4 h-4 text-rose-500" />
-            <CardTitle className="text-sm">Fasting Glucose (mg/dL)</CardTitle>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2"><Scale className="w-4 h-4 text-sky-600" />Weight Trend</CardTitle>
+              {weightChange !== null && (
+                <div className="flex items-center gap-1">
+                  {lost ? <TrendingDown className="w-3.5 h-3.5 text-emerald-600" /> : <Activity className="w-3.5 h-3.5 text-rose-500" />}
+                  <span className={`text-sm font-bold ${lost ? "text-emerald-600" : "text-rose-500"}`}>{lost ? "" : "+"}{weightChange} kg</span>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            {glucoseData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={110}>
-                <BarChart data={glucoseData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={(d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} />
-                  <YAxis tick={{ fontSize: 9 }} domain={[60, 200]} />
-                  <Tooltip formatter={(v: number) => [`${v} mg/dL`, "Glucose"]} />
-                  <Bar dataKey="value" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <p className="text-xs text-muted-foreground text-center py-6">No glucose data recorded yet.</p>}
+            <ResponsiveContainer width="100%" height={100}>
+              <LineChart data={weightSeries}>
+                <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
+                <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} width={32} />
+                <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} labelFormatter={fmt} />
+                <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="flex justify-between text-xs text-muted-foreground mt-2 pt-2 border-t border-border/40">
+              {patient.startingWeight && <span>Start: <strong className="text-foreground">{patient.startingWeight} kg</strong></span>}
+              {patient.currentWeight && <span>Current: <strong className="text-foreground">{patient.currentWeight} kg</strong></span>}
+              {patient.targetWeight && <span>Goal: <strong className="text-foreground">{patient.targetWeight} kg</strong></span>}
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Recent check-ins summary */}
-      <Card className="border-border/40 rounded-xl">
-        <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Recent Check-ins</CardTitle></CardHeader>
-        <CardContent className="px-4 pb-4">
-          {recentCheckins.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">No check-ins yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {recentCheckins.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                  <p className="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
-                  <div className="flex gap-1.5">
-                    <Badge className={`text-[10px] border ${c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "all_meals" || c.mealsFollowed === "most_meals" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
-                      Meals: {c.mealsFollowed?.replace(/_/g, " ")}
-                    </Badge>
-                    <Badge className={`text-[10px] border ${c.activityCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>
-                      {c.activityCompleted ? "Active" : "No Activity"}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Energy trend */}
+      {energySeries.length > 0 && (
+        <Card className="border-border/40 rounded-xl">
+          <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm flex items-center gap-2"><Flame className="w-4 h-4 text-amber-500" />Energy & Wellbeing</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-4">
+            <ResponsiveContainer width="100%" height={80}>
+              <BarChart data={energySeries} barCategoryGap="30%">
+                <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
+                <YAxis tick={false} domain={[0, 3]} hide />
+                <Tooltip formatter={(v: number) => [v === 3 ? "High" : v === 2 ? "Moderate" : "Low", "Energy"]} labelFormatter={fmt} />
+                <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                  {energySeries.map((e: any, i: number) => <Cell key={i} fill={energyColor(e.value)} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Glucose trend */}
+      {glucoseSeries.length > 1 && (
+        <Card className="border-border/40 rounded-xl">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Droplets className="w-4 h-4 text-rose-500" />Fasting Glucose Trend
+              {avgGlucose && <span className="text-xs font-normal text-muted-foreground ml-1">avg {avgGlucose} mg/dL</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <ResponsiveContainer width="100%" height={100}>
+              <LineChart data={glucoseSeries}>
+                <ReferenceArea y1={80} y2={120} fill="#d1fae5" fillOpacity={0.4} />
+                <ReferenceArea y1={120} y2={140} fill="#fef3c7" fillOpacity={0.4} />
+                <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
+                <YAxis tick={{ fontSize: 9 }} domain={[60, 180]} width={30} />
+                <Tooltip formatter={(v: number) => [`${Number(v).toFixed(0)} mg/dL`, "Glucose"]} labelFormatter={fmt} />
+                <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Insights */}
+      {insights.length > 0 && (
+        <Card className="border-border/40 rounded-xl">
+          <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm flex items-center gap-2"><HeartPulse className="w-4 h-4 text-primary" />Weekly Insights</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-4 space-y-2">
+            {insights.map((ins: any, i: number) => (
+              <div key={i} className={`rounded-xl border p-3 text-xs ${ins.kind === "positive" ? "bg-emerald-50 border-emerald-200" : ins.kind === "challenge" ? "bg-rose-50 border-rose-200" : "bg-blue-50 border-blue-200"}`}>
+                <p className="font-semibold text-foreground mb-0.5">{ins.title}</p>
+                <p className="text-muted-foreground leading-relaxed">{ins.body}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Care plan */}
-      {detail?.plan && (
+      {d.carePlan && (
         <Card className="border-border/40 rounded-xl">
           <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Care Plan</CardTitle></CardHeader>
           <CardContent className="px-4 pb-4 space-y-3 text-xs text-muted-foreground">
-            <div><p className="font-semibold text-foreground text-xs mb-1">Nutrition Plan</p><p>{detail.plan.nutritionPlan}</p></div>
-            <div><p className="font-semibold text-foreground text-xs mb-1">Activity Plan</p><p>{detail.plan.activityPlan}</p></div>
-            <div><p className="font-semibold text-foreground text-xs mb-1">Weekly Goals</p><p>{detail.plan.weeklyGoals}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Nutrition Plan</p><p>{d.carePlan.nutritionPlan}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Activity Plan</p><p>{d.carePlan.activityPlan}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Weekly Goals</p><p>{d.carePlan.weeklyGoals}</p></div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Next appointment + care team */}
+      {(d.nextAppointment || d.careTeam) && (
+        <Card className="border-border/40 rounded-xl">
+          <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary" />Next Review</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-4 space-y-3">
+            {d.nextAppointment ? (
+              <div className="bg-primary/5 rounded-xl p-3">
+                <p className="text-sm font-semibold text-foreground">
+                  {new Date(d.nextAppointment.scheduledAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(d.nextAppointment.scheduledAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
+                  {d.nextAppointment.careTeamMember && ` · with ${d.nextAppointment.careTeamMember}`}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No upcoming review scheduled.</p>
+            )}
+            {d.careTeam && (d.careTeam.physician || d.careTeam.dietician || d.careTeam.caretaker) && (
+              <div className="pt-2 border-t border-border/40">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Care Team</p>
+                <div className="space-y-1.5">
+                  {d.careTeam.physician && <div className="flex items-center gap-2 text-xs"><Stethoscope className="w-3 h-3 text-sky-600" /><span className="text-foreground">{d.careTeam.physician.name}</span><span className="text-muted-foreground">Physician</span></div>}
+                  {d.careTeam.dietician && <div className="flex items-center gap-2 text-xs"><Salad className="w-3 h-3 text-emerald-600" /><span className="text-foreground">{d.careTeam.dietician.name}</span><span className="text-muted-foreground">Dietician</span></div>}
+                  {d.careTeam.caretaker && <div className="flex items-center gap-2 text-xs"><User className="w-3 h-3 text-violet-600" /><span className="text-foreground">{d.careTeam.caretaker.name}</span><span className="text-muted-foreground">Care Coordinator</span></div>}
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground pt-2 border-t border-border/40">
+              Responded to <strong className="text-foreground">{checkinCount} of 7</strong> check-ins this week
+              {d.totalCheckins > 0 && <span> · {d.totalCheckins} total</span>}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -179,6 +331,7 @@ function PatientDashboardView({ patient, detail }: { patient: any; detail: any }
   );
 }
 
+/* ═══════════════ MAIN COMPONENT ═════════════════════════════ */
 export default function PhysicianDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -192,7 +345,6 @@ export default function PhysicianDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [opsBackup] = useState(() => localStorage.getItem("cloudberry_ops_backup"));
 
-  // My Profile edit state
   const [editName, setEditName] = useState("");
   const [editSpecialty, setEditSpecialty] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -238,10 +390,17 @@ export default function PhysicianDashboard() {
     }
   }, [physicianMe]);
 
+  const { data: patientDash, isLoading: dashLoading } = useQuery({
+    queryKey: ["physician-patient-dashboard", selectedPatient?.id],
+    queryFn: () => apiFetch(`/physician/patients/${selectedPatient.id}/dashboard`),
+    enabled: !!selectedPatient && detailTab === "dashboard",
+    staleTime: 60000,
+  });
+
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ["physician-patient-detail", selectedPatient?.id],
     queryFn: () => apiFetch(`/physician/patients/${selectedPatient.id}`),
-    enabled: !!selectedPatient,
+    enabled: !!selectedPatient && detailTab !== "dashboard",
   });
 
   const noteMut = useMutation({
@@ -274,8 +433,6 @@ export default function PhysicianDashboard() {
     (!search || p.fullName?.toLowerCase().includes(search.toLowerCase()) || p.city?.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const highRisk = (patients as any[]).filter(p => p.riskLevel === "high");
-
   const navItems: { key: NavTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: "patients", label: "My Patients", icon: <Users className="w-4 h-4" />, badge: (patients as any[]).length },
     { key: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
@@ -295,7 +452,7 @@ export default function PhysicianDashboard() {
       </div>
     )}
     <div className={`min-h-screen bg-slate-50 flex${opsBackup ? " pt-9" : ""}`}>
-      {/* Sidebar — Light theme */}
+      {/* Sidebar */}
       <aside className={`${sidebarOpen ? "w-60" : "w-16"} transition-all bg-white border-r border-border/60 flex flex-col shrink-0 shadow-sm`}>
         <div className="p-4 border-b border-border/60 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
@@ -319,16 +476,6 @@ export default function PhysicianDashboard() {
               )}
             </button>
           ))}
-          {/* High risk alert inline */}
-          {sidebarOpen && highRisk.length > 0 && (
-            <div className="mt-3 px-3 py-2.5 rounded-lg bg-rose-50 border border-rose-100">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span className="text-xs font-semibold text-rose-700">{highRisk.length} High Risk</span>
-              </div>
-              <p className="text-[10px] text-rose-500 mt-0.5">Patients needing attention</p>
-            </div>
-          )}
         </nav>
         <div className="p-3 border-t border-border/60">
           <button onClick={handleLogout}
@@ -380,16 +527,6 @@ export default function PhysicianDashboard() {
                 </div>
               </div>
 
-              {/* High risk banner */}
-              {highRisk.length > 0 && (
-                <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
-                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-                  <p className="text-sm text-rose-700 font-medium">{highRisk.length} patient{highRisk.length !== 1 ? "s" : ""} flagged as high risk — review their profiles.</p>
-                  <Button size="sm" variant="outline" className="ml-auto text-xs rounded-full text-rose-600 border-rose-200 hover:bg-rose-50"
-                    onClick={() => setRiskFilter("high")}>View</Button>
-                </div>
-              )}
-
               {isLoading ? (
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                   {[1,2,3].map(i => <div key={i} className="h-44 bg-white rounded-2xl animate-pulse" />)}
@@ -440,7 +577,7 @@ export default function PhysicianDashboard() {
             </div>
           )}
 
-          {/* ── MY PROFILE TAB ────────────────────────────────────── */}
+          {/* ── MY PROFILE TAB ────────────────────────────────── */}
           {nav === "profile" && (
             <div className="max-w-xl space-y-6">
               <div>
@@ -492,7 +629,6 @@ export default function PhysicianDashboard() {
                         { label: "Email", value: physicianMe?.email || "—" },
                         { label: "Phone", value: physicianMe?.phone || "—" },
                         { label: "Patients Assigned", value: (patients as any[]).length.toString() },
-                        { label: "High Risk Patients", value: highRisk.length.toString() },
                       ].map(item => (
                         <div key={item.label} className="bg-slate-50 rounded-xl p-3 border border-border/40">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{item.label}</p>
@@ -523,11 +659,9 @@ export default function PhysicianDashboard() {
                   <Badge className={`${RISK_COLORS[selectedPatient.riskLevel]} border text-xs capitalize`}>{selectedPatient.riskLevel} risk</Badge>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setSelectedPatient(null)} className="text-white/70 hover:text-white ml-1">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <button onClick={() => setSelectedPatient(null)} className="text-white/70 hover:text-white ml-1">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Tabs */}
@@ -541,103 +675,111 @@ export default function PhysicianDashboard() {
             </div>
 
             <div className="flex-1 p-5 overflow-y-auto">
-              {detailLoading ? (
-                <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-              ) : (
+              {/* Dashboard tab — full patient dashboard view */}
+              {detailTab === "dashboard" && (
                 <>
-                  {/* Dashboard tab */}
-                  {detailTab === "dashboard" && (
-                    <PatientDashboardView patient={selectedPatient} detail={detail} />
+                  {(dashLoading) && (
+                    <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
                   )}
-
-                  {/* Profile tab */}
-                  {detailTab === "profile" && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        {[
-                          { label: "Full Name", value: selectedPatient.fullName },
-                          { label: "Phone", value: selectedPatient.phone || "—" },
-                          { label: "Email", value: selectedPatient.email || "—" },
-                          { label: "City", value: selectedPatient.city || "—" },
-                          { label: "Plan", value: selectedPatient.plan?.charAt(0).toUpperCase() + selectedPatient.plan?.slice(1) },
-                          { label: "Week", value: `Week ${selectedPatient.weekNumber}` },
-                          { label: "Goal", value: formatGoal(selectedPatient.primaryGoal) },
-                          { label: "Risk Level", value: selectedPatient.riskLevel?.charAt(0).toUpperCase() + selectedPatient.riskLevel?.slice(1) },
-                          { label: "Starting Weight", value: selectedPatient.startingWeight ? `${selectedPatient.startingWeight} kg` : "—" },
-                          { label: "Current Weight", value: selectedPatient.currentWeight ? `${selectedPatient.currentWeight} kg` : "—" },
-                          { label: "Target Weight", value: selectedPatient.targetWeight ? `${selectedPatient.targetWeight} kg` : "—" },
-                          { label: "Adherence", value: `${selectedPatient.adherencePct ?? "—"}%` },
-                        ].map(item => (
-                          <div key={item.label} className="bg-slate-50 rounded-xl p-3 border border-border/40">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{item.label}</p>
-                            <p className="text-sm font-semibold text-foreground">{item.value}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  {patientDash && !dashLoading && (
+                    <PhysicianPatientDashboard patient={selectedPatient} dashData={patientDash} />
                   )}
-
-                  {/* Check-ins tab */}
-                  {detailTab === "checkins" && (
-                    <div className="space-y-3">
-                      {(!detail?.checkins || detail.checkins.length === 0) ? (
-                        <p className="text-muted-foreground text-sm text-center py-8">No check-ins recorded yet.</p>
-                      ) : detail.checkins.map((c: any) => (
-                        <Card key={c.id} className="border-border/40 rounded-xl">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-semibold">{new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
-                              <div className="flex gap-1.5 flex-wrap">
-                                <Badge className={`text-[10px] border ${c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "all_meals" || c.mealsFollowed === "most_meals" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
-                                  Meals: {c.mealsFollowed?.replace(/_/g, " ")}
-                                </Badge>
-                                <Badge className={`text-[10px] border ${c.activityCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>
-                                  {c.activityCompleted ? "Active" : "No Activity"}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 text-xs">
-                              <div><span className="text-muted-foreground">Energy:</span> <span className="font-medium capitalize">{c.energyLevel}</span></div>
-                              <div><span className="text-muted-foreground">Mood:</span> <span className="font-medium capitalize">{c.mood}</span></div>
-                              {c.glucoseReading && <div><span className="text-muted-foreground">Glucose:</span> <span className="font-medium">{Number(c.glucoseReading).toFixed(0)} mg/dL</span></div>}
-                            </div>
-                            {c.notes && <p className="text-xs text-muted-foreground mt-2 italic">"{c.notes}"</p>}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Notes tab */}
-                  {detailTab === "notes" && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Add Clinical Note</label>
-                        <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
-                          placeholder="Enter your clinical notes, observations, or instructions…"
-                          className="w-full rounded-xl border border-border/60 p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                        <Button size="sm" className="rounded-full gap-2" disabled={!noteText.trim() || noteMut.isPending}
-                          onClick={() => noteMut.mutate({ id: selectedPatient.id, content: noteText })}>
-                          <FileText className="w-3 h-3" />
-                          {noteMut.isPending ? "Saving…" : "Save Note"}
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">Previous Notes</p>
-                        {(!detail?.notes || detail.notes.length === 0) ? (
-                          <p className="text-xs text-muted-foreground italic">No clinical notes yet.</p>
-                        ) : detail.notes.map((n: any) => (
-                          <Card key={n.id} className="border-border/40 rounded-xl">
-                            <CardContent className="p-3">
-                              <p className="text-xs text-muted-foreground mb-1">{new Date(n.createdAt).toLocaleString("en-IN")}</p>
-                              <p className="text-sm">{n.content}</p>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
+                  {!patientDash && !dashLoading && (
+                    <p className="text-sm text-muted-foreground text-center py-10">Dashboard data unavailable.</p>
                   )}
                 </>
+              )}
+
+              {/* Profile tab */}
+              {detailTab === "profile" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: "Full Name", value: selectedPatient.fullName },
+                      { label: "Phone", value: selectedPatient.phone || "—" },
+                      { label: "Email", value: selectedPatient.email || "—" },
+                      { label: "City", value: selectedPatient.city || "—" },
+                      { label: "Plan", value: selectedPatient.plan?.charAt(0).toUpperCase() + selectedPatient.plan?.slice(1) },
+                      { label: "Week", value: `Week ${selectedPatient.weekNumber}` },
+                      { label: "Goal", value: formatGoal(selectedPatient.primaryGoal) },
+                      { label: "Risk Level", value: selectedPatient.riskLevel?.charAt(0).toUpperCase() + selectedPatient.riskLevel?.slice(1) },
+                      { label: "Starting Weight", value: selectedPatient.startingWeight ? `${selectedPatient.startingWeight} kg` : "—" },
+                      { label: "Current Weight", value: selectedPatient.currentWeight ? `${selectedPatient.currentWeight} kg` : "—" },
+                      { label: "Target Weight", value: selectedPatient.targetWeight ? `${selectedPatient.targetWeight} kg` : "—" },
+                      { label: "Adherence", value: `${selectedPatient.adherencePct ?? "—"}%` },
+                    ].map(item => (
+                      <div key={item.label} className="bg-slate-50 rounded-xl p-3 border border-border/40">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{item.label}</p>
+                        <p className="text-sm font-semibold text-foreground">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Check-ins tab */}
+              {detailTab === "checkins" && (
+                <div className="space-y-3">
+                  {detailLoading ? (
+                    <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}</div>
+                  ) : (!detail?.checkins || detail.checkins.length === 0) ? (
+                    <p className="text-muted-foreground text-sm text-center py-8">No check-ins recorded yet.</p>
+                  ) : detail.checkins.map((c: any) => (
+                    <Card key={c.id} className="border-border/40 rounded-xl">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-semibold">{new Date(c.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+                          <div className="flex gap-1.5 flex-wrap">
+                            <Badge className={`text-[10px] border ${c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+                              Meals: {c.mealsFollowed}
+                            </Badge>
+                            <Badge className={`text-[10px] border ${c.activityCompleted ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                              {c.activityCompleted ? "Active" : "No Activity"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div><span className="text-muted-foreground">Energy:</span> <span className="font-medium capitalize">{c.energyLevel}</span></div>
+                          <div><span className="text-muted-foreground">Mood:</span> <span className="font-medium capitalize">{c.mood}</span></div>
+                          {c.glucoseReading && <div><span className="text-muted-foreground">Glucose:</span> <span className="font-medium">{Number(c.glucoseReading).toFixed(0)} mg/dL</span></div>}
+                        </div>
+                        {c.notes && <p className="text-xs text-muted-foreground mt-2 italic">"{c.notes}"</p>}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Notes tab */}
+              {detailTab === "notes" && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Add Clinical Note</label>
+                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)}
+                      placeholder="Enter your clinical notes, observations, or instructions…"
+                      className="w-full rounded-xl border border-border/60 p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                    <Button size="sm" className="rounded-full gap-2" disabled={!noteText.trim() || noteMut.isPending}
+                      onClick={() => noteMut.mutate({ id: selectedPatient.id, content: noteText })}>
+                      <FileText className="w-3 h-3" />
+                      {noteMut.isPending ? "Saving…" : "Save Note"}
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Previous Notes</p>
+                    {detailLoading ? (
+                      <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />)}</div>
+                    ) : (!detail?.notes || detail.notes.length === 0) ? (
+                      <p className="text-xs text-muted-foreground italic">No clinical notes yet.</p>
+                    ) : detail.notes.map((n: any) => (
+                      <Card key={n.id} className="border-border/40 rounded-xl">
+                        <CardContent className="p-3">
+                          <p className="text-xs text-muted-foreground mb-1">{new Date(n.createdAt).toLocaleString("en-IN")}</p>
+                          <p className="text-sm">{n.content}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </div>

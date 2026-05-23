@@ -28,7 +28,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-slate-50/40 pb-20 md:pb-0 font-sans flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-60 bg-white border-r border-border/60 fixed h-screen top-0 left-0 z-20 shadow-sm">
+      <aside className="hidden md:flex flex-col w-48 bg-white border-r border-border/60 fixed h-screen top-0 left-0 z-20 shadow-sm">
         <div className="px-5 py-5 border-b border-border/60">
           <Link href="/">
             <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
@@ -66,7 +66,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-60 relative min-h-[100dvh]">
+      <main className="flex-1 md:ml-48 relative min-h-[100dvh]">
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-border/60 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
           <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>

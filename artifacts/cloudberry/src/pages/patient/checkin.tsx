@@ -278,7 +278,7 @@ export default function CheckinPage() {
               <div className="flex items-center gap-2 mb-2">
                 <Droplets className="w-4 h-4 text-blue-500" />
                 <p className="text-sm font-semibold text-foreground">Fasting glucose reading
-                  <span className="text-xs font-normal text-muted-foreground ml-1">(every 2nd day, optional)</span>
+                  <span className="text-xs font-normal text-muted-foreground ml-1">(every 3 days, optional)</span>
                 </p>
               </div>
               <div className="relative max-w-[180px]">

@@ -133,9 +133,9 @@ function BasicConsistencyCard({ adherencePct, completedCount }: { adherencePct: 
         <p className="text-xs text-muted-foreground mb-3">Based on:</p>
         <div className="space-y-2">
           {[
-            { icon: <Salad className="w-3.5 h-3.5 text-emerald-600" />, label: "Meal Logging" },
-            { icon: <ClipboardCheck className="w-3.5 h-3.5 text-blue-600" />, label: "Daily Check-ins" },
-            { icon: <Dumbbell className="w-3.5 h-3.5 text-violet-600" />, label: "Activity Completion" },
+            { icon: <HeartPulse className="w-3.5 h-3.5 text-indigo-600" />, label: "Sleep Quality" },
+            { icon: <Salad className="w-3.5 h-3.5 text-emerald-600" />, label: "Nutrition" },
+            { icon: <Dumbbell className="w-3.5 h-3.5 text-violet-600" />, label: "Activity" },
           ].map(item => (
             <div key={item.label} className="flex items-center gap-2 text-xs text-foreground/80">{item.icon}{item.label}</div>
           ))}
@@ -149,11 +149,11 @@ function BasicConsistencyCard({ adherencePct, completedCount }: { adherencePct: 
 }
 
 /* ─── Comprehensive Consistency (progress bars) ──────────── */
-function ComprehensiveConsistencyCard({ mealCount, checkInCount7, activityCount }: { mealCount: number; checkInCount7: number; activityCount: number }) {
+function ComprehensiveConsistencyCard({ sleepCount, mealCount, activityCount }: { sleepCount: number; mealCount: number; activityCount: number }) {
   const bars = [
-    { label: "Meal Logging", count: mealCount, color: "bg-emerald-500" },
-    { label: "Check-ins", count: checkInCount7, color: "bg-blue-500" },
-    { label: "Activity Completion", count: activityCount, color: "bg-violet-500" },
+    { label: "Sleep Quality", count: sleepCount, color: "bg-indigo-500" },
+    { label: "Nutrition", count: mealCount, color: "bg-emerald-500" },
+    { label: "Activity", count: activityCount, color: "bg-violet-500" },
   ];
   return (
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
@@ -489,8 +489,8 @@ export default function PatientDashboard() {
   const checkinCount = adherence7Day.filter(d => d.completed !== null).length;
   const missedCount = 7 - completedCount;
   const mealCount = Math.round(((consistencyBreakdown.mealLogging ?? 0) / 100) * 7);
-  const checkInCount7 = Math.round(((consistencyBreakdown.checkIns ?? 0) / 100) * 7);
   const activityCount = Math.round(((consistencyBreakdown.activity ?? 0) / 100) * 7);
+  const sleepCount = Math.round(((consistencyBreakdown.sleep ?? 0) / 100) * 7);
 
 
   /* ── Shared adherence grid + legend ──────────────── */
@@ -716,7 +716,7 @@ export default function PatientDashboard() {
               <WeightCard weightSeries={weightSeries} weightChange={weightChange} patient={dash.patient} />
               {plan === "basic"
                 ? <BasicConsistencyCard adherencePct={adherencePct} completedCount={completedCount} />
-                : <ComprehensiveConsistencyCard mealCount={mealCount} checkInCount7={checkInCount7} activityCount={activityCount} />
+                : <ComprehensiveConsistencyCard sleepCount={sleepCount} mealCount={mealCount} activityCount={activityCount} />
               }
               <EnergyCard energySeries={energySeries} />
               {plan === "comprehensive" && glucoseSeries.length > 0 && (

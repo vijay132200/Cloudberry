@@ -1,0 +1,15 @@
+-The basic plan dashboard must be exactly like in the first uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version. The energy graph shall show day wise sicne it is collected daily.
+
+-The comprehensive plan dashboard must be exactly like in the second uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version.  The energy graph shall show day wise sicne it is collected daily.
+
+-The prermium plan dashboard must be exactly like in the third uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version.  The energy graph shall show day wise sicne it is collected daily.
+
+-In weight show how much they lose
+
+-Post meal glucose shall be collected once in every 3 days
+
+- In operations portal, whenever we click on any patient then there shall be one more tab and it shall be the first, that is the dashboard, in it the complete dashboard of that patient must be visible like it is in that patient's dashboard. It must be completely the same as that particular patient looks at their dashboard, it must be the 100% same the same sections, data, graphs, everything. The operations team must be able to edit things directly on that dashboard by viewing it, for example editing, this week's focus, insights, etc. directly. In the dashboard the operations team must be directly be able to go to that section and edit the text in that, like they can just click and edit this week's focus, insights, next coach review, weekly inisghts, etc.
+
+- In the doctor portal,
+Remove this escalation system completely
+Whenever a doctor clicks on a patient, then in the profile section they must be able to see the current full patient dashboard of that patient like the patient sees it, it must be visible completely. It must be completely the same as that particular patient looks at their dashboard, it must be the 100% same the same sections, data, graphs, everything

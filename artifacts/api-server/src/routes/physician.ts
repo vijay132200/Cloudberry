@@ -257,10 +257,19 @@ router.get("/patients/:id/dashboard", async (req, res) => {
     const dataCount = adherence7Day.filter(d => d.completed !== null).length;
     const adherencePct = dataCount > 0 ? Math.round((completedCount / 7) * 100) : null;
     const last7 = allCheckins.slice(0, 7);
+    const sleepMets = allMetrics.filter(m => m.type === "sleep_hours");
+    let goodSleepDays = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      const sm = sleepMets.find(m => m.date === iso);
+      if (sm && sm.value >= 7) goodSleepDays++;
+    }
     const consistencyBreakdown = last7.length === 0 ? null : {
       mealLogging: Math.round((last7.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly").length / 7) * 100),
       checkIns: Math.round((last7.length / 7) * 100),
       activity: Math.round((last7.filter(c => c.activityCompleted).length / 7) * 100),
+      sleep: Math.round((goodSleepDays / 7) * 100),
     };
 
     let streak = 0;
