@@ -115,7 +115,11 @@ async function seed() {
     fullName: "Rajesh Kumar", email: "caretaker@cloudberry.health", role: "caretaker", specialty: "Patient Care Coordination",
   });
 
-  console.log(`\n📋 Staff IDs — Ops: ${ops.id} | Physician: ${physician.id} | Dietician: ${dietician.id} | Caretaker: ${caretaker.id}\n`);
+  const coach = await upsertStaff("priya@cloudberry.health", {
+    fullName: "Priya Nair", email: "priya@cloudberry.health", role: "coach", specialty: "Lifestyle & Weight Management",
+  });
+
+  console.log(`\n📋 Staff IDs — Ops: ${ops.id} | Physician: ${physician.id} | Dietician: ${dietician.id} | Caretaker: ${caretaker.id} | Coach: ${coach.id}\n`);
 
   // ─── PATIENTS — 3 per plan × 3 data levels ───────────────────────────────
   // COMPREHENSIVE PLAN (1-month data) — main demo patient
@@ -126,8 +130,10 @@ async function seed() {
   const p1 = ep1 || (await db.insert(patientsTable).values({
     userId: u1.id, primaryGoal: "weight_loss", plan: "comprehensive",
     weekNumber: 8, startingWeight: 92.5, currentWeight: 88.3, targetWeight: 78.0,
-    assignedCoachId: physician.id, status: "active", riskLevel: "low",
+    assignedCoachId: physician.id, assignedPhysicianId: physician.id,
+    status: "active", riskLevel: "low",
   }).returning())[0];
+  if (ep1) await db.update(patientsTable).set({ assignedPhysicianId: physician.id }).where(eq(patientsTable.id, ep1.id));
   await seedPlan(p1.id);
   await seedCheckins(p1.id, 30);
   await seedMetrics(p1.id, 8, 92.5, 148);
@@ -142,8 +148,10 @@ async function seed() {
   const p2 = ep2 || (await db.insert(patientsTable).values({
     userId: u2.id, primaryGoal: "weight_loss", plan: "basic",
     weekNumber: 6, startingWeight: 98.0, currentWeight: 95.1, targetWeight: 82.0,
-    assignedCoachId: caretaker.id, status: "active", riskLevel: "low",
+    assignedCoachId: caretaker.id, assignedCaretakerId: caretaker.id,
+    status: "active", riskLevel: "low",
   }).returning())[0];
+  if (ep2) await db.update(patientsTable).set({ assignedCaretakerId: caretaker.id }).where(eq(patientsTable.id, ep2.id));
   await seedPlan(p2.id);
   await seedCheckins(p2.id, 28);
   await seedMetrics(p2.id, 6, 98.0, 135);
@@ -158,8 +166,10 @@ async function seed() {
   const p3 = ep3 || (await db.insert(patientsTable).values({
     userId: u3.id, primaryGoal: "diabetes_management", plan: "premium",
     weekNumber: 10, startingWeight: 74.5, currentWeight: 71.2, targetWeight: 62.0,
-    assignedCoachId: physician.id, status: "active", riskLevel: "medium",
+    assignedCoachId: physician.id, assignedPhysicianId: physician.id, assignedDieticianId: dietician.id,
+    status: "active", riskLevel: "medium",
   }).returning())[0];
+  if (ep3) await db.update(patientsTable).set({ assignedPhysicianId: physician.id, assignedDieticianId: dietician.id }).where(eq(patientsTable.id, ep3.id));
   await seedPlan(p3.id);
   await seedCheckins(p3.id, 30);
   await seedMetrics(p3.id, 10, 74.5, 162);
@@ -174,8 +184,10 @@ async function seed() {
   const p4 = ep4 || (await db.insert(patientsTable).values({
     userId: u4.id, primaryGoal: "both", plan: "comprehensive",
     weekNumber: 2, startingWeight: 82.0, currentWeight: 81.2, targetWeight: 70.0,
-    assignedCoachId: dietician.id, status: "active", riskLevel: "low",
+    assignedCoachId: dietician.id, assignedDieticianId: dietician.id,
+    status: "active", riskLevel: "low",
   }).returning())[0];
+  if (ep4) await db.update(patientsTable).set({ assignedDieticianId: dietician.id }).where(eq(patientsTable.id, ep4.id));
   await seedPlan(p4.id);
   await seedCheckins(p4.id, 7);
   await seedMetrics(p4.id, 2, 82.0, 138);
@@ -190,8 +202,10 @@ async function seed() {
   const p5 = ep5 || (await db.insert(patientsTable).values({
     userId: u5.id, primaryGoal: "weight_loss", plan: "basic",
     weekNumber: 1, startingWeight: 105.0, currentWeight: 104.5, targetWeight: 88.0,
-    assignedCoachId: caretaker.id, status: "active", riskLevel: "high",
+    assignedCoachId: caretaker.id, assignedCaretakerId: caretaker.id,
+    status: "active", riskLevel: "high",
   }).returning())[0];
+  if (ep5) await db.update(patientsTable).set({ assignedCaretakerId: caretaker.id }).where(eq(patientsTable.id, ep5.id));
   await seedPlan(p5.id);
   await seedCheckins(p5.id, 5);
   await seedMetrics(p5.id, 1, 105.0, 145);
@@ -206,8 +220,10 @@ async function seed() {
   const p6 = ep6 || (await db.insert(patientsTable).values({
     userId: u6.id, primaryGoal: "diabetes_management", plan: "premium",
     weekNumber: 2, startingWeight: 68.0, currentWeight: 67.5, targetWeight: 58.0,
-    assignedCoachId: physician.id, status: "active", riskLevel: "low",
+    assignedCoachId: physician.id, assignedPhysicianId: physician.id,
+    status: "active", riskLevel: "low",
   }).returning())[0];
+  if (ep6) await db.update(patientsTable).set({ assignedPhysicianId: physician.id }).where(eq(patientsTable.id, ep6.id));
   await seedPlan(p6.id);
   await seedCheckins(p6.id, 6);
   await seedMetrics(p6.id, 2, 68.0, 155);
@@ -302,6 +318,7 @@ async function seed() {
   console.log(`  Physician  : physician@cloudberry.health`);
   console.log(`  Dietician  : dietician@cloudberry.health`);
   console.log(`  Caretaker  : caretaker@cloudberry.health`);
+  console.log(`  Coach      : priya@cloudberry.health`);
   console.log("\nPATIENT DEMO CREDENTIALS (all password: demo123)");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("  Comprehensive (1 month) : patient@cloudberry.health");

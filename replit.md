@@ -50,11 +50,18 @@ Four distinct role-based experiences:
 
 ## Demo credentials
 
-| Role | Login | Credential |
-|------|-------|-----------|
-| Patient | 9876543210 (phone) | any password |
-| Coach | priya@cloudberry.health (email) | any password |
-| Ops | ops@cloudberry.health (email) | any password |
+All staff passwords: `demo123`
+
+| Role | Login | Name |
+|------|-------|------|
+| Patient | 9876543210 (phone) | Rahul Sharma |
+| Ops | ops@cloudberry.health | Neha Iyer |
+| Physician | physician@cloudberry.health | Dr. Arjun Mehta |
+| Dietician | dietician@cloudberry.health | Priya Sharma |
+| Caretaker | caretaker@cloudberry.health | Rajesh Kumar |
+| Coach | priya@cloudberry.health | Priya Nair |
+
+Patient sign-in uses phone number; staff portals use email. The main demo patient (Rahul Sharma, phone 9876543210) has 30 days of check-in history, weight/glucose metrics, a care plan, and an upcoming appointment.
 
 ## User preferences
 
