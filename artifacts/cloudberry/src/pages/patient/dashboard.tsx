@@ -436,6 +436,20 @@ export default function PatientDashboard() {
     retry: 1,
   });
 
+  const focusItems = useMemo(() => {
+    const goals = dash?.carePlan?.weeklyGoals;
+    if (!goals) return [];
+    return goals.split(/[\n\r•\-]/).map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
+  }, [dash?.carePlan?.weeklyGoals]);
+
+  const glucoseVariability = useMemo(() => {
+    const vals = (dash?.glucoseSeries || []).map((g: any) => g.value);
+    const avg = dash?.avgGlucose ?? null;
+    if (vals.length < 2 || avg === null) return null;
+    const variance = vals.reduce((s: number, v: number) => s + (v - avg) ** 2, 0) / vals.length;
+    return Math.round(Math.sqrt(variance));
+  }, [dash?.glucoseSeries, dash?.avgGlucose]);
+
   if (isLoading) {
     return (
       <PatientLayout>
@@ -478,17 +492,6 @@ export default function PatientDashboard() {
   const checkInCount7 = Math.round(((consistencyBreakdown.checkIns ?? 0) / 100) * 7);
   const activityCount = Math.round(((consistencyBreakdown.activity ?? 0) / 100) * 7);
 
-  const focusItems = useMemo(() => {
-    if (!carePlan?.weeklyGoals) return [];
-    return carePlan.weeklyGoals.split(/[\n\r•\-]/).map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
-  }, [carePlan]);
-
-  const glucoseVariability = useMemo(() => {
-    const vals = glucoseSeries.map((g: any) => g.value);
-    if (vals.length < 2 || avgGlucose === null) return null;
-    const variance = vals.reduce((s: number, v: number) => s + (v - avgGlucose) ** 2, 0) / vals.length;
-    return Math.round(Math.sqrt(variance));
-  }, [glucoseSeries, avgGlucose]);
 
   /* ── Shared adherence grid + legend ──────────────── */
   const AdherenceGrid = () => (
