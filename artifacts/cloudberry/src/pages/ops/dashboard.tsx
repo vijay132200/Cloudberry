@@ -420,6 +420,60 @@ function PatientDetailPanel({
                       </CardContent>
                     </Card>
 
+                    {/* Behavioral Consistency */}
+                    {(() => {
+                      const cb = d.consistencyBreakdown;
+                      const sleep = cb?.sleep ?? 0;
+                      const nutrition = cb?.mealLogging ?? 0;
+                      const activity = cb?.activity ?? 0;
+                      const overall = cb ? Math.round((sleep + nutrition + activity) / 3) : null;
+                      const scoreColor = overall === null ? "#94a3b8" : overall >= 70 ? "#22c55e" : overall >= 45 ? "#f59e0b" : "#ef4444";
+                      const scoreBg = overall === null ? "bg-slate-50 text-slate-500 border-slate-200"
+                        : overall >= 70 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : overall >= 45 ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200";
+                      const scoreLabel = overall === null ? "No data" : overall >= 70 ? "Strong" : overall >= 45 ? "Moderate" : "Needs Work";
+                      const bars = [
+                        { label: "Sleep", value: sleep, color: "bg-indigo-500" },
+                        { label: "Nutrition", value: nutrition, color: "bg-emerald-500" },
+                        { label: "Activity", value: activity, color: "bg-violet-500" },
+                      ];
+                      return (
+                        <Card className="border-border">
+                          <CardHeader className="pb-1">
+                            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                              <Activity className="w-3.5 h-3.5 text-emerald-600" /> Behavioral Consistency
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pb-3">
+                            <div className="flex items-end gap-3 mb-3 pb-2.5 border-b border-border/40">
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Overall Score</p>
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-3xl font-extrabold leading-none" style={{ color: scoreColor }}>{overall ?? "—"}</span>
+                                  <span className="text-xs text-muted-foreground">/100</span>
+                                </div>
+                              </div>
+                              <Badge variant="outline" className={`text-[10px] border mb-0.5 ${scoreBg}`}>{scoreLabel}</Badge>
+                            </div>
+                            <div className="space-y-2.5">
+                              {bars.map(b => (
+                                <div key={b.label}>
+                                  <div className="flex items-center justify-between text-[10px] mb-1">
+                                    <span className="text-foreground/80 font-medium">{b.label}</span>
+                                    <span className="font-bold text-foreground tabular-nums">{b.value}<span className="text-muted-foreground font-normal">/100</span></span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                    <div className={`h-full rounded-full transition-all duration-500 ${b.color}`} style={{ width: `${b.value}%` }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })()}
+
                     {/* Weight trend */}
                     {d.weightSeries?.length > 1 && (
                       <Card className="border-border">

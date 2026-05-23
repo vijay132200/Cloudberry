@@ -112,10 +112,20 @@ function PhysicianPatientDashboard({ patient, dashData }: { patient: any; dashDa
   const streak: number = d.streak ?? 0;
   const completedCount = adherence7Day.filter((day: any) => day.completed === true).length;
   const checkinCount = adherence7Day.filter((day: any) => day.completed !== null).length;
-  const sleepCount = Math.round(((consistencyBreakdown.sleep ?? 0) / 100) * 7);
-  const mealCount = Math.round(((consistencyBreakdown.mealLogging ?? 0) / 100) * 7);
-  const activityCount = Math.round(((consistencyBreakdown.activity ?? 0) / 100) * 7);
   const lost = weightChange !== null && weightChange < 0;
+
+  const cbSleep = consistencyBreakdown?.sleep ?? 0;
+  const cbNutrition = consistencyBreakdown?.mealLogging ?? 0;
+  const cbActivity = consistencyBreakdown?.activity ?? 0;
+  const cbOverall = consistencyBreakdown
+    ? Math.round((cbSleep + cbNutrition + cbActivity) / 3)
+    : null;
+  const cbColor = cbOverall === null ? "#94a3b8" : cbOverall >= 70 ? "#22c55e" : cbOverall >= 45 ? "#f59e0b" : "#ef4444";
+  const cbBadgeCls = cbOverall === null ? "bg-slate-50 text-slate-500 border-slate-200"
+    : cbOverall >= 70 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : cbOverall >= 45 ? "bg-amber-50 text-amber-700 border-amber-200"
+    : "bg-rose-50 text-rose-700 border-rose-200";
+  const cbLabel = cbOverall === null ? "No data" : cbOverall >= 70 ? "Strong" : cbOverall >= 45 ? "Moderate" : "Needs Work";
 
   return (
     <div className="space-y-5">
@@ -174,19 +184,39 @@ function PhysicianPatientDashboard({ patient, dashData }: { patient: any; dashDa
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="text-sm flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" />Behavioral Consistency</CardTitle>
         </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-3">
-          {[
-            { label: "Sleep Quality", count: sleepCount, color: "bg-indigo-500" },
-            { label: "Nutrition", count: mealCount, color: "bg-emerald-500" },
-            { label: "Activity", count: activityCount, color: "bg-violet-500" },
-          ].map(b => (
-            <div key={b.label}>
-              <div className="flex justify-between text-xs mb-1"><span className="text-foreground/80">{b.label}</span><span className="font-semibold text-foreground">{b.count}/7</span></div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className={`h-full rounded-full ${b.color}`} style={{ width: `${(b.count / 7) * 100}%` }} />
+        <CardContent className="px-4 pb-4">
+          {/* Overall score */}
+          <div className="flex items-end gap-3 mb-4 pb-3 border-b border-border/40">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Overall Score</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-extrabold leading-none" style={{ color: cbColor }}>{cbOverall ?? "—"}</span>
+                <span className="text-sm text-muted-foreground">/100</span>
               </div>
             </div>
-          ))}
+            <Badge variant="outline" className={`text-xs border mb-0.5 ${cbBadgeCls}`}>{cbLabel}</Badge>
+          </div>
+          {/* Individual metric bars */}
+          <div className="space-y-3">
+            {[
+              { icon: <HeartPulse className="w-3.5 h-3.5 text-indigo-500" />, label: "Sleep", value: cbSleep, color: "bg-indigo-500" },
+              { icon: <Salad className="w-3.5 h-3.5 text-emerald-600" />, label: "Nutrition", value: cbNutrition, color: "bg-emerald-500" },
+              { icon: <Dumbbell className="w-3.5 h-3.5 text-violet-600" />, label: "Activity", value: cbActivity, color: "bg-violet-500" },
+            ].map(b => (
+              <div key={b.label}>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="flex items-center gap-1.5 text-foreground/80 font-medium">{b.icon}{b.label}</span>
+                  <span className="font-bold text-foreground tabular-nums">{b.value}<span className="text-muted-foreground font-normal text-[10px]">/100</span></span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-500 ${b.color}`} style={{ width: `${b.value}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-3 pt-3 border-t border-border/40">
+            Score = average of Sleep, Nutrition & Activity · last 7 days
+          </p>
         </CardContent>
       </Card>
 
