@@ -1,0 +1,52 @@
+-The basic plan dashboard must be exactly like in the first uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version. The energy graph shall show day wise sicne it is collected daily.
+
+-The comprehensive plan dashboard must be exactly like in the second uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version.  The energy graph shall show day wise sicne it is collected daily.
+
+-The prermium plan dashboard must be exactly like in the third uploaded image, remove the notifications icon. The icons, the type and style of graphs must be exactly replicated like in the image, for calculation of certain metrics look in the image itself, all the insights or things that will come from the team will be given by them no sample or fake things, all real. If somethings is not logical that is it will show fake things then only dont keep it. Adjust things accordingly for the mobile version.  The energy graph shall show day wise sicne it is collected daily.
+
+-In weight show how much they lose
+
+-Post meal glucose shall be collected once in every 3 days
+
+- In operations portal, whenever we click on any patient then there shall be one more tab and it shall be the first, that is the dashboard, in it the complete dashboard of that patient must be visible like it is in that patient's dashboard. It must be completely the same as that particular patient looks at their dashboard, it must be the 100% same the same sections, data, graphs, everything. The operations team must be able to edit things directly on that dashboard by viewing it, for example editing, this week's focus, insights, etc. directly. In the dashboard the operations team must be directly be able to go to that section and edit the text in that, like they can just click and edit this week's focus, insights, next coach review, weekly inisghts, etc.
+
+- In the doctor portal,
+Remove this escalation system completely
+Whenever a doctor clicks on a patient, then in the profile section they must be able to see the current full patient dashboard of that patient like the patient sees it, it must be visible completely. It must be completely the same as that particular patient looks at their dashboard, it must be the 100% same the same sections, data, graphs, everything
+
+- Remove the partner with cloudberry button in the end of the home page
+
+- Remove the "Ready to start your health journey?" section in the home page
+
+- Make FAQs section white
+
+- In all the dashboards, currently it is showing big C in blue icon cloudberry logo, i dont want that i want only the text in black like it is in the home page and keep it only everywhere in the website. Fix it in anywhere wrong in the website.
+
+- In mobile when i go on patient sign up, there shall be only 3 blocks but in tab and pc version keep 4 blocks
+
+- In footer, keep Address: Indore, Madhya Pradesh (soon expanding in other cities) remove mumbai
+
+- In mobile, keep slidable carousal for about us and dots below it like in other carousals in the home page
+
+- The text only "Doctor-Led
+Clinical Oversight
+Coordinated
+Care Team
+Daily
+Accountability
+Personalized
+Nutrition & Movement" in the home page keep it in blue and white like the website's theme
+
+- In programs and pricing section keep all the blocks in shade of black only
+
+- In sign up and sign in page there shall be a button to go back
+
+- Inside all the sign up and sign in pages inside it it shall clearly mention that it for whom doctor, patient, operations team
+
+- Everywhere in the website there shall be a button to go back to previous
+
+- Once patient signs up in the sign up page, the message that comes is now in yellow shades that box and text must be consistent with our website's theme white and blue, and in the message it is not saying 24 hours work on that
+
+- When click on connect with us, in are you a doctor?, change the word clinical to clinic
+
+- The big floater button, "connect with us" shall only come in home page and no where else in the website.

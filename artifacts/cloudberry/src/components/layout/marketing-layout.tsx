@@ -151,7 +151,6 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
               <a href="/#pricing" className="text-white/60 hover:text-white text-sm transition-colors">Programs & Pricing</a>
               <a href="/#about" className="text-white/60 hover:text-white text-sm transition-colors">About Us</a>
               <p className="text-white/50 text-xs mt-1">Indore, Madhya Pradesh</p>
-              <p className="text-white/50 text-xs">Mumbai, Maharashtra</p>
               <a href="/#faqs" className="text-white/60 hover:text-white text-sm transition-colors">FAQs</a>
             </div>
 
@@ -214,7 +213,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                       <span className="font-semibold text-base">Are you a Doctor?</span>
                       <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-sky-600 transition-colors" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Partner with Cloudberry to extend your clinical reach</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Partner with Cloudberry to extend your clinic's reach</p>
                   </div>
                 </div>
               </div>
@@ -283,12 +282,14 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
         </DialogContent>
       </Dialog>
 
-      {/* Floating Mobile CTA */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-40 lg:hidden">
-        <Button size="lg" className="w-full rounded-full shadow-lg text-md py-6" onClick={() => setConnectOpen(true)}>
-          Connect with Us →
-        </Button>
-      </div>
+      {/* Floating Mobile CTA — only on home page */}
+      {location === "/" && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent z-40 lg:hidden">
+          <Button size="lg" className="w-full rounded-full shadow-lg text-md py-6" onClick={() => setConnectOpen(true)}>
+            Connect with Us →
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

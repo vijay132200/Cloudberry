@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = `${BASE}/api`;
@@ -67,6 +67,11 @@ export default function PatientSignin() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/60 via-white to-blue-50/60 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <div className="mb-3">
+          <Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </Link>
+        </div>
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-5">
             <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>

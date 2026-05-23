@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -56,12 +56,17 @@ export default function PhysicianSignin() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/40 via-white to-amber-50/30 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
+        <div className="mb-3">
+          <Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </Link>
+        </div>
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-5">
             <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">Doctor Sign In</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Access your physician portal</p>
+          <p className="text-muted-foreground mt-1 text-sm">For registered Cloudberry physicians</p>
         </div>
 
         <Card className="border-border/60 shadow-lg bg-white rounded-2xl overflow-hidden">

@@ -8,6 +8,7 @@ import * as z from "zod";
 import { useOpsSignin } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
+import { ArrowLeft } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email("Valid email required"),
@@ -42,6 +43,11 @@ export default function OpsSignin() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
+        <div className="mb-3">
+          <Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </Link>
+        </div>
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-3">
             <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>

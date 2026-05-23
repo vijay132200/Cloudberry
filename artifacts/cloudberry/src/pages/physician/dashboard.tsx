@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, Search, LogOut, ChevronRight, Activity, TrendingDown,
   FileText, CheckCircle2, HeartPulse, Stethoscope, X, Clock,
-  Target, User, ShieldAlert, ShieldCheck, RefreshCw, Save,
+  Target, User, RefreshCw, Save, AlertTriangle,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
@@ -244,16 +244,6 @@ export default function PhysicianDashboard() {
     enabled: !!selectedPatient,
   });
 
-  const escalateMut = useMutation({
-    mutationFn: (id: number) => apiPatch(`/physician/patients/${id}/escalate`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["physician-patients"] }); toast({ title: "Patient escalated to High Risk", variant: "destructive" }); },
-  });
-
-  const deescalateMut = useMutation({
-    mutationFn: (id: number) => apiPatch(`/physician/patients/${id}/deescalate`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["physician-patients"] }); toast({ title: "Patient de-escalated to Low Risk" }); },
-  });
-
   const noteMut = useMutation({
     mutationFn: ({ id, content }: { id: number; content: string }) => apiPost(`/physician/patients/${id}/notes`, { content, category: "physician" }),
     onSuccess: () => {
@@ -333,7 +323,7 @@ export default function PhysicianDashboard() {
           {sidebarOpen && highRisk.length > 0 && (
             <div className="mt-3 px-3 py-2.5 rounded-lg bg-rose-50 border border-rose-100">
               <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                 <span className="text-xs font-semibold text-rose-700">{highRisk.length} High Risk</span>
               </div>
               <p className="text-[10px] text-rose-500 mt-0.5">Patients needing attention</p>
@@ -393,7 +383,7 @@ export default function PhysicianDashboard() {
               {/* High risk banner */}
               {highRisk.length > 0 && (
                 <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
-                  <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0" />
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
                   <p className="text-sm text-rose-700 font-medium">{highRisk.length} patient{highRisk.length !== 1 ? "s" : ""} flagged as high risk — review their profiles.</p>
                   <Button size="sm" variant="outline" className="ml-auto text-xs rounded-full text-rose-600 border-rose-200 hover:bg-rose-50"
                     onClick={() => setRiskFilter("high")}>View</Button>
@@ -534,17 +524,6 @@ export default function PhysicianDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {selectedPatient.riskLevel !== "high" ? (
-                  <Button size="sm" variant="outline" className="text-xs rounded-full bg-white/10 border-white/30 text-white hover:bg-white/20 gap-1"
-                    onClick={() => escalateMut.mutate(selectedPatient.id)}>
-                    <ShieldAlert className="w-3 h-3" />Escalate
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline" className="text-xs rounded-full bg-white/10 border-white/30 text-white hover:bg-white/20 gap-1"
-                    onClick={() => deescalateMut.mutate(selectedPatient.id)}>
-                    <ShieldCheck className="w-3 h-3" />De-escalate
-                  </Button>
-                )}
                 <button onClick={() => setSelectedPatient(null)} className="text-white/70 hover:text-white ml-1">
                   <X className="w-5 h-5" />
                 </button>

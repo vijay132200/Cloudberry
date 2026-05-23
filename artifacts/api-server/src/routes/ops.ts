@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, patientsTable, checkinsTable, leadsTable, staffTable, appointmentsTable, patientNotesTable, patientPlansTable, metricsTable } from "@workspace/db";
-import { eq, desc, sql, or } from "drizzle-orm";
+import { eq, desc, sql, or, and, asc, gte } from "drizzle-orm";
 
 const router = Router();
 
@@ -398,6 +398,123 @@ router.get("/leads", async (req, res) => {
       ...l,
       createdAt: l.createdAt instanceof Date ? l.createdAt.toISOString() : l.createdAt,
     })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/ops/patients/:id/dashboard — full patient dashboard data
+router.get("/patients/:id/dashboard", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res);
+    if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, patient.userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    async function loadStaff2(id: number | null | undefined) {
+      if (!id) return null;
+      const [s] = await db.select().from(staffTable).where(eq(staffTable.id, id)).limit(1);
+      return s ? { name: s.fullName, role: s.role } : null;
+    }
+    const [physician, dietician, caretaker] = await Promise.all([
+      loadStaff2(patient.assignedPhysicianId),
+      loadStaff2(patient.assignedDieticianId),
+      loadStaff2(patient.assignedCaretakerId ?? patient.assignedCoachId),
+    ]);
+
+    const allMetrics = await db.select().from(metricsTable)
+      .where(eq(metricsTable.patientId, patient.id))
+      .orderBy(asc(metricsTable.createdAt)).limit(200);
+
+    const weightSeries = allMetrics.filter(m => m.type === "weight").map(m => ({ date: m.date, value: m.value }));
+    const glucoseSeries = allMetrics.filter(m => m.type === "glucose").map(m => ({ date: m.date, value: m.value }));
+
+    const allCheckins = await db.select().from(checkinsTable)
+      .where(eq(checkinsTable.patientId, patient.id))
+      .orderBy(desc(checkinsTable.createdAt)).limit(30);
+    const [{ count: totalCheckinsRow }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(checkinsTable).where(eq(checkinsTable.patientId, patient.id));
+    const totalCheckins = Number(totalCheckinsRow ?? 0);
+
+    const energyMap: Record<string, number> = { high: 3, good: 3, moderate: 2, medium: 2, low: 1, tired: 1 };
+    const recent7 = [...allCheckins].slice(0, 7).reverse();
+    const energySeries = recent7.map(c => ({
+      date: c.createdAt.toISOString().slice(0, 10),
+      value: energyMap[c.energyLevel?.toLowerCase()] ?? 2,
+      label: c.energyLevel,
+    }));
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayIso = today.toISOString().slice(0, 10);
+    const adherence7Day: Array<{ date: string; dow: string; completed: boolean | null }> = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      const dow = d.toLocaleDateString("en-US", { weekday: "short" });
+      const ci = allCheckins.find(c => c.createdAt.toISOString().slice(0, 10) === iso);
+      adherence7Day.push({ date: iso, dow, completed: ci ? ci.mealsFollowed === "yes" : null });
+    }
+    const completedCount = adherence7Day.filter(d => d.completed === true).length;
+    const dataCount = adherence7Day.filter(d => d.completed !== null).length;
+    const adherencePct = dataCount > 0 ? Math.round((completedCount / 7) * 100) : null;
+
+    const last7 = allCheckins.slice(0, 7);
+    const consistencyBreakdown = last7.length === 0 ? null : {
+      mealLogging: Math.round((last7.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly").length / 7) * 100),
+      checkIns: Math.round((last7.length / 7) * 100),
+      activity: Math.round((last7.filter(c => c.activityCompleted).length / 7) * 100),
+    };
+
+    let streak = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const iso = d.toISOString().slice(0, 10);
+      if (allCheckins.find(c => c.createdAt.toISOString().slice(0, 10) === iso)) streak++;
+      else if (i > 0) break;
+    }
+    const checkinDoneToday = allCheckins.some(c => c.createdAt.toISOString().slice(0, 10) === todayIso);
+    const weightChange = weightSeries.length >= 2
+      ? +(weightSeries[weightSeries.length - 1].value - weightSeries[0].value).toFixed(1) : null;
+    const last7Glucose = glucoseSeries.slice(-7).map(g => g.value);
+    const avgGlucose = last7Glucose.length > 0 ? Math.round(last7Glucose.reduce((a, b) => a + b, 0) / last7Glucose.length) : null;
+    const timeInRange = last7Glucose.length > 0
+      ? Math.round((last7Glucose.filter(g => g >= 80 && g <= 140).length / last7Glucose.length) * 100) : null;
+
+    const upcoming = await db.select().from(appointmentsTable)
+      .where(and(eq(appointmentsTable.patientId, patient.id), eq(appointmentsTable.status, "upcoming"), gte(appointmentsTable.scheduledAt, new Date())))
+      .orderBy(asc(appointmentsTable.scheduledAt)).limit(1);
+    const nextAppointment = upcoming[0] ? { ...upcoming[0], scheduledAt: upcoming[0].scheduledAt.toISOString(), createdAt: upcoming[0].createdAt.toISOString() } : null;
+
+    const [planRow] = await db.select().from(patientPlansTable).where(eq(patientPlansTable.patientId, patient.id)).limit(1);
+    const carePlan = planRow ? { nutritionPlan: planRow.nutritionPlan, activityPlan: planRow.activityPlan, weeklyGoals: planRow.weeklyGoals } : null;
+
+    const hasEnoughData = allCheckins.length >= 5;
+    let insights: Array<{ kind: string; title: string; body: string }> | null = null;
+    if (hasEnoughData) {
+      insights = [];
+      const lowE = last7.filter(c => energyMap[c.energyLevel?.toLowerCase()] === 1).length;
+      const skipped = last7.filter(c => !c.activityCompleted).length;
+      if (lowE >= 2) insights.push({ kind: "challenge", title: "Energy dip pattern", body: `Low energy on ${lowE} of last 7 days.` });
+      if (weightChange !== null && weightChange < 0) insights.push({ kind: "positive", title: "Weight trending down", body: `Down ${Math.abs(weightChange).toFixed(1)} kg over recorded period.` });
+      if (skipped >= 3) insights.push({ kind: "focus", title: "Activity consistency", body: `Activity completed ${7 - skipped}/7 days.` });
+      if (avgGlucose !== null && avgGlucose < 120) insights.push({ kind: "positive", title: "Glucose in healthy range", body: `7-day avg ${avgGlucose} mg/dL.` });
+      if (insights.length === 0) insights = null;
+    }
+
+    res.json({
+      patient: { id: patient.id, fullName: user.fullName, phone: user.phone, email: user.email ?? null, city: user.city ?? "", primaryGoal: patient.primaryGoal, plan: patient.plan, weekNumber: patient.weekNumber, startingWeight: patient.startingWeight ?? null, currentWeight: patient.currentWeight ?? null, targetWeight: patient.targetWeight ?? null },
+      careTeam: { physician, dietician, caretaker },
+      careAssigned: Boolean(physician || dietician || caretaker),
+      weekNumber: patient.weekNumber,
+      weightSeries, glucoseSeries, energySeries,
+      adherence7Day, adherencePct, consistencyBreakdown,
+      streak, checkinDoneToday, weightChange, avgGlucose, timeInRange,
+      nextAppointment, carePlan, insights, hasEnoughData, totalCheckins,
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

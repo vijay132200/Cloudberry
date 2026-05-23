@@ -23,7 +23,7 @@ const whyCards = [
 ];
 
 const impactBlocks = [
-  { icon: <Activity className="w-7 h-7 text-amber-400" />, title: "Better Lifestyle Consistency", desc: "Track habits and improve adherence over time." },
+  { icon: <Activity className="w-7 h-7 text-sky-400" />, title: "Better Lifestyle Consistency", desc: "Track habits and improve adherence over time." },
   { icon: <TrendingUp className="w-7 h-7 text-blue-400" />, title: "Sustainable Weight Management", desc: "Focus on gradual, long-term progress." },
   { icon: <HeartPulse className="w-7 h-7 text-rose-400" />, title: "Improved Glucose Awareness", desc: "Help patients better understand and manage their health patterns." },
   { icon: <Users className="w-7 h-7 text-emerald-400" />, title: "Continuous Human Support", desc: "Regular follow-up to help patients stay engaged and motivated." },
@@ -35,12 +35,38 @@ const journeySteps = [
   { week: "Week 2 onwards", title: "Continuous Fine-Tuning", desc: "Your care team regularly reviews progress and adjusts recommendations to help improve long-term consistency and outcomes." },
 ];
 
+const aboutCards = [
+  {
+    bg: "bg-primary/5 border-primary/15",
+    iconBg: "bg-primary/10",
+    icon: <Stethoscope className="w-6 h-6 text-primary" />,
+    title: "Built Around Doctor Trust",
+    body: "Every care decision at Cloudberry flows through a licensed physician. We don't replace doctors — we extend their reach so more patients can access the oversight they need.",
+  },
+  {
+    bg: "bg-amber-50 border-amber-100",
+    iconBg: "bg-amber-100",
+    icon: <GraduationCap className="w-6 h-6 text-amber-600" />,
+    title: "Alumni of IIT M and INSEAD",
+    body: "Our founding team brings deep experience across engineering, clinical science, and global business — combining rigour with real-world pragmatism in building healthcare technology.",
+  },
+  {
+    bg: "bg-slate-50 border-slate-100",
+    iconBg: "bg-slate-100",
+    icon: <MapPin className="w-6 h-6 text-slate-600" />,
+    title: "Kicking It Off in Indore",
+    body: "Starting from Indore, Madhya Pradesh — a city at the heart of India's growing middle class — we're building for patients who want quality care without travelling to a metro.",
+  },
+];
+
 export default function HomePage() {
   const [activeFrame, setActiveFrame] = useState(0);
   const [activeCard, setActiveCard] = useState(0);
+  const [activeAboutCard, setActiveAboutCard] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
   const cardsRef = useRef<HTMLDivElement | null>(null);
+  const aboutCardsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     intervalRef.current = setInterval(() => { setActiveFrame(prev => (prev + 1) % carouselFrames.length); }, 3500);
@@ -63,6 +89,15 @@ export default function HomePage() {
     if (cardsRef.current) {
       const container = cardsRef.current;
       const cardWidth = container.scrollWidth / whyCards.length;
+      container.scrollTo({ left: cardWidth * idx, behavior: "smooth" });
+    }
+  };
+
+  const scrollToAboutCard = (idx: number) => {
+    setActiveAboutCard(idx);
+    if (aboutCardsRef.current) {
+      const container = aboutCardsRef.current;
+      const cardWidth = container.scrollWidth / aboutCards.length;
       container.scrollTo({ left: cardWidth * idx, behavior: "smooth" });
     }
   };
@@ -92,7 +127,7 @@ export default function HomePage() {
                   <Button asChild variant="outline" size="lg" className="rounded-full px-8 text-base h-13 w-full sm:w-auto border-primary/30 hover:bg-primary/5 text-primary">
                     <Link href="/physician/signup">For Doctors <ArrowRight className="ml-2 h-5 w-5" /></Link>
                   </Button>
-                  <p className="text-xs text-muted-foreground text-center sm:text-left">Partner with Cloudberry to extend your clinical reach.</p>
+                  <p className="text-xs text-muted-foreground text-center sm:text-left">Partner with Cloudberry to extend your clinic's reach.</p>
                 </div>
               </div>
             </motion.div>
@@ -137,8 +172,8 @@ export default function HomePage() {
               { stat: "Personalized", label: "Nutrition & Movement" },
             ].map((item, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
-                <span className="text-xl font-bold text-amber-400">{item.stat}</span>
-                <span className="text-xs text-white/50 uppercase tracking-wider">{item.label}</span>
+                <span className="text-xl font-bold text-sky-300">{item.stat}</span>
+                <span className="text-xs text-white/60 uppercase tracking-wider">{item.label}</span>
               </div>
             ))}
           </div>
@@ -255,7 +290,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PROGRAMS & PRICING — Dark */}
+      {/* PROGRAMS & PRICING — Dark, all uniform */}
       <section id="pricing" className="py-14 bg-gray-900 scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-8">
@@ -285,41 +320,41 @@ export default function HomePage() {
             ].map((plan, pi) => (
               <div key={pi} className={`rounded-2xl flex flex-col gap-4 p-6 relative ${
                 plan.popular
-                  ? "bg-white border-2 border-primary shadow-xl ring-4 ring-primary/20"
+                  ? "bg-white/10 border border-primary/50 ring-1 ring-primary/30"
                   : "bg-white/5 border border-white/15"
               }`}>
                 <div>
                   <span className={`inline-block text-[10px] font-extrabold tracking-widest px-3 py-1 rounded-full ${
                     plan.popular ? "bg-primary text-white" : "border border-white/20 text-white/60"
                   }`}>{plan.label}</span>
-                  {plan.popular && <span className="ml-2 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Most Popular</span>}
+                  {plan.popular && <span className="ml-2 text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">Most Popular</span>}
                 </div>
                 <div>
-                  <h3 className={`text-2xl font-bold leading-tight ${plan.popular ? "text-foreground" : "text-white"}`}>{plan.name}</h3>
-                  <p className={`text-sm mt-0.5 ${plan.popular ? "text-muted-foreground" : "text-white/50"}`}>{plan.subtitle}</p>
+                  <h3 className="text-2xl font-bold leading-tight text-white">{plan.name}</h3>
+                  <p className="text-sm mt-0.5 text-white/50">{plan.subtitle}</p>
                   <div className="mt-2 flex items-baseline gap-1">
-                    <span className={`text-4xl font-extrabold ${plan.popular ? "text-foreground" : "text-white"}`}>{plan.price}</span>
-                    <span className={`text-base font-normal ${plan.popular ? "text-muted-foreground" : "text-white/50"}`}>/month</span>
+                    <span className="text-4xl font-extrabold text-white">{plan.price}</span>
+                    <span className="text-base font-normal text-white/50">/month</span>
                   </div>
                 </div>
-                <hr className={plan.popular ? "border-border" : "border-white/10"} />
+                <hr className="border-white/10" />
                 <div>
-                  <p className={`text-[10px] font-extrabold tracking-widest uppercase mb-1 ${plan.popular ? "text-muted-foreground" : "text-white/40"}`}>Best For:</p>
-                  <p className={`text-sm leading-relaxed ${plan.popular ? "text-foreground/70" : "text-white/60"}`}>{plan.bestFor}</p>
+                  <p className="text-[10px] font-extrabold tracking-widest uppercase mb-1 text-white/40">Best For:</p>
+                  <p className="text-sm leading-relaxed text-white/60">{plan.bestFor}</p>
                 </div>
                 <div className="flex-1">
-                  <p className={`text-[10px] font-extrabold tracking-widest uppercase mb-2 ${plan.popular ? "text-muted-foreground" : "text-white/40"}`}>Includes:</p>
-                  {plan.everythingIn && <p className={`text-sm font-semibold mb-2 ${plan.popular ? "text-primary" : "text-amber-400"}`}>{plan.everythingIn}</p>}
+                  <p className="text-[10px] font-extrabold tracking-widest uppercase mb-2 text-white/40">Includes:</p>
+                  {plan.everythingIn && <p className="text-sm font-semibold mb-2 text-amber-400">{plan.everythingIn}</p>}
                   <ul className="space-y-2">
                     {plan.includes.map((feat, j) => (
-                      <li key={j} className={`flex items-start gap-2 text-sm ${plan.popular ? "text-foreground/80" : "text-white/70"}`}>
-                        <CheckCircle2 className={`h-4 w-4 shrink-0 mt-0.5 ${plan.popular ? "text-primary" : "text-amber-400"}`} />
+                      <li key={j} className="flex items-start gap-2 text-sm text-white/70">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
                         {feat}
                       </li>
                     ))}
                   </ul>
                 </div>
-                <Button asChild variant={plan.popular ? "default" : "outline"} className={`w-full rounded-full mt-auto ${!plan.popular ? "border-white/20 text-white hover:bg-white/10" : ""}`}>
+                <Button asChild variant="outline" className="w-full rounded-full mt-auto border-white/20 text-white hover:bg-white/10">
                   <Link href={`/patient/signup?plan=${plan.planKey}`}>Get Started</Link>
                 </Button>
               </div>
@@ -337,48 +372,46 @@ export default function HomePage() {
               Cloudberry was built by people who believe healthcare needs a smarter, more human approach to chronic metabolic conditions.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-primary/5 border border-primary/15 rounded-2xl p-7 flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Stethoscope className="w-6 h-6 text-primary" />
+
+          {/* Desktop Grid */}
+          <div className="hidden md:grid grid-cols-3 gap-6">
+            {aboutCards.map((card, i) => (
+              <div key={i} className={`rounded-2xl p-7 flex flex-col gap-4 border ${card.bg}`}>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.iconBg}`}>{card.icon}</div>
+                <h3 className="text-lg font-bold text-foreground">{card.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{card.body}</p>
               </div>
-              <h3 className="text-lg font-bold text-foreground">Built Around Doctor Trust</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Every care decision at Cloudberry flows through a licensed physician. We don't replace doctors — we extend their reach so more patients can access the oversight they need.
-              </p>
-            </div>
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-7 flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">Alumni of IIT M and INSEAD</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Our founding team brings deep experience across engineering, clinical science, and global business — combining rigour with real-world pragmatism in building healthcare technology.
-              </p>
-            </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-7 flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
-                <MapPin className="w-6 h-6 text-slate-600" />
-              </div>
-              <h3 className="text-lg font-bold text-foreground">Kicking It Off in Indore</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Starting from Indore, Madhya Pradesh — a city at the heart of India's growing middle class — we're building for patients who want quality care without travelling to a metro.
-              </p>
-            </div>
+            ))}
           </div>
-          <div className="flex justify-center mt-8">
-            <Button asChild size="lg" className="rounded-full px-8">
-              <Link href="/physician/signup">Partner with Cloudberry →</Link>
-            </Button>
+
+          {/* Mobile Carousel */}
+          <div className="md:hidden">
+            <div ref={aboutCardsRef} className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {aboutCards.map((card, i) => (
+                <div key={i} className="snap-start shrink-0 w-[82vw]">
+                  <div className={`rounded-2xl p-7 flex flex-col gap-4 border h-full ${card.bg}`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.iconBg}`}>{card.icon}</div>
+                    <h3 className="text-lg font-bold text-foreground">{card.title}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">{card.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center gap-2 mt-4">
+              {aboutCards.map((_, i) => (
+                <button key={i} onClick={() => scrollToAboutCard(i)}
+                  className={`h-2 rounded-full transition-all ${i === activeAboutCard ? 'bg-primary w-6' : 'bg-muted-foreground/30 w-2'}`} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FAQs */}
-      <section id="faqs" className="py-14 bg-gray-900 scroll-mt-20">
+      {/* FAQs — White background */}
+      <section id="faqs" className="py-14 bg-white border-t scroll-mt-20">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl">
           <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Frequently Asked Questions</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Frequently Asked Questions</h2>
           </div>
           <Accordion type="single" collapsible className="w-full space-y-3">
             {[
@@ -389,30 +422,12 @@ export default function HomePage() {
               { q: "How does Cloudberry track progress?", a: "We use habit tracking, regular check-ins, progress reviews, and optional glucose logging to help patients stay accountable." },
               { q: "Is the program fully online?", a: "Most support is provided digitally through WhatsApp, calls, and online coordination." },
             ].map((item, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border border-white/10 rounded-2xl px-5 bg-white/5">
-                <AccordionTrigger className="text-white font-medium hover:no-underline py-4">{item.q}</AccordionTrigger>
-                <AccordionContent className="text-white/60 pb-4">{item.a}</AccordionContent>
+              <AccordionItem key={i} value={`faq-${i}`} className="border border-border/50 rounded-2xl px-5 bg-slate-50/60">
+                <AccordionTrigger className="text-foreground font-medium hover:no-underline py-4">{item.q}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground pb-4">{item.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      </section>
-
-      {/* CTA SECTION */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Ready to start your health journey?</h2>
-            <p className="text-lg text-muted-foreground mb-8">Join patients already working with Cloudberry toward better metabolic health.</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="rounded-full px-10 text-base">
-                <Link href="/patient/signup">For Patients <ArrowRight className="ml-2 h-5 w-5" /></Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full px-10 text-base border-primary/30 text-primary hover:bg-primary/5">
-                <Link href="/physician/signup">For Doctors <ArrowRight className="ml-2 h-5 w-5" /></Link>
-              </Button>
-            </div>
-          </motion.div>
         </div>
       </section>
     </MarketingLayout>

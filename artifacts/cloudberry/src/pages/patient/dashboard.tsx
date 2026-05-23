@@ -1,152 +1,170 @@
 import { PatientLayout } from "@/components/layout/patient-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Activity, TrendingDown, Calendar, CheckCircle2, AlertCircle,
-  TrendingUp, MessageSquare, Video, Lock, ChevronRight, Star,
-  Stethoscope, Apple, HeartHandshake, Sparkles,
+  CheckCircle2, XCircle, MinusCircle, TrendingDown, TrendingUp,
+  Activity, Star, CalendarDays, Scale, Salad, Footprints, Dumbbell,
+  ClipboardCheck, Flame, User, HeartPulse, Droplets, Stethoscope, ChevronRight,
 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceArea, BarChart, Bar, Cell,
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea,
 } from "recharts";
-import { Link, useLocation } from "wouter";
-import { AssessmentModal } from "./assessment";
+import { Link } from "wouter";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = `${BASE}/api`;
 
-type Plan = "basic" | "comprehensive" | "premium";
-
 async function fetchDashboard() {
-  const token = localStorage.getItem("cloudberry_token");
+  const token = localStorage.getItem("cloudberry_token") || "";
   const r = await fetch(`${API}/patients/me/dashboard`, { headers: { Authorization: `Bearer ${token}` } });
   if (!r.ok) throw new Error("Failed");
   return r.json();
 }
-function getPlan(apiPlan?: string): Plan {
-  if (apiPlan === "basic" || apiPlan === "comprehensive" || apiPlan === "premium") return apiPlan;
+
+function getPlan(): "basic" | "comprehensive" | "premium" {
   const p = localStorage.getItem("cloudberry_plan");
-  return (p === "basic" || p === "comprehensive" || p === "premium") ? p : "comprehensive";
+  return (p === "basic" || p === "comprehensive" || p === "premium") ? p : "basic";
 }
 
-const energyColor = (v: number) => v === 3 ? "#22c55e" : v === 2 ? "#f59e0b" : "#ef4444";
-const energyLabel = (v: number) => v === 3 ? "High" : v === 2 ? "Moderate" : "Low";
+function fmt(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
 
-/* ─── Empty / Locked state ────────────────────────────────────── */
-function EmptyState({ icon: Icon, title, body, cta }: { icon: any; title: string; body: string; cta?: { label: string; href: string } }) {
-  return (
-    <div className="flex flex-col items-center justify-center text-center py-8 px-4">
-      <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-        <Icon className="w-5 h-5 text-muted-foreground" />
+function adherenceLabel(pct: number | null) {
+  if (pct === null || pct === undefined) return "—";
+  if (pct >= 80) return "Strong";
+  if (pct >= 60) return "Moderate";
+  return "Needs Work";
+}
+function adherenceLabelCls(pct: number | null) {
+  if (!pct) return "bg-slate-50 text-slate-600 border-slate-200";
+  if (pct >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (pct >= 60) return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-rose-50 text-rose-700 border-rose-200";
+}
+function energyColor(v: number) {
+  if (v >= 3) return "#22c55e";
+  if (v >= 2) return "#f59e0b";
+  return "#ef4444";
+}
+
+/* ─── Adherence Day Cell ─────────────────────────────────── */
+function AdherenceDayCell({ day }: { day: { date: string; dow: string; completed: boolean | null } }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const ring = day.date === today ? "ring-2 ring-primary ring-offset-1" : "";
+  if (day.completed === true) return (
+    <div className="flex flex-col items-center gap-1">
+      <div className={`w-9 h-9 rounded-full bg-emerald-50 border-2 border-emerald-400 flex items-center justify-center ${ring}`}>
+        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
       </div>
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed">{body}</p>
-      {cta && (
-        <Button asChild size="sm" variant="outline" className="mt-3 rounded-lg text-xs h-8">
-          <Link href={cta.href}>{cta.label} <ChevronRight className="w-3 h-3 ml-1" /></Link>
-        </Button>
-      )}
+      <span className="text-[10px] text-muted-foreground font-medium">{day.dow}</span>
+    </div>
+  );
+  if (day.completed === false) return (
+    <div className="flex flex-col items-center gap-1">
+      <div className={`w-9 h-9 rounded-full bg-rose-50 border-2 border-rose-300 flex items-center justify-center ${ring}`}>
+        <XCircle className="w-4 h-4 text-rose-500" />
+      </div>
+      <span className="text-[10px] text-muted-foreground font-medium">{day.dow}</span>
+    </div>
+  );
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className={`w-9 h-9 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center ${ring}`}>
+        <MinusCircle className="w-4 h-4 text-slate-400" />
+      </div>
+      <span className="text-[10px] text-muted-foreground font-medium">{day.dow}</span>
     </div>
   );
 }
 
-function LockedCard({ title, body }: { title: string; body: string }) {
+/* ─── Weight Card ────────────────────────────────────────── */
+function WeightCard({ weightSeries, weightChange, patient }: { weightSeries: any[]; weightChange: number | null; patient: any }) {
+  const lost = weightChange !== null && weightChange < 0;
+  const pctChange = (patient?.startingWeight && weightChange !== null)
+    ? Math.abs(Math.round((weightChange / patient.startingWeight) * 1000) / 10) : null;
   return (
-    <Card className="border-dashed border-border/60 bg-muted/20">
-      <CardContent className="py-8">
-        <EmptyState icon={Lock} title={title} body={body} />
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2"><Scale className="w-4 h-4 text-sky-600" /><h3 className="text-sm font-bold text-foreground">Weight Trend</h3></div>
+          {weightChange !== null && (
+            <div className="flex items-center gap-1">
+              {lost ? <TrendingDown className="w-3.5 h-3.5 text-emerald-600" /> : <TrendingUp className="w-3.5 h-3.5 text-rose-500" />}
+              <span className={`text-sm font-bold ${lost ? "text-emerald-600" : "text-rose-500"}`}>{lost ? "" : "+"}{weightChange} kg</span>
+            </div>
+          )}
+        </div>
+        {pctChange !== null && <p className="text-xs text-muted-foreground mb-2">{lost ? "↓" : "↑"} {pctChange}% vs starting weight</p>}
+        {weightSeries.length > 1 ? (
+          <ResponsiveContainer width="100%" height={100}>
+            <LineChart data={weightSeries}>
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
+              <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} width={32} />
+              <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} labelFormatter={fmt} />
+              <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : <div className="h-20 flex items-center justify-center text-xs text-muted-foreground">Not enough data yet</div>}
+        <div className="flex justify-between text-xs text-muted-foreground mt-2 pt-2 border-t border-border/40">
+          {patient?.startingWeight && <span>Start: <strong className="text-foreground">{patient.startingWeight} kg</strong></span>}
+          {patient?.currentWeight && <span>Current: <strong className="text-foreground">{patient.currentWeight} kg</strong></span>}
+          {patient?.targetWeight && <span>Goal: <strong className="text-foreground">{patient.targetWeight} kg</strong></span>}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-/* ─── Charts (all consume real data props) ───────────────────── */
-function WeightChart({ data, target }: { data: any[]; target?: number | null }) {
-  if (data.length === 0) return <EmptyState icon={TrendingDown} title="No weight recorded yet" body="Add your first weight in Health Records to start tracking trends." cta={{ label: "Add weight", href: "/patient/records" }} />;
-  const ys = data.map(d => d.value);
-  const lo = Math.floor(Math.min(...ys) - 1);
-  const hi = Math.ceil(Math.max(...ys, target ?? 0) + 1);
+/* ─── Basic Consistency Card ─────────────────────────────── */
+function BasicConsistencyCard({ adherencePct, completedCount }: { adherencePct: number | null; completedCount: number }) {
   return (
-    <ResponsiveContainer width="100%" height={120}>
-      <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={d => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
-        <YAxis domain={[lo, hi]} tick={{ fontSize: 9 }} />
-        <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} />
-        <Line type="monotone" dataKey="value" stroke="hsl(218 91% 50%)" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 4 }} />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
-function GlucoseChart({ data, zones = false }: { data: any[]; zones?: boolean }) {
-  if (data.length === 0) return <EmptyState icon={Activity} title="No glucose data yet" body="Glucose readings will appear once you log them in Health Records." cta={{ label: "Add reading", href: "/patient/records" }} />;
-  return (
-    <ResponsiveContainer width="100%" height={160}>
-      <LineChart data={data.slice(-14)} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={d => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
-        <YAxis domain={[60, 180]} tick={{ fontSize: 9 }} />
-        <Tooltip formatter={(v: number) => [`${v} mg/dL`, "Glucose"]} />
-        {zones && <>
-          <ReferenceArea y1={80} y2={120} fill="#22c55e0d" />
-          <ReferenceArea y1={120} y2={140} fill="#f59e0b0d" />
-          <ReferenceArea y1={140} y2={180} fill="#ef44440d" />
-        </>}
-        <Line type="monotone" dataKey="value" stroke="hsl(218 91% 50%)" strokeWidth={2}
-          dot={({ cx, cy, payload }: any) => {
-            const c = payload.value < 120 ? "#22c55e" : payload.value < 140 ? "#f59e0b" : "#ef4444";
-            return <circle key={cx} cx={cx} cy={cy} r={3.5} fill={c} stroke="white" strokeWidth={1} />;
-          }} activeDot={{ r: 5 }} />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-
-function EnergyChart({ data }: { data: any[] }) {
-  if (data.length === 0) return <EmptyState icon={Activity} title="No energy data yet" body="Complete a check-in to start tracking your energy levels." cta={{ label: "Check in", href: "/patient/checkin" }} />;
-  return (
-    <ResponsiveContainer width="100%" height={90}>
-      <BarChart data={data} margin={{ top: 4, right: 4, left: -30, bottom: 0 }}>
-        <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={d => new Date(d).toLocaleDateString("en-US", { weekday: "short" })} />
-        <YAxis domain={[0, 3]} ticks={[1, 2, 3]} tickFormatter={v => ["", "Lo", "Mid", "Hi"][v]} tick={{ fontSize: 9 }} />
-        <Tooltip formatter={(v: number) => [energyLabel(v), "Energy"]} />
-        <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-          {data.map((d, i) => <Cell key={i} fill={energyColor(d.value)} />)}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-/* ─── Adherence grid ─────────────────────────────────────────── */
-function WeeklyAdherence({ days, pct }: { days: any[]; pct: number | null }) {
-  return (
-    <Card className="border-border/60 shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-sm font-semibold text-foreground">Weekly Adherence</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{pct === null ? "No check-ins recorded this week" : `${days.filter(d => d.completed === true).length} of 7 days completed`}</p>
-          </div>
-          <span className="text-2xl font-extrabold text-primary">{pct === null ? "—" : `${pct}%`}</span>
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-3"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><h3 className="text-sm font-bold text-foreground">Behavioral Consistency</h3></div>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-3xl font-extrabold text-foreground">{adherencePct ?? "—"}%</span>
+          <Badge variant="outline" className={`text-xs border ${adherenceLabelCls(adherencePct)}`}>{adherenceLabel(adherencePct)}</Badge>
         </div>
-        <div className="grid grid-cols-7 gap-1.5">
-          {days.map((d) => (
-            <div key={d.date} className="flex flex-col items-center gap-1">
-              <span className="text-[9px] text-muted-foreground font-medium">{d.dow}</span>
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs ${
-                d.completed === null
-                  ? "bg-muted/40 text-muted-foreground/50"
-                  : d.completed
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-50 text-red-500"
-              }`}>
-                {d.completed === null ? "–" : d.completed ? "✓" : "✕"}
+        <p className="text-xs text-muted-foreground mb-3">Based on:</p>
+        <div className="space-y-2">
+          {[
+            { icon: <Salad className="w-3.5 h-3.5 text-emerald-600" />, label: "Meal Logging" },
+            { icon: <ClipboardCheck className="w-3.5 h-3.5 text-blue-600" />, label: "Daily Check-ins" },
+            { icon: <Dumbbell className="w-3.5 h-3.5 text-violet-600" />, label: "Activity Completion" },
+          ].map(item => (
+            <div key={item.label} className="flex items-center gap-2 text-xs text-foreground/80">{item.icon}{item.label}</div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/40">
+          <strong className="text-foreground">{completedCount} of 7 days</strong> met program goals
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Comprehensive Consistency (progress bars) ──────────── */
+function ComprehensiveConsistencyCard({ mealCount, checkInCount7, activityCount }: { mealCount: number; checkInCount7: number; activityCount: number }) {
+  const bars = [
+    { label: "Meal Logging", count: mealCount, color: "bg-emerald-500" },
+    { label: "Check-ins", count: checkInCount7, color: "bg-blue-500" },
+    { label: "Activity Completion", count: activityCount, color: "bg-violet-500" },
+  ];
+  return (
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-4"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><h3 className="text-sm font-bold text-foreground">Behavioral Consistency</h3></div>
+        <div className="space-y-3">
+          {bars.map(b => (
+            <div key={b.label}>
+              <div className="flex justify-between text-xs mb-1"><span className="text-foreground/80">{b.label}</span><span className="font-semibold text-foreground">{b.count}/7</span></div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className={`h-full rounded-full ${b.color}`} style={{ width: `${(b.count / 7) * 100}%` }} />
               </div>
             </div>
           ))}
@@ -156,469 +174,558 @@ function WeeklyAdherence({ days, pct }: { days: any[]; pct: number | null }) {
   );
 }
 
-/* ─── Care Team Card ─────────────────────────────────────────── */
-function CareTeamCard({ team }: { team: any }) {
-  const members = [
-    { key: "physician", role: "Physician", icon: Stethoscope, color: "text-blue-600 bg-blue-50", person: team?.physician },
-    { key: "dietician", role: "Dietician", icon: Apple, color: "text-green-600 bg-green-50", person: team?.dietician },
-    { key: "caretaker", role: "Caretaker", icon: HeartHandshake, color: "text-purple-600 bg-purple-50", person: team?.caretaker },
-  ];
+/* ─── Premium Consistency (donut chart) ──────────────────── */
+function PremiumConsistencyCard({ adherencePct }: { adherencePct: number | null }) {
+  const pct = adherencePct ?? 0;
   return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Your Care Team</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 pt-0">
-        {members.map(m => (
-          <div key={m.key} className="flex items-center gap-3 py-1">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${m.color}`}>
-              <m.icon className="w-4 h-4" />
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-3"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><h3 className="text-sm font-bold text-foreground">Behavioral Consistency</h3></div>
+        <div className="flex items-center justify-center gap-5">
+          <div className="relative">
+            <PieChart width={110} height={110}>
+              <Pie data={[{ value: pct }, { value: 100 - pct }]} cx="50%" cy="50%"
+                innerRadius={35} outerRadius={52} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
+                <Cell fill="#22c55e" /><Cell fill="#e5e7eb" />
+              </Pie>
+            </PieChart>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xl font-extrabold text-foreground">{pct}%</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{m.role}</p>
-              <p className="text-sm font-medium text-foreground truncate">
-                {m.person ? m.person.name : <span className="text-muted-foreground italic font-normal">Yet to be assigned</span>}
+          </div>
+          <div>
+            <Badge variant="outline" className={`text-xs border ${adherenceLabelCls(adherencePct)}`}>{adherenceLabel(adherencePct)}</Badge>
+            <p className="text-xs text-muted-foreground mt-2">7-day adherence</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Energy Card ────────────────────────────────────────── */
+function EnergyCard({ energySeries }: { energySeries: any[] }) {
+  const last = energySeries[energySeries.length - 1];
+  const labelCls = !last?.label ? "bg-slate-50 text-slate-600 border-slate-200"
+    : /high|good/i.test(last.label) ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : /low|tired/i.test(last.label) ? "bg-rose-50 text-rose-700 border-rose-200"
+    : "bg-amber-50 text-amber-700 border-amber-200";
+  return (
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2"><Flame className="w-4 h-4 text-amber-500" /><h3 className="text-sm font-bold text-foreground">Energy & Wellbeing</h3></div>
+          {last?.label && <Badge variant="outline" className={`text-xs border capitalize ${labelCls}`}>{last.label}</Badge>}
+        </div>
+        <p className="text-[10px] text-muted-foreground mb-2">Self-reported · last 7 check-ins</p>
+        {energySeries.length > 0 ? (
+          <ResponsiveContainer width="100%" height={90}>
+            <BarChart data={energySeries} barCategoryGap="30%">
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
+              <YAxis tick={false} domain={[0, 3]} hide />
+              <Tooltip formatter={(v: number) => [v === 3 ? "High" : v === 2 ? "Moderate" : "Low", "Energy"]} labelFormatter={fmt} />
+              <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                {energySeries.map((e: any, i: number) => <Cell key={i} fill={energyColor(e.value)} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : <div className="h-20 flex items-center justify-center text-xs text-muted-foreground">No energy data yet</div>}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Glucose Card ───────────────────────────────────────── */
+function GlucoseCard({ glucoseSeries, avgGlucose, compact }: { glucoseSeries: any[]; avgGlucose: number | null; compact?: boolean }) {
+  const improving = avgGlucose !== null && avgGlucose < 120;
+  return (
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2"><Droplets className="w-4 h-4 text-rose-500" /><h3 className="text-sm font-bold text-foreground">Fasting Glucose Trend</h3></div>
+          {avgGlucose !== null && (
+            <Badge variant="outline" className={`text-xs border ${improving ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
+              {improving ? "In Range" : "Above Range"}
+            </Badge>
+          )}
+        </div>
+        {avgGlucose !== null && <p className="text-xs text-muted-foreground mb-2">7-day avg: <strong className="text-foreground">{avgGlucose} mg/dL</strong></p>}
+        {glucoseSeries.length > 1 ? (
+          <ResponsiveContainer width="100%" height={compact ? 90 : 120}>
+            <LineChart data={glucoseSeries}>
+              <ReferenceArea y1={80} y2={120} fill="#d1fae5" fillOpacity={0.4} />
+              <ReferenceArea y1={120} y2={140} fill="#fef3c7" fillOpacity={0.4} />
+              <ReferenceArea y1={140} y2={200} fill="#fee2e2" fillOpacity={0.3} />
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
+              <YAxis tick={{ fontSize: 9 }} domain={[60, 180]} width={30} />
+              <Tooltip formatter={(v: number) => [`${Number(v).toFixed(0)} mg/dL`, "Glucose"]} labelFormatter={fmt} />
+              <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : <div className={`${compact ? "h-20" : "h-28"} flex items-center justify-center text-xs text-muted-foreground`}>Not enough glucose data yet</div>}
+        <div className="flex gap-3 mt-2 pt-2 border-t border-border/40">
+          {[{ color: "bg-emerald-200", label: "80–120" }, { color: "bg-amber-200", label: "120–140" }, { color: "bg-rose-200", label: "140+" }].map(z => (
+            <span key={z.label} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className={`w-2.5 h-2.5 rounded-sm ${z.color}`} />{z.label}
+            </span>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Insights Card (Basic/Comprehensive) ────────────────── */
+function InsightsCard({ insights, careAssigned, hasEnoughData }: { insights: any[]; careAssigned: boolean; hasEnoughData: boolean }) {
+  const kindMap: Record<string, { bg: string; label: string }> = {
+    challenge: { bg: "bg-rose-50 border-rose-200", label: "Observed Challenge" },
+    positive: { bg: "bg-emerald-50 border-emerald-200", label: "Positive Correlation" },
+    focus: { bg: "bg-blue-50 border-blue-200", label: "Recommended Focus" },
+  };
+  return (
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-4"><HeartPulse className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Weekly Insights</h3></div>
+        {(!hasEnoughData || !careAssigned || insights.length === 0) ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            {!hasEnoughData ? "Keep checking in! Insights will appear after 5 check-ins."
+              : !careAssigned ? "Insights appear once your care team is assigned."
+              : "No specific insights this week — keep it up!"}
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {insights.slice(0, 3).map((ins: any, i: number) => {
+              const style = kindMap[ins.kind] || { bg: "bg-muted/50 border-border", label: ins.kind };
+              return (
+                <div key={i} className={`rounded-xl border p-3 ${style.bg}`}>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{style.label}</p>
+                  <p className="text-xs font-semibold text-foreground mb-1">{ins.title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{ins.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Premium Insights Card ──────────────────────────────── */
+function PremiumInsightsCard({ insights, carePlan, avgGlucose, glucoseVariability }: {
+  insights: any[]; carePlan: any; avgGlucose: number | null; glucoseVariability: number | null;
+}) {
+  const primary = insights.find(i => i.kind === "positive") || insights[0];
+  const focuses = insights.filter(i => i.kind === "focus" || i.kind === "challenge").slice(0, 2);
+  return (
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5 space-y-4">
+        <div className="flex items-center gap-2"><HeartPulse className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Daily Insights</h3></div>
+        {primary && (
+          <div className="bg-primary/5 rounded-xl p-3">
+            <p className="text-[10px] font-bold text-primary uppercase tracking-wide mb-1">Interpreted Insight</p>
+            <p className="text-xs font-semibold text-foreground mb-0.5">{primary.title}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{primary.body}</p>
+          </div>
+        )}
+        {!primary && <p className="text-sm text-muted-foreground text-center py-2">Keep checking in for personalized insights.</p>}
+        {focuses.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Recommended Focus</p>
+            <div className="space-y-1.5">
+              {focuses.map((ins: any, i: number) => (
+                <div key={i} className="flex items-start gap-2 text-xs">
+                  <ChevronRight className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                  <span className="text-foreground/80">{ins.body}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {(avgGlucose !== null || glucoseVariability !== null) && (
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Key Patterns</p>
+            <div className="grid grid-cols-2 gap-2">
+              {avgGlucose !== null && (
+                <div className="bg-slate-50 rounded-xl p-2.5 border border-border/40">
+                  <p className="text-[10px] text-muted-foreground">7-day avg glucose</p>
+                  <p className="font-bold text-foreground text-sm mt-0.5">{avgGlucose} mg/dL</p>
+                </div>
+              )}
+              {glucoseVariability !== null && (
+                <div className="bg-slate-50 rounded-xl p-2.5 border border-border/40">
+                  <p className="text-[10px] text-muted-foreground">Glucose variability</p>
+                  <p className="font-bold text-foreground text-sm mt-0.5">{glucoseVariability} mg/dL</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Next Review Card ───────────────────────────────────── */
+function NextReviewCard({ nextAppointment, totalCheckins, checkinCount, careTeam, isPremium }: {
+  nextAppointment: any; totalCheckins: number; checkinCount: number; careTeam: any; isPremium?: boolean;
+}) {
+  return (
+    <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-bold text-foreground">{isPremium ? "Next Comprehensive Review" : "Next Coach Review"}</h3>
+        </div>
+        {nextAppointment ? (
+          <div className="space-y-3">
+            <div className="bg-primary/5 rounded-xl p-3">
+              <p className="text-sm font-semibold text-foreground">
+                {new Date(nextAppointment.scheduledAt).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(nextAppointment.scheduledAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
+                {nextAppointment.careTeamMember && ` · with ${nextAppointment.careTeamMember}`}
               </p>
             </div>
+            {nextAppointment.notes && (
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-1.5">Focus Areas</p>
+                <div className="space-y-1">
+                  {nextAppointment.notes.split(/[\n\r•]/).filter(Boolean).slice(0, 4).map((note: string, i: number) => (
+                    <div key={i} className="flex items-start gap-1.5 text-xs text-foreground/80">
+                      <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />{note.trim()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        ))}
+        ) : (
+          <div className="bg-slate-50 rounded-xl p-4 text-center">
+            <CalendarDays className="w-6 h-6 text-muted-foreground/40 mx-auto mb-1.5" />
+            <p className="text-xs text-muted-foreground">No upcoming review scheduled</p>
+          </div>
+        )}
+        {(careTeam?.physician || careTeam?.dietician || careTeam?.caretaker) && (
+          <div className="mt-3 pt-3 border-t border-border/40">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Your Care Team</p>
+            <div className="space-y-1.5">
+              {careTeam.physician && <div className="flex items-center gap-2 text-xs"><Stethoscope className="w-3 h-3 text-sky-600" /><span className="text-foreground">{careTeam.physician.name}</span><span className="text-muted-foreground">Physician</span></div>}
+              {careTeam.dietician && <div className="flex items-center gap-2 text-xs"><Salad className="w-3 h-3 text-emerald-600" /><span className="text-foreground">{careTeam.dietician.name}</span><span className="text-muted-foreground">Dietician</span></div>}
+              {careTeam.caretaker && <div className="flex items-center gap-2 text-xs"><User className="w-3 h-3 text-violet-600" /><span className="text-foreground">{careTeam.caretaker.name}</span><span className="text-muted-foreground">Care Coordinator</span></div>}
+            </div>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/40">
+          Patient responded to <strong className="text-foreground">{checkinCount} of 7</strong> check-ins this week
+          {totalCheckins > 0 && <span> · {totalCheckins} total</span>}
+        </p>
       </CardContent>
     </Card>
   );
 }
 
-/* ─── Messages ───────────────────────────────────────────────── */
-function MessagesCard({ messages, careAssigned }: { messages: any[]; careAssigned: boolean }) {
-  if (!careAssigned) {
+/* ═══════════════ MAIN COMPONENT ═══════════════════════════ */
+export default function PatientDashboard() {
+  const plan = useMemo(getPlan, []);
+  const { data: dash, isLoading, error } = useQuery({
+    queryKey: ["patient-dashboard"],
+    queryFn: fetchDashboard,
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  if (isLoading) {
     return (
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-muted-foreground" /> Care Team Messages
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <EmptyState icon={Lock} title="Awaiting care team allocation" body="Once your care team is assigned, their messages will appear here." />
-        </CardContent>
-      </Card>
+      <PatientLayout>
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-4">
+          {[1, 2, 3].map(i => <div key={i} className="h-32 bg-white rounded-2xl animate-pulse border border-border/40" />)}
+        </div>
+      </PatientLayout>
     );
   }
-  const roleColor: Record<string, string> = {
-    physician: "bg-blue-100 text-blue-700",
-    dietician: "bg-green-100 text-green-700",
-    caretaker: "bg-purple-100 text-purple-700",
-  };
-  return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-primary" /> Care Team Messages
-          </CardTitle>
-          {messages.length > 0 && <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{messages.length}</Badge>}
+
+  if (error || !dash) {
+    return (
+      <PatientLayout>
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <HeartPulse className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-foreground mb-2">Dashboard unavailable</h2>
+          <p className="text-muted-foreground text-sm">We couldn't load your dashboard. Please try refreshing.</p>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {messages.length === 0 ? (
-          <EmptyState icon={MessageSquare} title="No messages yet" body="Your care team hasn't sent any messages." />
-        ) : (
-          <div className="space-y-3">
-            {messages.map(m => (
-              <div key={m.id} className="flex gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${roleColor[m.role] ?? "bg-muted text-foreground"}`}>
-                  {m.from.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold text-foreground">{m.from}</p>
-                    <span className="text-[10px] text-muted-foreground capitalize">{m.role}</span>
-                    <span className="text-[10px] text-muted-foreground ml-auto">{new Date(m.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+      </PatientLayout>
+    );
+  }
+
+  /* ── Derived data ─────────────────────────────────── */
+  const adherence7Day: any[] = dash.adherence7Day || [];
+  const adherencePct: number | null = dash.adherencePct ?? null;
+  const weightSeries: any[] = dash.weightSeries || [];
+  const glucoseSeries: any[] = dash.glucoseSeries || [];
+  const energySeries: any[] = dash.energySeries || [];
+  const consistencyBreakdown = dash.consistencyBreakdown || {};
+  const insights: any[] = dash.insights || [];
+  const carePlan = dash.carePlan;
+  const weightChange: number | null = dash.weightChange ?? null;
+  const avgGlucose: number | null = dash.avgGlucose ?? null;
+  const timeInRange: number | null = dash.timeInRange ?? null;
+  const streak: number = dash.streak ?? 0;
+  const completedCount = adherence7Day.filter(d => d.completed === true).length;
+  const checkinCount = adherence7Day.filter(d => d.completed !== null).length;
+  const missedCount = 7 - completedCount;
+  const mealCount = Math.round(((consistencyBreakdown.mealLogging ?? 0) / 100) * 7);
+  const checkInCount7 = Math.round(((consistencyBreakdown.checkIns ?? 0) / 100) * 7);
+  const activityCount = Math.round(((consistencyBreakdown.activity ?? 0) / 100) * 7);
+
+  const focusItems = useMemo(() => {
+    if (!carePlan?.weeklyGoals) return [];
+    return carePlan.weeklyGoals.split(/[\n\r•\-]/).map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
+  }, [carePlan]);
+
+  const glucoseVariability = useMemo(() => {
+    const vals = glucoseSeries.map((g: any) => g.value);
+    if (vals.length < 2 || avgGlucose === null) return null;
+    const variance = vals.reduce((s: number, v: number) => s + (v - avgGlucose) ** 2, 0) / vals.length;
+    return Math.round(Math.sqrt(variance));
+  }, [glucoseSeries, avgGlucose]);
+
+  /* ── Shared adherence grid + legend ──────────────── */
+  const AdherenceGrid = () => (
+    <>
+      <div className="flex justify-between gap-1 mb-3">
+        {adherence7Day.map((day: any, i: number) => <AdherenceDayCell key={i} day={day} />)}
+      </div>
+      <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" />Met goals</span>
+        <span className="flex items-center gap-1"><XCircle className="w-3 h-3 text-rose-400" />Not met</span>
+        <span className="flex items-center gap-1"><MinusCircle className="w-3 h-3 text-slate-400" />No data</span>
+      </div>
+    </>
+  );
+
+  return (
+    <PatientLayout>
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+
+        {/* ── Header ─────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg font-bold text-foreground">Patient Accountability Dashboard</h1>
+              {plan === "premium" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">Premium Plan</Badge>}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {plan === "basic" ? "Simple behavioral reinforcement for continuity of care"
+                : plan === "comprehensive" ? "Structured coaching with behavioral & metabolic tracking"
+                : "Advanced monitoring with full metabolic & behavioral analysis"}
+            </p>
+          </div>
+          <div className="text-right text-xs text-muted-foreground shrink-0">
+            <p className="font-semibold text-foreground text-sm">{dash.patient.fullName}</p>
+            <p>Patient ID #{dash.patient.id}</p>
+            <p>Data as of {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+          </div>
+        </div>
+
+        {/* ── Check-in prompt ──────────────────────────── */}
+        {!dash.checkinDoneToday && (
+          <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <ClipboardCheck className="w-4 h-4 text-primary shrink-0" />
+              <p className="text-sm font-medium text-foreground">You haven't done today's check-in yet</p>
+            </div>
+            <Link href="/patient/checkin"><Button size="sm" className="rounded-full text-xs h-7 shrink-0">Check in now</Button></Link>
+          </div>
+        )}
+
+        {/* ══════════ PREMIUM PLAN ══════════════════════ */}
+        {plan === "premium" && (
+          <div className="space-y-6">
+
+            {/* Section 1: Activity & Adherence */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">1</span>
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Activity & Program Adherence</h2>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                {/* Welcome + Today's Focus */}
+                <div className="lg:col-span-2 bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-5 text-white flex flex-col gap-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-white/70 text-xs uppercase tracking-wide">Week {dash.weekNumber}</p>
+                      <h3 className="text-xl font-bold mt-1">{dash.patient.fullName.split(" ")[0]}</h3>
+                    </div>
+                    {streak > 0 && (
+                      <div className="flex flex-col items-center bg-white/15 rounded-xl px-3 py-2 shrink-0">
+                        <Flame className="w-4 h-4 text-amber-300" />
+                        <p className="text-xs font-bold text-white mt-0.5">{streak}d</p>
+                        <p className="text-[10px] text-white/70">streak</p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{m.content}</p>
+                  {(focusItems.length > 0 || carePlan?.nutritionPlan) && (
+                    <div className="bg-white/10 rounded-xl p-3 space-y-1.5 flex-1">
+                      <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">Today's Focus</p>
+                      {focusItems.length > 0 ? focusItems.map((item: string, i: number) => (
+                        <div key={i} className="flex items-start gap-1.5 text-xs text-white/90">
+                          <CheckCircle2 className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{item}
+                        </div>
+                      )) : (
+                        <>
+                          {carePlan?.nutritionPlan && <div className="flex items-start gap-1.5 text-xs text-white/90"><Salad className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{carePlan.nutritionPlan.slice(0, 90)}</div>}
+                          {carePlan?.activityPlan && <div className="flex items-start gap-1.5 text-xs text-white/90"><Footprints className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{carePlan.activityPlan.slice(0, 90)}</div>}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {/* Adherence with stats */}
+                <div className="lg:col-span-3 bg-white rounded-2xl border border-border/50 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Weekly Adherence</h3></div>
+                    {adherencePct !== null && <span className="text-sm font-bold text-primary">{adherencePct}% this week</span>}
+                  </div>
+                  <AdherenceGrid />
+                  <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-border/40">
+                    {[
+                      { label: "Active days", value: completedCount },
+                      { label: "Check-ins", value: `${checkinCount}/7` },
+                      { label: "Adherence", value: `${adherencePct ?? "—"}%` },
+                      { label: "Missed", value: missedCount },
+                    ].map(s => (
+                      <div key={s.label} className="text-center">
+                        <p className="text-base font-bold text-foreground">{s.value}</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+            </div>
 
-/* ─── Insights ───────────────────────────────────────────────── */
-function InsightsCard({ insights, hasEnoughData, careAssigned }: { insights: any[] | null; hasEnoughData: boolean; careAssigned: boolean }) {
-  if (!careAssigned) return <LockedCard title="Insights pending care team" body="Clinical insights are generated by your care team after assignment." />;
-  if (!hasEnoughData) return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Weekly Insights</CardTitle></CardHeader>
-      <CardContent className="pt-0">
-        <EmptyState icon={AlertCircle} title="Not enough data yet" body="Complete at least 5 daily check-ins to unlock personalised insights." cta={{ label: "Check in now", href: "/patient/checkin" }} />
-      </CardContent>
-    </Card>
-  );
-  if (!insights || insights.length === 0) return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Weekly Insights</CardTitle></CardHeader>
-      <CardContent className="pt-0"><EmptyState icon={Sparkles} title="All systems steady" body="No notable patterns detected this week. Keep going." /></CardContent>
-    </Card>
-  );
-  const palette: Record<string, string> = {
-    challenge: "bg-red-50/60 border-red-100",
-    positive: "bg-green-50/60 border-green-100",
-    focus: "bg-blue-50/60 border-blue-100",
-  };
-  const labelColor: Record<string, string> = {
-    challenge: "text-red-700",
-    positive: "text-green-700",
-    focus: "text-blue-700",
-  };
-  return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Weekly Insights</CardTitle></CardHeader>
-      <CardContent className="pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {insights.map((ins, i) => (
-          <div key={i} className={`rounded-xl p-3 border ${palette[ins.kind] ?? "bg-muted/40"}`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${labelColor[ins.kind] ?? "text-foreground"}`}>{ins.title}</p>
-            <p className="text-xs text-foreground/80 leading-relaxed">{ins.body}</p>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ─── Next Review ────────────────────────────────────────────── */
-function NextReviewCard({ appt, careAssigned }: { appt: any; careAssigned: boolean }) {
-  if (!careAssigned) return <LockedCard title="No upcoming meetings" body="Meetings appear here once your care team is assigned and schedules a review." />;
-  if (!appt) return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="text-sm">Next Coach Review</CardTitle></CardHeader>
-      <CardContent className="pt-0"><EmptyState icon={Calendar} title="No upcoming meetings" body="When your care team schedules a session, it will appear here." cta={{ label: "View appointments", href: "/patient/appointments" }} /></CardContent>
-    </Card>
-  );
-  const d = new Date(appt.scheduledAt);
-  return (
-    <Card className="border-border/60 shadow-sm">
-      <CardContent className="p-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Next Review</p>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p className="font-bold text-foreground text-sm">{d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" })}</p>
-            <p className="text-xs text-muted-foreground">{d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true })} · with {appt.careTeamMember}</p>
-          </div>
-        </div>
-        {appt.notes && <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-2.5 mb-3">{appt.notes}</p>}
-        <Button size="sm" className="w-full h-8 rounded-lg text-xs gap-1.5"><Video className="w-3.5 h-3.5" /> Join Call</Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ─── Care Plan ──────────────────────────────────────────────── */
-function CarePlanCard({ plan, careAssigned }: { plan: any; careAssigned: boolean }) {
-  if (!careAssigned) return <LockedCard title="Care plan pending" body="Your personalised nutrition and activity plan will be ready after your care team is assigned." />;
-  if (!plan || (!plan.nutritionPlan && !plan.activityPlan && !plan.weeklyGoals)) return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="text-sm">Your Care Plan</CardTitle></CardHeader>
-      <CardContent className="pt-0"><EmptyState icon={AlertCircle} title="Plan being prepared" body="Your care team is finalising your plan. Check back soon." /></CardContent>
-    </Card>
-  );
-  return (
-    <Card className="border-border/60 shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="text-sm">Your Care Plan</CardTitle></CardHeader>
-      <CardContent className="pt-0 space-y-3 text-xs text-foreground/80 leading-relaxed">
-        {plan.weeklyGoals && <div><p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">This Week's Goals</p>{plan.weeklyGoals}</div>}
-        {plan.nutritionPlan && <div><p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Nutrition</p>{plan.nutritionPlan}</div>}
-        {plan.activityPlan && <div><p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Activity</p>{plan.activityPlan}</div>}
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ─── Metric Cards Row ───────────────────────────────────────── */
-function MetricRow({ dash }: { dash: any }) {
-  const { weightSeries, consistencyBreakdown, energySeries, glucoseSeries } = dash;
-  const lastWeight = weightSeries[weightSeries.length - 1]?.value ?? null;
-  const startWeight = weightSeries[0]?.value ?? null;
-  const weightDelta = (lastWeight !== null && startWeight !== null) ? lastWeight - startWeight : null;
-  const lastEnergy = energySeries[energySeries.length - 1]?.value ?? null;
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <Card className="border-border/60 shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase">Weight</p>
-            <TrendingDown className="w-3 h-3 text-primary" />
-          </div>
-          {lastWeight === null ? (
-            <p className="text-sm text-muted-foreground mt-2">No data</p>
-          ) : (
-            <>
-              <p className="text-xl font-extrabold text-foreground">{lastWeight} <span className="text-xs font-normal">kg</span></p>
-              {weightDelta !== null && weightDelta !== 0 && (
-                <p className={`text-[10px] font-semibold ${weightDelta < 0 ? "text-green-600" : "text-amber-600"}`}>
-                  {weightDelta < 0 ? "↓" : "↑"} {Math.abs(weightDelta).toFixed(1)} kg since start
-                </p>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/60 shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase">Consistency</p>
-            <CheckCircle2 className="w-3 h-3 text-primary" />
-          </div>
-          {consistencyBreakdown === null ? (
-            <p className="text-sm text-muted-foreground mt-2">No data</p>
-          ) : (
-            <>
-              <p className="text-2xl font-extrabold text-primary">{consistencyBreakdown.checkIns}%</p>
-              <p className="text-[10px] text-muted-foreground">check-ins · 7 days</p>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/60 shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase">Energy</p>
-            <Activity className="w-3 h-3 text-amber-500" />
-          </div>
-          {lastEnergy === null ? (
-            <p className="text-sm text-muted-foreground mt-2">No data</p>
-          ) : (
-            <>
-              <p className={`text-xl font-extrabold ${lastEnergy === 3 ? "text-green-600" : lastEnergy === 2 ? "text-amber-500" : "text-red-500"}`}>{energyLabel(lastEnergy)}</p>
-              <p className="text-[10px] text-muted-foreground">latest check-in</p>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/60 shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase">Avg Glucose</p>
-            <TrendingUp className="w-3 h-3 text-primary" />
-          </div>
-          {dash.avgGlucose === null ? (
-            <p className="text-sm text-muted-foreground mt-2">No data</p>
-          ) : (
-            <>
-              <p className="text-xl font-extrabold text-foreground">{dash.avgGlucose}<span className="text-xs font-normal"> mg/dL</span></p>
-              <p className="text-[10px] text-muted-foreground">{dash.timeInRange}% in range · 7d</p>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-/* ─── MAIN EXPORT ────────────────────────────────────────────── */
-export default function PatientDashboard() {
-  const [, navigate] = useLocation();
-  const [assessmentDone, setAssessmentDone] = useState(() => localStorage.getItem("cloudberry_assessment_done") === "1");
-  const [showAssessment, setShowAssessment] = useState(false);
-  const [checkinRequired, setCheckinRequired] = useState(() => localStorage.getItem("cloudberry_first_checkin_done") !== "1");
-
-  const { data: dash, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard, retry: 1, staleTime: 60_000 });
-
-  const plan = useMemo(() => getPlan(dash?.patient?.plan), [dash?.patient?.plan]);
-
-  const storedName = localStorage.getItem("cloudberry_name") || "there";
-  const firstName = (dash?.patient?.fullName ?? storedName).split(" ")[0];
-
-  const weekNum = dash?.weekNumber ?? 1;
-  const streak = dash?.streak ?? 0;
-  const totalCheckins = dash?.totalCheckins ?? 0;
-  const isNewPatient = totalCheckins === 0;
-  const careAssigned = dash?.careAssigned ?? false;
-
-  useEffect(() => {
-    if (dash && isNewPatient && !assessmentDone) setShowAssessment(true);
-  }, [dash, isNewPatient, assessmentDone]);
-
-  const planLabel: Record<Plan, string> = { basic: "Accountability", comprehensive: "Structured Coaching", premium: "Advanced Monitoring" };
-  const planColor: Record<Plan, string> = {
-    basic: "bg-slate-100 text-slate-700 border-slate-200",
-    comprehensive: "bg-primary/10 text-primary border-primary/20",
-    premium: "bg-amber-50 text-amber-700 border-amber-200",
-  };
-
-  if (isLoading || !dash) return (
-    <PatientLayout>
-      <div className="p-6 max-w-5xl mx-auto"><div className="text-sm text-muted-foreground">Loading your dashboard…</div></div>
-    </PatientLayout>
-  );
-
-  return (
-    <PatientLayout>
-      {showAssessment && !assessmentDone && (
-        <AssessmentModal plan={plan} onComplete={() => {
-          localStorage.setItem("cloudberry_assessment_done", "1");
-          setAssessmentDone(true); setShowAssessment(false);
-          navigate("/patient/checkin");
-        }} />
-      )}
-
-      {assessmentDone && checkinRequired && isNewPatient && (
-        <div className="fixed inset-0 z-40 bg-background/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-border p-8 max-w-md w-full text-center space-y-5">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto"><CheckCircle2 className="w-7 h-7 text-primary" /></div>
+            {/* Section 2: Behavioral Patterns */}
             <div>
-              <h2 className="text-xl font-bold text-foreground">Assessment complete! 🎉</h2>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">Complete your first daily check-in to start tracking your journey.</p>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">2</span>
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Behavioral Patterns & Metabolic Markers</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <WeightCard weightSeries={weightSeries} weightChange={weightChange} patient={dash.patient} />
+                <PremiumConsistencyCard adherencePct={adherencePct} />
+                <EnergyCard energySeries={energySeries} />
+              </div>
             </div>
-            <Button className="w-full rounded-xl" onClick={() => navigate("/patient/checkin")}>Do Your First Check-in <ChevronRight className="w-4 h-4 ml-1" /></Button>
-            <button className="text-xs text-muted-foreground underline underline-offset-2" onClick={() => { localStorage.setItem("cloudberry_first_checkin_done", "1"); setCheckinRequired(false); }}>Skip for now</button>
-          </div>
-        </div>
-      )}
 
-      <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+            {/* Section 3: Glucose */}
+            {glucoseSeries.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">3</span>
+                  <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Glucose Readings</h2>
+                </div>
+                <GlucoseCard glucoseSeries={glucoseSeries} avgGlucose={avgGlucose} />
+              </div>
+            )}
 
-        {/* Header */}
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-                {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}, {firstName}
-              </h1>
-              {streak > 0 && (
-                <span className="text-sm font-bold text-orange-500 flex items-center gap-1">🔥 {streak}-day streak</span>
-              )}
+            {/* Section 4: Insights */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">
+                  {glucoseSeries.length > 0 ? "4" : "3"}
+                </span>
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Daily Insights & Care Review</h2>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <PremiumInsightsCard insights={insights} carePlan={carePlan} avgGlucose={avgGlucose} glucoseVariability={glucoseVariability} />
+                <NextReviewCard nextAppointment={dash.nextAppointment} totalCheckins={dash.totalCheckins ?? 0} checkinCount={checkinCount} careTeam={dash.careTeam} isPremium />
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Week {weekNum} · {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</p>
-          </div>
-          <Badge variant="outline" className={`text-xs px-3 py-1 font-medium border ${planColor[plan]}`}>
-            {plan === "premium" && <Star className="w-3 h-3 mr-1 fill-amber-500 text-amber-500" />}{planLabel[plan]}
-          </Badge>
-        </div>
 
-        {/* Assessment prompt */}
-        {!assessmentDone && (
-          <div className="bg-gradient-to-r from-primary/8 to-blue-50/60 border border-primary/20 rounded-2xl p-4 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><Lock className="w-4 h-4 text-primary" /></div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">Complete your initial health assessment</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Takes ~5 minutes. We use this to personalise your plan.</p>
-            </div>
-            <Button size="sm" className="shrink-0 rounded-xl text-xs" onClick={() => setShowAssessment(true)}>Start <ChevronRight className="w-3 h-3 ml-1" /></Button>
+            {/* Bottom stats bar */}
+            {(avgGlucose !== null || timeInRange !== null) && (
+              <div className="bg-slate-900 rounded-2xl p-4">
+                <div className="flex flex-wrap gap-8 justify-around">
+                  {avgGlucose !== null && (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-white">{avgGlucose} <span className="text-sm font-normal text-white/60">mg/dL</span></p>
+                      <p className="text-xs text-white/50 mt-0.5">Avg Glucose (7d)</p>
+                    </div>
+                  )}
+                  {timeInRange !== null && (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-emerald-400">{timeInRange}<span className="text-sm font-normal text-white/60">%</span></p>
+                      <p className="text-xs text-white/50 mt-0.5">Time in Range (7d)</p>
+                    </div>
+                  )}
+                  {glucoseVariability !== null && (
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-amber-400">{glucoseVariability} <span className="text-sm font-normal text-white/60">mg/dL</span></p>
+                      <p className="text-xs text-white/50 mt-0.5">Glucose Variability</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Pre-care-assignment banner */}
-        {!careAssigned && (
-          <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0"><Sparkles className="w-4 h-4 text-amber-600" /></div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-900">Your care team is being assigned</p>
-              <p className="text-xs text-amber-800/80 mt-0.5">Meetings, care plans, messages and insights will unlock once Operations completes your onboarding.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Check-in CTA row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card className="border-border/60 shadow-sm sm:col-span-2 bg-gradient-to-br from-primary/5 to-blue-50/30">
-            <CardContent className="p-5">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Today's Check-in</p>
-              <div className="flex items-center gap-3">
-                {dash.checkinDoneToday ? (
-                  <>
-                    <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center"><CheckCircle2 className="w-6 h-6 text-green-600" /></div>
-                    <div>
-                      <p className="text-base font-bold text-foreground">Done for today ✓</p>
-                      <p className="text-xs text-muted-foreground">Great job. Come back tomorrow to keep your streak.</p>
+        {/* ══════════ BASIC & COMPREHENSIVE ══════════════ */}
+        {(plan === "basic" || plan === "comprehensive") && (
+          <div className="space-y-5">
+            {/* Row 1: Welcome + Adherence */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-5 text-white flex flex-col gap-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-white/70 text-xs uppercase tracking-wide">Week {dash.weekNumber}</p>
+                    <h3 className="text-xl font-bold mt-1">{dash.patient.fullName}</h3>
+                  </div>
+                  {streak > 0 && (
+                    <div className="flex flex-col items-center bg-white/15 rounded-xl px-3 py-2 shrink-0">
+                      <Star className="w-4 h-4 text-amber-300" />
+                      <p className="text-xs font-bold text-white mt-0.5">{streak}</p>
+                      <p className="text-[10px] text-white/70">streak</p>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center"><AlertCircle className="w-6 h-6 text-primary" /></div>
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-foreground">Check-in pending</p>
-                      <p className="text-xs text-muted-foreground">5 quick questions · under 2 minutes</p>
-                    </div>
-                    <Button asChild size="sm" className="rounded-xl text-xs"><Link href="/patient/checkin">Check in <ChevronRight className="w-3.5 h-3.5 ml-1" /></Link></Button>
-                  </>
+                  )}
+                </div>
+                {(carePlan?.nutritionPlan || carePlan?.activityPlan) && (
+                  <div className="bg-white/10 rounded-xl p-3 space-y-2">
+                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">This Week's Focus</p>
+                    {carePlan.nutritionPlan && <div className="flex items-start gap-2 text-xs text-white/90"><Salad className="w-3.5 h-3.5 text-white/60 shrink-0 mt-0.5" /><span>{carePlan.nutritionPlan.slice(0, 100)}</span></div>}
+                    {carePlan.activityPlan && <div className="flex items-start gap-2 text-xs text-white/90"><Footprints className="w-3.5 h-3.5 text-white/60 shrink-0 mt-0.5" /><span>{carePlan.activityPlan.slice(0, 100)}</span></div>}
+                  </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
 
-          <Card className="border-border/60 shadow-sm">
-            <CardContent className="p-4">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">This Week</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-extrabold text-foreground">{totalCheckins}</span>
-                <span className="text-xs text-muted-foreground">check-ins total</span>
+              <div className="bg-white rounded-2xl border border-border/50 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary" /><h3 className="text-sm font-bold text-foreground">Weekly Adherence</h3></div>
+                  {adherencePct !== null && <span className="text-sm font-bold text-primary">{adherencePct}% this week</span>}
+                </div>
+                <AdherenceGrid />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Since week 1 of your program</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Adherence */}
-        <WeeklyAdherence days={dash.adherence7Day} pct={dash.adherencePct} />
-
-        {/* Metric Row */}
-        <MetricRow dash={dash} />
-
-        {/* Care team + Glucose */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <CareTeamCard team={dash.careTeam} />
-          <Card className="lg:col-span-2 border-border/60 shadow-sm">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Fasting Glucose Trend</CardTitle>
-                {dash.glucoseSeries.length > 0 && <Badge className="text-[10px] bg-green-50 text-green-700 border-green-200">Avg {dash.avgGlucose} mg/dL</Badge>}
-              </div>
-              <CardDescription className="text-xs">Last 14 readings</CardDescription>
-            </CardHeader>
-            <CardContent className="px-2 pb-3"><GlucoseChart data={dash.glucoseSeries} zones /></CardContent>
-          </Card>
-        </div>
-
-        {/* Weight + Energy */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card className="border-border/60 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Weight Progress</CardTitle></CardHeader>
-            <CardContent className="px-2 pb-3"><WeightChart data={dash.weightSeries} target={dash.patient.targetWeight} /></CardContent>
-          </Card>
-          <Card className="border-border/60 shadow-sm">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Energy (last 7 check-ins)</CardTitle></CardHeader>
-            <CardContent className="px-2 pb-3"><EnergyChart data={dash.energySeries} /></CardContent>
-          </Card>
-        </div>
-
-        {/* Insights + Next review */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2"><InsightsCard insights={dash.insights} hasEnoughData={dash.hasEnoughData} careAssigned={careAssigned} /></div>
-          <NextReviewCard appt={dash.nextAppointment} careAssigned={careAssigned} />
-        </div>
-
-        {/* Care plan + Messages */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <CarePlanCard plan={dash.carePlan} careAssigned={careAssigned} />
-          <MessagesCard messages={dash.messages ?? []} careAssigned={careAssigned} />
-        </div>
-
-        {/* Upgrade banner */}
-        {plan === "basic" && (
-          <div className="bg-gradient-to-r from-primary/8 to-blue-50/40 border border-primary/20 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="font-semibold text-foreground text-sm">Unlock Nutrition & Fitness Coaching</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Upgrade to Comprehensive for personalised meal plans and movement guidance.</p>
             </div>
-            <Button asChild size="sm" className="rounded-full shrink-0 text-xs"><a href="/#pricing">Upgrade Plan →</a></Button>
+
+            {/* Row 2: Metrics */}
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${plan === "comprehensive" && glucoseSeries.length > 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-4`}>
+              <WeightCard weightSeries={weightSeries} weightChange={weightChange} patient={dash.patient} />
+              {plan === "basic"
+                ? <BasicConsistencyCard adherencePct={adherencePct} completedCount={completedCount} />
+                : <ComprehensiveConsistencyCard mealCount={mealCount} checkInCount7={checkInCount7} activityCount={activityCount} />
+              }
+              <EnergyCard energySeries={energySeries} />
+              {plan === "comprehensive" && glucoseSeries.length > 0 && (
+                <GlucoseCard glucoseSeries={glucoseSeries} avgGlucose={avgGlucose} compact />
+              )}
+            </div>
+
+            {/* Row 3: Insights + Review */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <InsightsCard insights={insights} careAssigned={dash.careAssigned ?? false} hasEnoughData={dash.hasEnoughData ?? true} />
+              <NextReviewCard nextAppointment={dash.nextAppointment} totalCheckins={dash.totalCheckins ?? 0} checkinCount={checkinCount} careTeam={dash.careTeam} />
+            </div>
           </div>
         )}
       </div>

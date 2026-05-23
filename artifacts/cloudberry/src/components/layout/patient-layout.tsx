@@ -30,10 +30,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-60 bg-white border-r border-border/60 fixed h-screen top-0 left-0 z-20 shadow-sm">
         <div className="px-5 py-5 border-b border-border/60">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-xs">C</span>
-            </div>
+          <Link href="/">
             <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
           </Link>
           <p className="text-[10px] text-muted-foreground mt-1 ml-9">Patient Portal</p>
@@ -72,12 +69,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 md:ml-60 relative min-h-[100dvh]">
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-border/60 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-[10px]">C</span>
-            </div>
-            <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
-          </div>
+          <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
           <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground p-1">
             <LogOut className="w-5 h-5" />
           </button>
