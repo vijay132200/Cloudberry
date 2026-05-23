@@ -44,7 +44,10 @@ export default function PhysicianSignin() {
       toast({ title: `Welcome, Dr. ${data.fullName || ""}!`, duration: 2000 });
       const role = data.role;
       if (role === "physician") setLocation("/physician/dashboard");
+      else if (role === "dietician") setLocation("/dietician/dashboard");
+      else if (role === "caretaker") setLocation("/caretaker/dashboard");
       else if (role === "ops") setLocation("/ops/dashboard");
+      else if (role === "coach") setLocation("/coach/patients");
       else setLocation("/physician/dashboard");
     } catch {
       setError("Connection error. Please try again.");

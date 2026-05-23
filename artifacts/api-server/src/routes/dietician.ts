@@ -111,6 +111,24 @@ router.post("/patients/:id/notes", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+router.post("/appointments", async (req, res) => {
+  try {
+    const auth = await requireDietician(req, res);
+    if (!auth) return;
+    const { patientId, scheduledAt, type, notes } = req.body ?? {};
+    if (!patientId || !scheduledAt) { res.status(400).json({ error: "patientId and scheduledAt required" }); return; }
+    const [appt] = await db.insert(appointmentsTable).values({
+      patientId: parseInt(patientId),
+      careTeamMember: auth.fullName,
+      role: "dietician",
+      scheduledAt: new Date(scheduledAt),
+      status: "upcoming",
+      notes: notes ?? type ?? null,
+    }).returning();
+    res.status(201).json({ ...appt, scheduledAt: appt.scheduledAt.toISOString(), createdAt: appt.createdAt.toISOString() });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 router.patch("/patients/:id/plan", async (req, res) => {
   try {
     const auth = await requireDietician(req, res);

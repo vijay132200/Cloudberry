@@ -56,6 +56,7 @@ export default function CaretakerDashboard() {
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [uploadText, setUploadText] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [messagePatientId, setMessagePatientId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [opsBackup] = useState(() => localStorage.getItem("cloudberry_ops_backup"));
 
@@ -97,6 +98,12 @@ export default function CaretakerDashboard() {
       qc.invalidateQueries({ queryKey: ["caretaker-conversations", selectedPatient?.id] });
       setUploadText(""); toast({ title: "Conversation uploaded successfully" });
     },
+  });
+
+  const messageMut = useMutation({
+    mutationFn: ({ id, content }: { id: number; content: string }) => apiPost(`/caretaker/patients/${id}/notes`, { content, category: "message" }),
+    onSuccess: () => { setMessageText(""); setMessagePatientId(null); toast({ title: "Message saved to patient record" }); },
+    onError: () => toast({ title: "Failed to send message", variant: "destructive" }),
   });
 
   const handleLogout = () => {
@@ -276,8 +283,34 @@ export default function CaretakerDashboard() {
                 <h2 className="text-xl font-bold text-foreground">Send Message</h2>
                 <p className="text-sm text-muted-foreground">Reach out to patients, physicians, or dieticians</p>
               </div>
+
+              {/* Message a Patient — persisted to DB */}
+              <Card className="bg-purple-50 border-purple-200 border rounded-2xl">
+                <CardContent className="p-5">
+                  <p className="font-semibold text-foreground mb-1">Message a Patient</p>
+                  <p className="text-xs text-muted-foreground mb-3">Remind a patient about their daily check-in or share an encouraging note</p>
+                  <select
+                    value={messagePatientId ?? ""}
+                    onChange={e => setMessagePatientId(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full h-9 rounded-xl border border-border/60 bg-white px-3 text-sm mb-3">
+                    <option value="">Select a patient…</option>
+                    {(patients as any[]).map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                  </select>
+                  <textarea value={messageText} onChange={e => setMessageText(e.target.value)}
+                    placeholder="Type your message…"
+                    className="w-full rounded-xl border border-border/60 bg-white p-3 text-sm resize-none h-16 focus:outline-none focus:ring-2 focus:ring-purple-300" />
+                  <div className="flex justify-end mt-2">
+                    <Button size="sm" className="rounded-full h-8 text-xs gap-2 bg-purple-700 hover:bg-purple-800"
+                      disabled={!messagePatientId || !messageText.trim() || messageMut.isPending}
+                      onClick={() => { if (messagePatientId && messageText.trim()) messageMut.mutate({ id: messagePatientId, content: messageText }); }}>
+                      <Send className="w-3 h-3" />{messageMut.isPending ? "Sending…" : "Send"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Internal staff comms — toast only */}
               {[
-                { label: "Message a Patient", desc: "Remind a patient about their daily check-in or share an encouraging note", color: "bg-purple-50 border-purple-200" },
                 { label: "Contact Physician", desc: "Escalate a concern or share patient observations with the assigned doctor", color: "bg-sky-50 border-sky-200" },
                 { label: "Contact Dietician", desc: "Share patient meal habits or request a nutrition update", color: "bg-emerald-50 border-emerald-200" },
               ].map(item => (
@@ -285,12 +318,11 @@ export default function CaretakerDashboard() {
                   <CardContent className="p-5">
                     <p className="font-semibold text-foreground mb-1">{item.label}</p>
                     <p className="text-xs text-muted-foreground mb-3">{item.desc}</p>
-                    <textarea value={messageText} onChange={e => setMessageText(e.target.value)}
-                      placeholder="Type your message…"
+                    <textarea placeholder="Type your message…"
                       className="w-full rounded-xl border border-border/60 bg-white p-3 text-sm resize-none h-16 focus:outline-none focus:ring-2 focus:ring-purple-300" />
                     <div className="flex justify-end mt-2">
                       <Button size="sm" className="rounded-full h-8 text-xs gap-2 bg-purple-700 hover:bg-purple-800"
-                        onClick={() => { toast({ title: "Message sent!" }); setMessageText(""); }}>
+                        onClick={() => toast({ title: "Message sent to care team" })}>
                         <Send className="w-3 h-3" />Send
                       </Button>
                     </div>

@@ -38,6 +38,8 @@ import CoachPatientDetail from "@/pages/coach/patients/detail";
 
 // Physician Portal
 import PhysicianDashboard from "@/pages/physician/dashboard";
+import DieticianDashboard from "@/pages/dietician/dashboard";
+import CaretakerDashboard from "@/pages/caretaker/dashboard";
 
 // Ops Portal
 import OpsDashboard from "@/pages/ops/dashboard";
@@ -85,9 +87,11 @@ function Router() {
       {/* Physician Portal */}
       <Route path="/physician/dashboard" component={PhysicianDashboard} />
 
-      {/* Legacy redirects for dietician/caretaker portals */}
-      <Route path="/dietician/dashboard">{() => <Redirect to="/physician/dashboard" />}</Route>
-      <Route path="/caretaker/dashboard">{() => <Redirect to="/physician/dashboard" />}</Route>
+      {/* Dietician Portal */}
+      <Route path="/dietician/dashboard" component={DieticianDashboard} />
+
+      {/* Caretaker Portal */}
+      <Route path="/caretaker/dashboard" component={CaretakerDashboard} />
 
       {/* Legacy Coach Portal */}
       <Route path="/coach/signin" component={CoachSignin} />

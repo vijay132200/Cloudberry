@@ -57,7 +57,10 @@ export default function DieticianDashboard() {
   const [detailTab, setDetailTab] = useState<"profile" | "checkins" | "nutrition" | "notes">("profile");
   const [noteText, setNoteText] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [messagePatientId, setMessagePatientId] = useState<number | null>(null);
   const [scheduleDate, setScheduleDate] = useState("");
+  const [schedulePatientId, setSchedulePatientId] = useState<number | null>(null);
+  const [scheduleType, setScheduleType] = useState("Nutrition Plan Review");
   const [opsBackup] = useState(() => localStorage.getItem("cloudberry_ops_backup"));
 
   const handleReturnToOps = () => {
@@ -99,6 +102,19 @@ export default function DieticianDashboard() {
       qc.invalidateQueries({ queryKey: ["dietician-patient-detail", selectedPatient?.id] });
       setNoteText(""); toast({ title: "Nutrition note saved" });
     },
+  });
+
+  const messageMut = useMutation({
+    mutationFn: ({ id, content }: { id: number; content: string }) => apiPost(`/dietician/patients/${id}/notes`, { content, category: "message" }),
+    onSuccess: () => { setMessageText(""); setMessagePatientId(null); toast({ title: "Message saved to patient record" }); },
+    onError: () => toast({ title: "Failed to send message", variant: "destructive" }),
+  });
+
+  const scheduleMut = useMutation({
+    mutationFn: ({ patientId, scheduledAt, type }: { patientId: number; scheduledAt: string; type: string }) =>
+      apiPost("/dietician/appointments", { patientId, scheduledAt, type }),
+    onSuccess: () => { setScheduleDate(""); setSchedulePatientId(null); toast({ title: "Consultation scheduled!", description: "The appointment has been saved." }); },
+    onError: () => toast({ title: "Failed to schedule appointment", variant: "destructive" }),
   });
 
   const handleLogout = () => {
@@ -251,8 +267,34 @@ export default function DieticianDashboard() {
                 <h2 className="text-xl font-bold text-foreground">Send Message</h2>
                 <p className="text-sm text-muted-foreground">Coordinate with patients, physicians, and caretakers</p>
               </div>
+
+              {/* Message a Patient — persisted to DB */}
+              <Card className="bg-emerald-50 border-emerald-200 border rounded-2xl">
+                <CardContent className="p-5">
+                  <p className="font-semibold text-foreground mb-1">Message a Patient</p>
+                  <p className="text-xs text-muted-foreground mb-3">Send nutrition tips or meal reminders directly to a patient</p>
+                  <select
+                    value={messagePatientId ?? ""}
+                    onChange={e => setMessagePatientId(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full h-9 rounded-xl border border-border/60 bg-white px-3 text-sm mb-3">
+                    <option value="">Select a patient…</option>
+                    {(patients as any[]).map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                  </select>
+                  <textarea value={messageText} onChange={e => setMessageText(e.target.value)}
+                    placeholder="Type your message…"
+                    className="w-full rounded-xl border border-border/60 bg-white p-3 text-sm resize-none h-16 focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                  <div className="flex justify-end mt-2">
+                    <Button size="sm" className="rounded-full h-8 text-xs gap-2 bg-emerald-600 hover:bg-emerald-700"
+                      disabled={!messagePatientId || !messageText.trim() || messageMut.isPending}
+                      onClick={() => { if (messagePatientId && messageText.trim()) messageMut.mutate({ id: messagePatientId, content: messageText }); }}>
+                      <Send className="w-3 h-3" />{messageMut.isPending ? "Sending…" : "Send"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Internal staff comms — toast only */}
               {[
-                { label: "Message a Patient", desc: "Send nutrition tips or meal reminders directly to a patient", color: "bg-emerald-50 border-emerald-200" },
                 { label: "Contact Physician", desc: "Share clinical nutrition updates or request medical input", color: "bg-sky-50 border-sky-200" },
                 { label: "Contact Caretaker", desc: "Coordinate daily meal tracking and patient support", color: "bg-amber-50 border-amber-200" },
                 { label: "Contact Support", desc: "Get operational help or report programme concerns", color: "bg-violet-50 border-violet-200" },
@@ -261,12 +303,11 @@ export default function DieticianDashboard() {
                   <CardContent className="p-5">
                     <p className="font-semibold text-foreground mb-1">{item.label}</p>
                     <p className="text-xs text-muted-foreground mb-3">{item.desc}</p>
-                    <textarea value={messageText} onChange={e => setMessageText(e.target.value)}
-                      placeholder="Type your message…"
+                    <textarea placeholder="Type your message…"
                       className="w-full rounded-xl border border-border/60 bg-white p-3 text-sm resize-none h-16 focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                     <div className="flex justify-end mt-2">
                       <Button size="sm" className="rounded-full h-8 text-xs gap-2 bg-emerald-600 hover:bg-emerald-700"
-                        onClick={() => { toast({ title: "Message sent!" }); setMessageText(""); }}>
+                        onClick={() => toast({ title: "Message sent to care team" })}>
                         <Send className="w-3 h-3" />Send
                       </Button>
                     </div>
@@ -287,7 +328,10 @@ export default function DieticianDashboard() {
                 <CardContent className="p-6 space-y-4">
                   <div>
                     <label className="text-sm font-medium block mb-1.5">Select Patient</label>
-                    <select className="w-full h-10 rounded-xl border border-border/60 px-3 text-sm bg-white">
+                    <select
+                      value={schedulePatientId ?? ""}
+                      onChange={e => setSchedulePatientId(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full h-10 rounded-xl border border-border/60 px-3 text-sm bg-white">
                       <option value="">Choose a patient…</option>
                       {(patients as any[]).map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
                     </select>
@@ -299,13 +343,21 @@ export default function DieticianDashboard() {
                   </div>
                   <div>
                     <label className="text-sm font-medium block mb-1.5">Call Purpose</label>
-                    <select className="w-full h-10 rounded-xl border border-border/60 px-3 text-sm bg-white">
-                      <option>Nutrition Plan Review</option><option>Meal Logging Follow-up</option><option>Supplement Discussion</option><option>Progress Check-in</option>
+                    <select value={scheduleType} onChange={e => setScheduleType(e.target.value)} className="w-full h-10 rounded-xl border border-border/60 px-3 text-sm bg-white">
+                      <option>Nutrition Plan Review</option>
+                      <option>Meal Logging Follow-up</option>
+                      <option>Supplement Discussion</option>
+                      <option>Progress Check-in</option>
                     </select>
                   </div>
                   <Button className="w-full rounded-full h-11 gap-2 bg-emerald-600 hover:bg-emerald-700"
-                    onClick={() => toast({ title: "Consultation scheduled!", description: "Patient and care team have been notified." })}>
-                    <Video className="w-4 h-4" />Confirm Schedule
+                    disabled={!schedulePatientId || !scheduleDate || scheduleMut.isPending}
+                    onClick={() => {
+                      if (schedulePatientId && scheduleDate) {
+                        scheduleMut.mutate({ patientId: schedulePatientId, scheduledAt: scheduleDate, type: scheduleType });
+                      }
+                    }}>
+                    <Video className="w-4 h-4" />{scheduleMut.isPending ? "Scheduling…" : "Confirm Schedule"}
                   </Button>
                 </CardContent>
               </Card>

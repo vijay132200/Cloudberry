@@ -188,12 +188,31 @@ function NotificationsSection() {
 }
 
 function SecuritySection() {
-  const [pw1, setPw1] = useState(""); const [pw2, setPw2] = useState(""); const [msg, setMsg] = useState("");
+  const [currentPw, setCurrentPw] = useState("");
+  const [pw1, setPw1] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const changePw = useMutation({
+    mutationFn: () => {
+      const token = localStorage.getItem("cloudberry_token");
+      return fetch(`${API}/patients/me/password`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: currentPw || undefined, newPassword: pw1 }),
+      }).then(async r => { if (!r.ok) throw new Error((await r.json()).error ?? "Failed"); });
+    },
+    onSuccess: () => { setMsg("Password updated successfully ✓"); setCurrentPw(""); setPw1(""); setPw2(""); },
+    onError: (e: any) => setMsg(e.message ?? "Failed to update password"),
+  });
+
   const onChange = () => {
-    if (pw1.length < 6) return setMsg("Password must be at least 6 characters.");
+    if (pw1.length < 8) return setMsg("Password must be at least 8 characters.");
     if (pw1 !== pw2) return setMsg("Passwords do not match.");
-    setMsg("Password updated successfully ✓"); setPw1(""); setPw2("");
+    setMsg("");
+    changePw.mutate();
   };
+
   return (
     <div className="space-y-6">
       <Card className="border-border/60 shadow-sm">
@@ -202,13 +221,15 @@ function SecuritySection() {
           <CardDescription>Choose a strong password you don't use elsewhere.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2"><Label>Current password</Label><Input type="password" value={currentPw} onChange={e => { setCurrentPw(e.target.value); setMsg(""); }} placeholder="Leave blank if you signed up without a password" /></div>
           <div className="space-y-2"><Label>New password</Label><Input type="password" value={pw1} onChange={e => { setPw1(e.target.value); setMsg(""); }} /></div>
-          <div className="space-y-2"><Label>Confirm password</Label><Input type="password" value={pw2} onChange={e => { setPw2(e.target.value); setMsg(""); }} /></div>
+          <div className="space-y-2"><Label>Confirm new password</Label><Input type="password" value={pw2} onChange={e => { setPw2(e.target.value); setMsg(""); }} /></div>
           {msg && <p className={`text-xs ${msg.includes("✓") ? "text-green-600" : "text-destructive"}`}>{msg}</p>}
-          <Button className="rounded-xl" onClick={onChange} disabled={!pw1 || !pw2}>Update password</Button>
+          <Button className="rounded-xl" onClick={onChange} disabled={!pw1 || !pw2 || changePw.isPending}>
+            {changePw.isPending ? "Updating…" : "Update password"}
+          </Button>
         </CardContent>
       </Card>
-
     </div>
   );
 }

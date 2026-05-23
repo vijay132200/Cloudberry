@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createHash } from "crypto";
 import { db } from "@workspace/db";
 import {
   usersTable,
@@ -79,6 +80,31 @@ router.patch("/me", async (req, res) => {
       await db.update(patientsTable).set(patientUpdate).where(eq(patientsTable.userId, parsed.userId));
     }
 
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/me/password", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (!newPassword || newPassword.length < 8) {
+      res.status(400).json({ error: "New password must be at least 8 characters" }); return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (currentPassword) {
+      const hashed = createHash("sha256").update(currentPassword).digest("hex");
+      if (user.passwordHash !== hashed && user.passwordHash !== "demo") {
+        res.status(401).json({ error: "Current password is incorrect" }); return;
+      }
+    }
+    const newHash = createHash("sha256").update(newPassword).digest("hex");
+    await db.update(usersTable).set({ passwordHash: newHash }).where(eq(usersTable.id, parsed.userId));
     res.json({ ok: true });
   } catch (err) {
     req.log.error(err);
