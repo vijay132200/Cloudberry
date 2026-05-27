@@ -479,12 +479,14 @@ function PatientDetailPanel({
                       <Card className="border-border">
                         <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-primary" /> Weight Trend {d.weightChange !== null && <span className={`ml-1 ${d.weightChange < 0 ? "text-emerald-600" : "text-rose-500"}`}>{d.weightChange < 0 ? "↓" : "↑"}{Math.abs(d.weightChange)} kg</span>}</CardTitle></CardHeader>
                         <CardContent className="pb-3">
-                          <LineChart width={380} height={90} data={d.weightSeries} style={{ maxWidth: "100%" }}>
-                            <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
-                            <YAxis tick={{ fontSize: 8 }} domain={["auto","auto"]} width={28} />
-                            <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} labelFormatter={fmt} />
-                            <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
-                          </LineChart>
+                          <ResponsiveContainer width="100%" height={90}>
+                            <LineChart data={d.weightSeries} margin={{ top: 4, right: 10, bottom: 4, left: -10 }}>
+                              <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
+                              <YAxis tick={{ fontSize: 8 }} domain={["auto","auto"]} width={28} />
+                              <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} labelFormatter={fmt} />
+                              <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
                           <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                             {p.startingWeight && <span>Start: <strong className="text-foreground">{p.startingWeight} kg</strong></span>}
                             {p.currentWeight && <span>Now: <strong className="text-foreground">{p.currentWeight} kg</strong></span>}

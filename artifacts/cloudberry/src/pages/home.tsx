@@ -63,10 +63,12 @@ export default function HomePage() {
   const [activeFrame, setActiveFrame] = useState(0);
   const [activeCard, setActiveCard] = useState(0);
   const [activeAboutCard, setActiveAboutCard] = useState(0);
+  const [activeImpact, setActiveImpact] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
   const cardsRef = useRef<HTMLDivElement | null>(null);
   const aboutCardsRef = useRef<HTMLDivElement | null>(null);
+  const impactRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     intervalRef.current = setInterval(() => { setActiveFrame(prev => (prev + 1) % carouselFrames.length); }, 3500);
@@ -100,6 +102,35 @@ export default function HomePage() {
       const cardWidth = container.scrollWidth / aboutCards.length;
       container.scrollTo({ left: cardWidth * idx, behavior: "smooth" });
     }
+  };
+
+  const scrollToImpact = (idx: number) => {
+    setActiveImpact(idx);
+    if (impactRef.current) {
+      const c = impactRef.current;
+      c.scrollTo({ left: (c.scrollWidth / impactBlocks.length) * idx, behavior: "smooth" });
+    }
+  };
+
+  const handleCardsScroll = () => {
+    if (!cardsRef.current) return;
+    const c = cardsRef.current;
+    const idx = Math.round(c.scrollLeft / (c.scrollWidth / whyCards.length));
+    setActiveCard(Math.min(Math.max(idx, 0), whyCards.length - 1));
+  };
+
+  const handleAboutScroll = () => {
+    if (!aboutCardsRef.current) return;
+    const c = aboutCardsRef.current;
+    const idx = Math.round(c.scrollLeft / (c.scrollWidth / aboutCards.length));
+    setActiveAboutCard(Math.min(Math.max(idx, 0), aboutCards.length - 1));
+  };
+
+  const handleImpactScroll = () => {
+    if (!impactRef.current) return;
+    const c = impactRef.current;
+    const idx = Math.round(c.scrollLeft / (c.scrollWidth / impactBlocks.length));
+    setActiveImpact(Math.min(Math.max(idx, 0), impactBlocks.length - 1));
   };
 
   return (
@@ -210,7 +241,7 @@ export default function HomePage() {
           </div>
           {/* Mobile Carousel */}
           <div className="md:hidden">
-            <div ref={cardsRef} className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            <div ref={cardsRef} onScroll={handleCardsScroll} className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {whyCards.map((card, i) => (
                 <div key={i} className="snap-start shrink-0 w-[82vw]">
                   <Card className="border-border shadow-sm bg-card flex flex-col h-full">
@@ -249,7 +280,8 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">What We Aim To Help You Improve</h2>
             <p className="text-white/60 text-lg max-w-xl mx-auto">Measurable outcomes that matter — tracked consistently over time.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
+          {/* Desktop grid */}
+          <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
             {impactBlocks.map((block, i) => (
               <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-3 hover:bg-white/10 hover:border-white/20 transition-all">
                 <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">{block.icon}</div>
@@ -257,6 +289,26 @@ export default function HomePage() {
                 <p className="text-white/60 text-sm leading-relaxed">{block.desc}</p>
               </div>
             ))}
+          </div>
+          {/* Mobile carousel */}
+          <div className="sm:hidden">
+            <div ref={impactRef} onScroll={handleImpactScroll} className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {impactBlocks.map((block, i) => (
+                <div key={i} className="snap-start shrink-0 w-[82vw]">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-3 h-full">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">{block.icon}</div>
+                    <h3 className="font-semibold text-base text-white leading-snug">{block.title}</h3>
+                    <p className="text-white/60 text-sm leading-relaxed">{block.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center gap-2 mt-4">
+              {impactBlocks.map((_, i) => (
+                <button key={i} onClick={() => scrollToImpact(i)}
+                  className={`h-2 rounded-full transition-all ${i === activeImpact ? 'bg-white w-6' : 'bg-white/30 w-2'}`} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -323,11 +375,11 @@ export default function HomePage() {
                   ? "bg-white/10 border border-primary/50 ring-1 ring-primary/30"
                   : "bg-white/5 border border-white/15"
               }`}>
-                <div>
-                  <span className={`inline-block text-[10px] font-extrabold tracking-widest px-3 py-1 rounded-full ${
+                <div className="flex flex-col gap-1.5">
+                  <span className={`self-start text-[10px] font-extrabold tracking-widest px-3 py-1 rounded-full ${
                     plan.popular ? "bg-primary text-white" : "border border-white/20 text-white/60"
                   }`}>{plan.label}</span>
-                  {plan.popular && <span className="ml-2 text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">Most Popular</span>}
+                  {plan.popular && <span className="self-start text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">Most Popular</span>}
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold leading-tight text-white">{plan.name}</h3>
@@ -386,7 +438,7 @@ export default function HomePage() {
 
           {/* Mobile Carousel */}
           <div className="md:hidden">
-            <div ref={aboutCardsRef} className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            <div ref={aboutCardsRef} onScroll={handleAboutScroll} className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {aboutCards.map((card, i) => (
                 <div key={i} className="snap-start shrink-0 w-[82vw]">
                   <div className={`rounded-2xl p-7 flex flex-col gap-4 border h-full ${card.bg}`}>

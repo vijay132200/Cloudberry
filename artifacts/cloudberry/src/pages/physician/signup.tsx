@@ -9,7 +9,7 @@ import * as z from "zod";
 import { useSubmitPhysicianLead } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Stethoscope } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -63,6 +63,11 @@ export default function PhysicianSignupPage() {
           <Card className="border-border/50 shadow-xl rounded-2xl overflow-hidden bg-white">
             <div className="h-1.5 bg-gradient-to-r from-primary via-blue-400 to-primary/60" />
             <CardHeader className="text-center pb-7 border-b border-border/40 pt-8 bg-gradient-to-br from-primary/5 to-blue-50/50">
+              <div className="flex justify-center mb-3">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full">
+                  <Stethoscope className="w-3.5 h-3.5" /> Physician / Doctor Sign Up
+                </span>
+              </div>
               <CardTitle className="text-2xl font-bold text-foreground">Connect with Us</CardTitle>
               <CardDescription className="mt-2">
                 Leave your details and our clinical partnership team will reach out to discuss collaboration.

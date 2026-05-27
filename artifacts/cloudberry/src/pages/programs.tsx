@@ -190,14 +190,9 @@ export default function ProgramsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
               >
-                <Card className={`relative flex flex-col overflow-hidden ${plan.color} ${plan.badge ? "md:scale-105" : ""}`}>
-                  {plan.badge && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider z-10">
-                      {plan.badge}
-                    </div>
-                  )}
+                <Card className={`relative flex flex-col ${plan.color} ${plan.badge ? "md:scale-105" : ""}`}>
                   {/* Plan image */}
-                  <div className="aspect-[16/7] overflow-hidden relative">
+                  <div className="aspect-[16/7] overflow-hidden relative rounded-t-xl">
                     <img src={plan.image} alt={plan.name} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     <div className="absolute bottom-4 left-5">
@@ -205,7 +200,14 @@ export default function ProgramsPage() {
                     </div>
                   </div>
 
-                  <CardHeader className="text-center pb-5 border-b pt-6">
+                  <CardHeader className="text-center pb-5 border-b pt-5">
+                    {plan.badge && (
+                      <div className="mb-3">
+                        <span className="inline-block bg-primary text-primary-foreground px-5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                          {plan.badge}
+                        </span>
+                      </div>
+                    )}
                     <CardDescription className="text-sm mb-3 leading-relaxed">{plan.tagline}</CardDescription>
                     <div className="text-4xl font-bold text-foreground">{plan.price}<span className="text-lg text-muted-foreground font-normal">{plan.period}</span></div>
                   </CardHeader>

@@ -102,9 +102,9 @@ function WeightCard({ weightSeries, weightChange, patient }: { weightSeries: any
         {pctChange !== null && <p className="text-xs text-muted-foreground mb-2">{lost ? "↓" : "↑"} {pctChange}% vs starting weight</p>}
         {weightSeries.length > 1 ? (
           <ResponsiveContainer width="100%" height={100}>
-            <LineChart data={weightSeries}>
+            <LineChart data={weightSeries} margin={{ top: 4, right: 10, bottom: 4, left: -10 }}>
               <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
-              <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} width={32} />
+              <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} width={28} />
               <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} labelFormatter={fmt} />
               <Line type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
             </LineChart>

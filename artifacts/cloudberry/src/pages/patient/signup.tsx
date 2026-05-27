@@ -133,20 +133,25 @@ export default function PatientSignup() {
 
         <div className="bg-white rounded-3xl border border-border/50 shadow-lg p-8 md:p-10">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-foreground">Start Your Journey</h2>
-            <Link href="/patient/signin" className="text-sm text-primary font-semibold hover:underline">
+            <div>
+              <span className="inline-block text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full mb-2">
+                Patient Sign Up
+              </span>
+              <h2 className="text-2xl font-bold text-foreground">Start Your Journey</h2>
+            </div>
+            <Link href="/patient/signin" className="text-sm text-primary font-semibold hover:underline shrink-0 ml-4">
               Log in instead
             </Link>
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-7">
             {[
-              { title: "Personalised Plans", desc: "Tailored to your biology." },
-              { title: "Daily Support", desc: "Accountability every day." },
-              { title: "Doctor-Led", desc: "Clinical oversight." },
-              { title: "Coordinated Care", desc: "Full care team." },
+              { title: "Personalised Plans", desc: "Tailored to your biology.", mobileHide: false },
+              { title: "Daily Support", desc: "Accountability every day.", mobileHide: false },
+              { title: "Doctor-Led", desc: "Clinical oversight.", mobileHide: false },
+              { title: "Coordinated Care", desc: "Full care team.", mobileHide: true },
             ].map((item) => (
-              <div key={item.title} className="bg-primary/5 rounded-xl p-2.5 text-center">
+              <div key={item.title} className={`bg-primary/5 rounded-xl p-2.5 text-center ${item.mobileHide ? "hidden sm:block" : ""}`}>
                 <CheckCircle2 className="h-4 w-4 text-primary mx-auto mb-1" />
                 <p className="text-xs font-semibold text-foreground leading-tight">{item.title}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{item.desc}</p>
