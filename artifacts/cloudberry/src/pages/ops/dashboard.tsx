@@ -10,8 +10,12 @@ import {
   Bell, Download, Search, Phone, Mail, TrendingUp, Activity, Star,
   Stethoscope, Target, Dumbbell, Salad, UserCheck, Shield, ChevronRight,
   X, ChevronDown, Weight, MapPin, CalendarCheck, User, FileText,
-  MessageSquare, Plus, ExternalLink, ArrowUp, ArrowDown, CalendarPlus, ClipboardList
+  MessageSquare, Plus, ExternalLink, ArrowUp, ArrowDown, CalendarPlus, ClipboardList,
+  UserPlus, Lock,
 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -587,10 +591,11 @@ function PatientDetailPanel({
                   { icon: <Target className="w-3.5 h-3.5" />, label: "Goal", val: goalLabel(p.primaryGoal) },
                   { icon: <CalendarCheck className="w-3.5 h-3.5" />, label: "Program Week", val: `Week ${p.weekNumber}` },
                   { icon: <Star className="w-3.5 h-3.5" />, label: "Plan", val: p.plan },
+                  { icon: <Lock className="w-3.5 h-3.5" />, label: "Password", val: p.password },
                 ].map(item => (
                   <div key={item.label} className="bg-muted/40 rounded-xl p-3">
                     <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 mb-1">{item.icon} {item.label}</div>
-                    <div className="text-sm font-semibold text-foreground capitalize">{item.val || "—"}</div>
+                    <div className={`text-sm font-semibold text-foreground ${item.label !== "Password" ? "capitalize" : "font-mono"}`}>{item.val || "—"}</div>
                   </div>
                 ))}
               </div>
@@ -1013,6 +1018,15 @@ export default function OpsDashboard() {
   const [regSearch, setRegSearch] = useState("");
   const [addingStaff, setAddingStaff] = useState(false);
   const [staffForm, setStaffForm] = useState({ fullName: "", email: "", phone: "", role: "physician", specialty: "", password: "" });
+  const [addCoachDietOpen, setAddCoachDietOpen] = useState(false);
+  const [coachDietStep, setCoachDietStep] = useState<1 | 2>(1);
+  const [coachDietRole, setCoachDietRole] = useState<"dietician" | "coach">("dietician");
+  const [coachDietForm, setCoachDietForm] = useState({ fullName: "", email: "", phone: "", specialty: "", password: "" });
+  const closeCoachDiet = () => {
+    setAddCoachDietOpen(false);
+    setCoachDietStep(1);
+    setCoachDietForm({ fullName: "", email: "", phone: "", specialty: "", password: "" });
+  };
 
   // Auth guard
   useEffect(() => {
@@ -1136,6 +1150,101 @@ export default function OpsDashboard() {
         />
       )}
 
+      {/* Add Dietician / Fitness Coach Dialog */}
+      <Dialog open={addCoachDietOpen} onOpenChange={open => { if (!open) closeCoachDiet(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {coachDietStep === 1 ? "Add Dietician or Fitness Coach" : `Add ${coachDietRole === "dietician" ? "Dietician" : "Fitness Coach"}`}
+            </DialogTitle>
+          </DialogHeader>
+
+          {coachDietStep === 1 ? (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">Choose the role you want to add to the care team:</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => { setCoachDietRole("dietician"); setCoachDietStep(2); }}
+                  className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border/60 hover:border-emerald-400 hover:bg-emerald-50 transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                    <Salad className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">Dietician</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Nutrition specialist</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => { setCoachDietRole("coach"); setCoachDietStep(2); }}
+                  className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-border/60 hover:border-blue-400 hover:bg-blue-50 transition-all group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <Dumbbell className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-foreground">Fitness Coach</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Movement & activity</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 py-2">
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${coachDietRole === "dietician" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-blue-50 text-blue-700 border border-blue-200"}`}>
+                {coachDietRole === "dietician" ? <Salad className="w-3.5 h-3.5" /> : <Dumbbell className="w-3.5 h-3.5" />}
+                {coachDietRole === "dietician" ? "Dietician — Nutrition Specialist" : "Fitness Coach — Movement & Activity"}
+                <button onClick={() => setCoachDietStep(1)} className="ml-auto underline text-[10px] opacity-70 hover:opacity-100">Change</button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Full Name *</label>
+                  <Input value={coachDietForm.fullName} onChange={e => setCoachDietForm(f => ({ ...f, fullName: e.target.value }))}
+                    placeholder={coachDietRole === "dietician" ? "Dr. Priya Sharma" : "Vikram Singh"} className="h-9 text-sm rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Email *</label>
+                  <Input type="email" value={coachDietForm.email} onChange={e => setCoachDietForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="name@cloudberry.health" className="h-9 text-sm rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Phone</label>
+                  <Input value={coachDietForm.phone} onChange={e => setCoachDietForm(f => ({ ...f, phone: e.target.value }))}
+                    placeholder="+91 99999 00000" className="h-9 text-sm rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Specialty</label>
+                  <Input value={coachDietForm.specialty} onChange={e => setCoachDietForm(f => ({ ...f, specialty: e.target.value }))}
+                    placeholder={coachDietRole === "dietician" ? "Clinical Nutrition" : "Strength & Conditioning"} className="h-9 text-sm rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Password *</label>
+                  <Input type="password" value={coachDietForm.password} onChange={e => setCoachDietForm(f => ({ ...f, password: e.target.value }))}
+                    placeholder="Initial password" className="h-9 text-sm rounded-lg" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={closeCoachDiet} className="text-sm">Cancel</Button>
+            {coachDietStep === 2 && (
+              <Button
+                onClick={() => {
+                  addStaffMutation.mutate({ ...coachDietForm, role: coachDietRole }, {
+                    onSuccess: closeCoachDiet,
+                  });
+                }}
+                disabled={addStaffMutation.isPending || !coachDietForm.fullName || !coachDietForm.email || !coachDietForm.password}
+                className="text-sm"
+              >
+                {addStaffMutation.isPending ? "Adding…" : `Add ${coachDietRole === "dietician" ? "Dietician" : "Coach"}`}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="p-4 md:p-5 max-w-7xl mx-auto space-y-4">
 
         {/* Header */}
@@ -1150,6 +1259,10 @@ export default function OpsDashboard() {
             <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
               onClick={() => navigate("/patient/signup")}>
               <Plus className="w-3.5 h-3.5" /> Add Patient
+            </Button>
+            <Button size="sm" className="h-8 text-xs gap-1.5"
+              onClick={() => { setCoachDietStep(1); setAddCoachDietOpen(true); }}>
+              <UserPlus className="w-3.5 h-3.5" /> Add Dietician / Coach
             </Button>
             <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5"
               onClick={() => exportCSV(patients as any[])}>

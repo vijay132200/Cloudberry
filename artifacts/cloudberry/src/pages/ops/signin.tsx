@@ -49,9 +49,10 @@ export default function OpsSignin() {
           </Link>
         </div>
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-3">
+          <Link href="/" className="inline-block mb-1">
             <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>
           </Link>
+          <p className="text-xs text-muted-foreground mb-4">Doctor-Led Care for Long-Term Metabolic Health</p>
           <h2 className="text-2xl font-bold text-foreground">Operations Sign In</h2>
           <p className="text-muted-foreground mt-1 text-sm">Authorized personnel only</p>
         </div>

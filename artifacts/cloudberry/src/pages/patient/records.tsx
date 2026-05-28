@@ -1,206 +1,389 @@
 import { PatientLayout } from "@/components/layout/patient-layout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, FileText, Activity, Inbox } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { Upload, FileText, Eye, Trash2, Download, FolderOpen, Plus, X } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const API = `${BASE}/api`;
+type DocCategory = "prescription" | "report" | "lab_test" | "discharge" | "other";
 
-async function fetchJson(path: string) {
-  const token = localStorage.getItem("cloudberry_token");
-  const r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!r.ok) throw new Error("Failed");
-  return r.json();
+type DocEntry = {
+  id: string;
+  name: string;
+  category: DocCategory;
+  date: string;
+  size: string;
+  mimeType: string;
+  data: string;
+};
+
+const CATEGORY_LABELS: Record<DocCategory, string> = {
+  prescription: "Prescription",
+  report: "Medical Report",
+  lab_test: "Lab Test",
+  discharge: "Discharge Summary",
+  other: "Other",
+};
+
+const CATEGORY_COLORS: Record<DocCategory, string> = {
+  prescription: "bg-blue-50 text-blue-700 border-blue-200",
+  report: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  lab_test: "bg-purple-50 text-purple-700 border-purple-200",
+  discharge: "bg-amber-50 text-amber-700 border-amber-200",
+  other: "bg-slate-50 text-slate-600 border-slate-200",
+};
+
+const STORAGE_KEY = "cloudberry_patient_documents";
+
+function loadDocs(): DocEntry[] {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+  catch { return []; }
 }
 
-async function postJson(path: string, body: any) {
-  const token = localStorage.getItem("cloudberry_token");
-  const r = await fetch(`${API}${path}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error("Failed");
-  return r.json();
+function saveDocs(docs: DocEntry[]) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(docs)); } catch { }
 }
 
-function EmptyBlock({ icon: Icon, title, body }: { icon: any; title: string; body: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center text-center py-12 px-4">
-      <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3"><Icon className="w-6 h-6 text-muted-foreground" /></div>
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      <p className="text-xs text-muted-foreground mt-1 max-w-xs">{body}</p>
-    </div>
-  );
+function fmtSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
 }
 
 export default function PatientRecords() {
-  const qc = useQueryClient();
-  const { data: dash, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: () => fetchJson("/patients/me/dashboard") });
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState("weight");
-  const [value, setValue] = useState("");
+  const { toast } = useToast();
+  const [docs, setDocs] = useState<DocEntry[]>(loadDocs);
+  const [filter, setFilter] = useState<DocCategory | "all">("all");
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [viewDoc, setViewDoc] = useState<DocEntry | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [form, setForm] = useState({ name: "", category: "prescription" as DocCategory });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const addMetric = useMutation({
-    mutationFn: () => postJson("/metrics", {
-      type, value: parseFloat(value), date: new Date().toISOString().slice(0, 10),
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-      setOpen(false); setValue("");
-    },
-  });
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+    setForm(f => ({ ...f, name: file.name.replace(/\.[^/.]+$/, "") }));
+  };
 
-  const weightData = (dash?.weightSeries ?? []).map((d: any) => ({
-    date: new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    weight: d.value,
-  }));
-  const glucoseReadings = (dash?.glucoseSeries ?? []).slice(-10).reverse().map((g: any) => ({
-    val: g.value,
-    date: new Date(g.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
-    status: g.value <= 100 ? "normal" : g.value <= 140 ? "elevated" : "high",
-  }));
-  const carePlan = dash?.carePlan;
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) { handleFileSelect(file); setUploadOpen(true); }
+  }, []);
+
+  const closeUpload = () => {
+    setUploadOpen(false);
+    setSelectedFile(null);
+    setForm({ name: "", category: "prescription" });
+  };
+
+  const handleUpload = () => {
+    if (!selectedFile || !form.name.trim()) return;
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const doc: DocEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        name: form.name.trim(),
+        category: form.category,
+        date: new Date().toISOString(),
+        size: fmtSize(selectedFile.size),
+        mimeType: selectedFile.type || "application/octet-stream",
+        data: e.target?.result as string,
+      };
+      const updated = [doc, ...docs];
+      setDocs(updated);
+      saveDocs(updated);
+      closeUpload();
+      setUploading(false);
+      toast({ title: "Document saved", description: `${doc.name} has been added to your records.` });
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      toast({ title: "Upload failed", description: "Could not read the file. Please try again.", variant: "destructive" });
+    };
+    reader.readAsDataURL(selectedFile);
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = docs.filter(d => d.id !== id);
+    setDocs(updated);
+    saveDocs(updated);
+    toast({ title: "Document removed" });
+  };
+
+  const filtered = filter === "all" ? docs : docs.filter(d => d.category === filter);
+
+  const counts: Record<string, number> = { all: docs.length };
+  (Object.keys(CATEGORY_LABELS) as DocCategory[]).forEach(c => { counts[c] = docs.filter(d => d.category === c).length; });
+
+  const filterTabs: [string, string][] = [
+    ["all", "All"],
+    ["prescription", "Prescriptions"],
+    ["report", "Reports"],
+    ["lab_test", "Lab Tests"],
+    ["discharge", "Discharge"],
+    ["other", "Other"],
+  ];
 
   return (
     <PatientLayout>
-      <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto">
+      <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Health Records</h1>
-            <p className="text-muted-foreground text-sm">Track your metrics and review clinical notes.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">My Documents</h1>
+            <p className="text-muted-foreground text-sm">Your prescriptions, reports, and medical documents — stored privately on this device.</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="rounded-full shadow-sm gap-2"><Plus className="w-4 h-4" /> Add Reading</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Add a metric reading</DialogTitle></DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weight">Weight (kg)</SelectItem>
-                      <SelectItem value="glucose">Glucose (mg/dL)</SelectItem>
-                      <SelectItem value="blood_pressure_systolic">BP — Systolic</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Value</Label>
-                  <Input type="number" step="0.1" value={value} onChange={e => setValue(e.target.value)} placeholder="e.g. 78.5" />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={() => addMetric.mutate()} disabled={!value || addMetric.isPending}>{addMetric.isPending ? "Saving…" : "Save"}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button className="rounded-full shadow-sm gap-2" onClick={() => setUploadOpen(true)}>
+            <Plus className="w-4 h-4" /> Upload Document
+          </Button>
         </div>
 
-        <Tabs defaultValue="trends" className="w-full">
-          <TabsList className="w-full max-w-md grid grid-cols-3 mb-6 bg-muted/50 p-1 rounded-xl">
-            <TabsTrigger value="trends" className="rounded-lg">Trends</TabsTrigger>
-            <TabsTrigger value="readings" className="rounded-lg">Readings</TabsTrigger>
-            <TabsTrigger value="notes" className="rounded-lg">Care Plan</TabsTrigger>
-          </TabsList>
+        {/* Drop zone */}
+        <div
+          className="border-2 border-dashed border-border/50 rounded-2xl p-8 mb-6 flex flex-col items-center justify-center gap-2.5 text-center bg-muted/20 hover:bg-muted/30 transition-colors cursor-pointer"
+          onClick={() => setUploadOpen(true)}
+          onDrop={handleDrop}
+          onDragOver={e => e.preventDefault()}
+        >
+          <Upload className="w-8 h-8 text-muted-foreground/50" />
+          <p className="text-sm font-medium text-foreground">Drag & drop a file here, or click to browse</p>
+          <p className="text-xs text-muted-foreground">PDF, JPG, PNG supported · Files stored locally on your device</p>
+        </div>
 
-          <TabsContent value="trends" className="space-y-6">
-            <Card className="border-border/60 shadow-sm">
-              <CardHeader>
-                <CardTitle>Weight Progress</CardTitle>
-                <CardDescription>
-                  {dash?.patient?.targetWeight
-                    ? `Tracking towards target of ${dash.patient.targetWeight}kg`
-                    : "Track your weight over time"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <p className="text-sm text-muted-foreground py-12 text-center">Loading…</p>
-                ) : weightData.length === 0 ? (
-                  <EmptyBlock icon={Activity} title="No weight readings yet" body="Tap 'Add Reading' to log your first weight and start tracking progress." />
+        {/* Filter chips */}
+        <div className="flex gap-2 flex-wrap mb-5">
+          {filterTabs.map(([val, label]) => (
+            <button
+              key={val}
+              onClick={() => setFilter(val as DocCategory | "all")}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                filter === val
+                  ? "bg-primary text-white border-primary shadow-sm"
+                  : "bg-white text-muted-foreground border-border/60 hover:text-foreground hover:border-border"
+              }`}
+            >
+              {label}
+              {counts[val] > 0 && (
+                <span className="ml-1.5 opacity-70">{counts[val]}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Document list */}
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <FolderOpen className="w-7 h-7 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1.5">
+              {filter === "all" ? "No documents uploaded yet" : `No ${CATEGORY_LABELS[filter as DocCategory] || filter} documents yet`}
+            </p>
+            <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+              {filter === "all"
+                ? "Keep your prescriptions, lab reports, and medical documents in one place. Upload your first document to get started."
+                : "Click 'Upload Document' to add files to this category."}
+            </p>
+            <Button variant="outline" className="mt-4 rounded-full gap-2 text-sm" onClick={() => setUploadOpen(true)}>
+              <Upload className="w-4 h-4" /> Upload Document
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {filtered.map(doc => (
+              <div
+                key={doc.id}
+                className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-white hover:shadow-sm transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center shrink-0 border border-primary/15">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{doc.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(doc.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    {" · "}{doc.size}
+                  </p>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] shrink-0 hidden sm:inline-flex ${CATEGORY_COLORS[doc.category]}`}
+                >
+                  {CATEGORY_LABELS[doc.category]}
+                </Badge>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => setViewDoc(doc)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    title="View"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <a
+                    href={doc.data}
+                    download={doc.name}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
+                  </a>
+                  <button
+                    onClick={() => handleDelete(doc.id)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+          onChange={e => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }}
+        />
+
+        {/* Upload Dialog */}
+        <Dialog open={uploadOpen} onOpenChange={open => { if (!open) closeUpload(); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload Document</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              {!selectedFile ? (
+                <div
+                  className="border-2 border-dashed border-border/60 rounded-xl p-8 flex flex-col items-center gap-3 cursor-pointer hover:bg-muted/20 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDrop={e => { e.preventDefault(); if (e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
+                  onDragOver={e => e.preventDefault()}
+                >
+                  <Upload className="w-8 h-8 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground text-center">Click or drag file here</p>
+                  <p className="text-xs text-muted-foreground">PDF, JPG, PNG — up to 10 MB</p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                  <FileText className="w-5 h-5 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{fmtSize(selectedFile.size)}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedFile(null)}
+                    className="text-muted-foreground hover:text-foreground p-1 rounded"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Document Name</Label>
+                <Input
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Dr. Mehta Prescription — May 2026"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={form.category}
+                  onValueChange={v => setForm(f => ({ ...f, category: v as DocCategory }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prescription">Prescription</SelectItem>
+                    <SelectItem value="report">Medical Report</SelectItem>
+                    <SelectItem value="lab_test">Lab Test / Blood Work</SelectItem>
+                    <SelectItem value="discharge">Discharge Summary</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={closeUpload}>Cancel</Button>
+              <Button
+                onClick={handleUpload}
+                disabled={!selectedFile || !form.name.trim() || uploading}
+              >
+                {uploading ? "Saving…" : "Save Document"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Document Dialog */}
+        <Dialog open={!!viewDoc} onOpenChange={open => { if (!open) setViewDoc(null); }}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <FileText className="w-4 h-4 text-primary shrink-0" />
+                <span className="truncate">{viewDoc?.name}</span>
+                {viewDoc && (
+                  <Badge variant="outline" className={`ml-1 text-[10px] shrink-0 ${CATEGORY_COLORS[viewDoc.category]}`}>
+                    {CATEGORY_LABELS[viewDoc.category]}
+                  </Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+            {viewDoc && (
+              <div className="rounded-xl overflow-hidden border border-border/60 max-h-[60vh] overflow-y-auto">
+                {viewDoc.mimeType.startsWith("image/") ? (
+                  <img src={viewDoc.data} alt={viewDoc.name} className="w-full object-contain" />
+                ) : viewDoc.mimeType === "application/pdf" ? (
+                  <iframe src={viewDoc.data} className="w-full h-[55vh]" title={viewDoc.name} />
                 ) : (
-                  <div className="h-[300px] w-full pt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={weightData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#64748B", fontSize: 12 }} dy={10} />
-                        <YAxis domain={["dataMin - 2", "dataMax + 2"]} axisLine={false} tickLine={false} tick={{ fill: "#64748B", fontSize: 12 }} dx={-10} />
-                        <Tooltip contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} formatter={(v: number) => [`${v} kg`, "Weight"]} />
-                        <Line type="monotone" dataKey="weight" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                  <div className="flex flex-col items-center justify-center py-12 gap-4">
+                    <FileText className="w-10 h-10 text-muted-foreground/40" />
+                    <p className="text-sm text-muted-foreground">Preview not available for this file type</p>
+                    <a href={viewDoc.data} download={viewDoc.name}>
+                      <Button variant="outline" size="sm" className="gap-2 rounded-full">
+                        <Download className="w-4 h-4" /> Download to view
+                      </Button>
+                    </a>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="readings">
-            <Card className="border-border/60 shadow-sm">
-              <CardHeader><CardTitle className="text-lg">Recent Glucose Readings</CardTitle></CardHeader>
-              <CardContent>
-                {glucoseReadings.length === 0 ? (
-                  <EmptyBlock icon={Inbox} title="No readings yet" body="Add a glucose reading to start tracking." />
-                ) : (
-                  <div className="space-y-3">
-                    {glucoseReadings.map((g: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-3 rounded-lg border border-border/40">
-                        <div>
-                          <div className="font-medium text-foreground">Reading</div>
-                          <div className="text-xs text-muted-foreground">{g.date}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-lg">{g.val} <span className="text-xs font-normal text-muted-foreground">mg/dL</span></div>
-                          <div className={`text-xs font-medium ${g.status === "normal" ? "text-green-600" : g.status === "elevated" ? "text-amber-600" : "text-red-600"}`}>
-                            {g.status === "normal" ? "In range" : g.status === "elevated" ? "Elevated" : "High"}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notes" className="space-y-4">
-            {!dash?.careAssigned ? (
-              <Card className="border-dashed border-border/60 bg-muted/20">
-                <CardContent className="py-8"><EmptyBlock icon={FileText} title="Care plan pending" body="Your care team will provide a personalised plan after Operations completes your onboarding." /></CardContent>
-              </Card>
-            ) : !carePlan || (!carePlan.nutritionPlan && !carePlan.activityPlan && !carePlan.weeklyGoals) ? (
-              <Card className="border-dashed border-border/60 bg-muted/20">
-                <CardContent className="py-8"><EmptyBlock icon={FileText} title="Plan being prepared" body="Your care team is finalising your plan. Check back soon." /></CardContent>
-              </Card>
-            ) : (
-              <Card className="border-border/60 shadow-sm">
-                <CardContent className="p-6 space-y-5 text-sm text-foreground/80 leading-relaxed">
-                  {carePlan.weeklyGoals && <div><Badge variant="outline" className="mb-2">Weekly Goals</Badge><p>{carePlan.weeklyGoals}</p></div>}
-                  {carePlan.nutritionPlan && <div><Badge variant="outline" className="mb-2">Nutrition</Badge><p>{carePlan.nutritionPlan}</p></div>}
-                  {carePlan.activityPlan && <div><Badge variant="outline" className="mb-2">Activity</Badge><p>{carePlan.activityPlan}</p></div>}
-                </CardContent>
-              </Card>
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
+            {viewDoc && (
+              <div className="flex items-center justify-between pt-1">
+                <p className="text-xs text-muted-foreground">
+                  Added {new Date(viewDoc.date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} · {viewDoc.size}
+                </p>
+                <a href={viewDoc.data} download={viewDoc.name}>
+                  <Button variant="outline" size="sm" className="gap-1.5 rounded-full h-8 text-xs">
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </Button>
+                </a>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
       </div>
     </PatientLayout>
   );

@@ -482,23 +482,39 @@ export default function PhysicianDashboard() {
         </button>
       </div>
     )}
-    <div className={`min-h-screen bg-slate-50 flex${opsBackup ? " pt-9" : ""}`}>
-      {/* Sidebar */}
-      <aside className={`${sidebarOpen ? "w-60" : "w-16"} transition-all bg-white border-r border-border/60 flex flex-col shrink-0 shadow-sm`}>
+    <div className={`min-h-screen bg-slate-50${opsBackup ? " pt-9" : ""}`}>
+      {/* Sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — fixed overlay */}
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-white flex flex-col transition-all duration-300 ${sidebarOpen ? "w-full shadow-2xl" : "w-16 border-r border-border/60 shadow-sm"}`}>
         <div className="p-4 border-b border-border/60 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
             <Stethoscope className="w-4 h-4 text-primary" />
           </div>
           {sidebarOpen && (
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-foreground truncate">{storedName}</p>
               <p className="text-[10px] text-muted-foreground truncate">{storedSpecialty || "Physician"}</p>
             </div>
           )}
+          {sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="ml-auto p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map(item => (
-            <button key={item.key} onClick={() => setNav(item.key)}
+            <button key={item.key} onClick={() => { setNav(item.key); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${nav === item.key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-slate-50"}`}>
               {item.icon}
               {sidebarOpen && <span className="flex-1 text-left">{item.label}</span>}
@@ -517,8 +533,8 @@ export default function PhysicianDashboard() {
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content — always offset by the collapsed sidebar width */}
+      <div className="ml-16 min-h-screen flex flex-col">
         <header className="bg-white border-b border-border/60 px-6 py-4 flex items-center gap-4">
           <button onClick={() => setSidebarOpen(v => !v)} className="text-muted-foreground hover:text-foreground">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>

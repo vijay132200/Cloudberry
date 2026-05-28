@@ -227,6 +227,7 @@ router.get("/patients/:id/detail", async (req, res) => {
       assignedCaretaker: caretaker,
       assignedCoach: physician ?? coach,
       createdAt: pat.createdAt,
+      password: (user?.passwordHash === DEMO_PW_HASH || user?.passwordHash === "demo") ? "demo123" : "Custom",
       checkins: checkins.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })),
       notes: notes.map(n => ({ ...n, createdAt: n.createdAt.toISOString() })),
       metrics: metrics.map(m => ({ ...m, createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : m.createdAt })),
@@ -264,14 +265,17 @@ router.post("/staff", async (req, res) => {
   try {
     const auth = await requireOps(req, res); if (!auth) return;
     const { fullName, email, phone, role } = req.body;
+    const { specialty, password } = req.body;
     if (!fullName || !email || !role) { res.status(400).json({ error: "Name, email, and role required" }); return; }
-    if (!["physician", "dietician", "caretaker", "ops"].includes(role)) { res.status(400).json({ error: "Invalid role" }); return; }
+    if (!["physician", "dietician", "caretaker", "ops", "coach"].includes(role)) { res.status(400).json({ error: "Invalid role" }); return; }
     const existing = await db.select().from(staffTable).where(eq(staffTable.email, email)).limit(1);
     if (existing.length > 0) { res.status(409).json({ error: "A staff member with this email already exists" }); return; }
+    const passwordHash = password ? createHash("sha256").update(password).digest("hex") : DEMO_PW_HASH;
+    const autoSpecialty = role === "dietician" ? "Nutrition" : role === "coach" ? "Fitness Coaching" : "Care Coordination";
     const [staff] = await db.insert(staffTable).values({
       fullName, email, phone: phone || null, role,
-      passwordHash: DEMO_PW_HASH,
-      specialty: role === "dietician" ? "Nutrition" : "Care Coordination",
+      passwordHash,
+      specialty: specialty || autoSpecialty,
     }).returning();
     res.status(201).json({ id: staff.id, fullName: staff.fullName, email: staff.email, phone: staff.phone, role: staff.role, specialty: staff.specialty, patientCount: 0, password: "demo123" });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

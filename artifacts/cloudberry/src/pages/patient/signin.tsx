@@ -73,9 +73,10 @@ export default function PatientSignin() {
           </Link>
         </div>
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-5">
+          <Link href="/" className="inline-block mb-1">
             <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>
           </Link>
+          <p className="text-xs text-muted-foreground mb-5">Doctor-Led Care for Long-Term Metabolic Health</p>
           <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
           <p className="text-muted-foreground mt-1 text-sm">Sign in to your Patient's Portal</p>
         </div>
