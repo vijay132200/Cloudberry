@@ -108,7 +108,7 @@ function exportCSV(patients: any[]) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-type TabType = "pending" | "patients" | "registrations" | "leads" | "staff" | "credentials";
+type TabType = "pending" | "patients" | "registrations" | "staff" | "credentials";
 type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan";
 
 /* ── Appointment Scheduler ────────────────────────────────────────── */
@@ -245,14 +245,27 @@ function PatientDetailPanel({
   const [selPhysician, setSelPhysician] = useState<string>("");
   const [selDietician, setSelDietician] = useState<string>("");
   const [selCaretaker, setSelCaretaker] = useState<string>("");
+  const [targetWeightInput, setTargetWeightInput] = useState("");
 
   useEffect(() => {
     if (detail) {
       setSelPhysician(detail.assignedPhysicianId ? String(detail.assignedPhysicianId) : "none");
       setSelDietician(detail.assignedDieticianId ? String(detail.assignedDieticianId) : "none");
       setSelCaretaker(detail.assignedCaretakerId ? String(detail.assignedCaretakerId) : "none");
+      setTargetWeightInput(p.targetWeight ? String(p.targetWeight) : "");
     }
   }, [detail]);
+
+  const targetWeightMut = useMutation({
+    mutationFn: (weight: number) => patchJson(`/ops/patients/${patient.id}/target-weight`, { targetWeight: weight }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops-patients"] });
+      qc.invalidateQueries({ queryKey: ["ops-patient-detail", patient.id] });
+      toast({ title: "Target weight updated" });
+      onRefresh();
+    },
+    onError: () => toast({ title: "Failed to update target weight", variant: "destructive" }),
+  });
 
   const assignTeam = useMutation({
     mutationFn: (body: any) => patchJson(`/ops/patients/${patient.id}/assign-team`, body),
@@ -612,6 +625,27 @@ function PatientDetailPanel({
                 </Card>
               )}
 
+              {/* Target weight editor */}
+              <Card className="border-border">
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><Target className="w-3.5 h-3.5 text-primary" /> Set Target Weight</CardTitle></CardHeader>
+                <CardContent className="pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input type="number" value={targetWeightInput} onChange={e => setTargetWeightInput(e.target.value)}
+                        placeholder={p.targetWeight ? String(p.targetWeight) : "e.g. 72"}
+                        className="flex h-9 w-full rounded-xl border border-border/60 bg-muted/30 px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg</span>
+                    </div>
+                    <Button size="sm" className="h-9 rounded-xl"
+                      disabled={targetWeightMut.isPending || !targetWeightInput}
+                      onClick={() => targetWeightMut.mutate(Number(targetWeightInput))}>
+                      {targetWeightMut.isPending ? "Saving…" : "Update"}
+                    </Button>
+                  </div>
+                  {p.targetWeight && <p className="text-xs text-muted-foreground mt-1.5">Current target: <strong className="text-foreground">{p.targetWeight} kg</strong></p>}
+                </CardContent>
+              </Card>
+
               {/* Joined date */}
               <div className="text-xs text-muted-foreground text-center pt-1">
                 Joined: {p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"}
@@ -747,24 +781,6 @@ function PatientDetailPanel({
           {!isLoading && detailTab === "plan" && (
             <div className="space-y-4">
               <OpsPlanEditor patient={p} detail={detail} />
-
-              {/* Appointments */}
-              {detail?.appointments?.length > 0 && (
-                <Card className="border-border">
-                  <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-primary" /> Appointments</CardTitle></CardHeader>
-                  <CardContent className="space-y-2 pb-4">
-                    {detail.appointments.slice(0, 5).map((a: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between text-xs border-b border-border/30 pb-1.5 last:border-0 last:pb-0">
-                        <span className="font-medium text-foreground capitalize">{a.type || "Consultation"}</span>
-                        <span className="text-muted-foreground">{a.scheduledAt ? new Date(a.scheduledAt).toLocaleDateString("en-IN") : "—"}</span>
-                        <Badge variant="outline" className={`text-[10px] capitalize ${a.status === "completed" ? "bg-green-50 text-green-700 border-green-200" : a.status === "upcoming" ? "bg-sky-50 text-sky-700 border-sky-200" : "bg-muted text-muted-foreground"}`}>
-                          {a.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
             </div>
           )}
         </div>
@@ -897,7 +913,6 @@ function OpsContentEditor({ patient }: { patient: any }) {
             { label: "Date", type: "date", field: "date", val: form.coachReview?.date || "" },
             { label: "Time", type: "time", field: "time", val: form.coachReview?.time || "" },
             { label: "Duration", type: "text", field: "duration", val: form.coachReview?.duration || "", ph: "e.g. 30 min" },
-            { label: "Provider Name", type: "text", field: "providerName", val: form.coachReview?.providerName || "", ph: "Dr. Name" },
           ].map(f => (
             <div key={f.field} className="space-y-0.5">
               <label className="text-[10px] text-muted-foreground">{f.label}</label>
@@ -905,6 +920,12 @@ function OpsContentEditor({ patient }: { patient: any }) {
                 onChange={e => setCR(f.field, e.target.value)} className="h-8 text-xs" />
             </div>
           ))}
+          <div className="space-y-0.5">
+            <label className="text-[10px] text-muted-foreground">Provider (Caretaker)</label>
+            <div className="h-8 text-xs flex items-center px-3 rounded-md border border-border/40 bg-muted/30 text-foreground/70">
+              {patient.assignedCaretaker || <span className="italic text-muted-foreground">Not assigned</span>}
+            </div>
+          </div>
         </div>
         <div className="space-y-0.5">
           <label className="text-[10px] text-muted-foreground">Focus Areas (one per line)</label>
@@ -990,6 +1011,8 @@ export default function OpsDashboard() {
   const [tab, setTab] = useState<TabType>("pending");
   const [staffSearch, setStaffSearch] = useState("");
   const [regSearch, setRegSearch] = useState("");
+  const [addingStaff, setAddingStaff] = useState(false);
+  const [staffForm, setStaffForm] = useState({ fullName: "", email: "", phone: "", role: "physician", specialty: "", password: "" });
 
   // Auth guard
   useEffect(() => {
@@ -1010,18 +1033,30 @@ export default function OpsDashboard() {
     refetchInterval: 30000,
   });
 
-  const { data: staff = [], isLoading: sLoading } = useQuery({
+  const { data: staff = [], isLoading: sLoading, refetch: refetchStaff } = useQuery({
     queryKey: ["ops-staff"],
     queryFn: () => fetchJson("/ops/staff"),
     refetchInterval: 60000,
   });
 
-  const { data: leads = [], isLoading: lLoading, refetch: refetchLeads } = useQuery({
-    queryKey: ["ops-leads"],
-    queryFn: () => fetchJson("/ops/leads"),
-    refetchInterval: 60000,
+  const { data: credentials = [] } = useQuery({
+    queryKey: ["ops-credentials"],
+    queryFn: () => fetchJson("/ops/credentials"),
+    enabled: tab === "credentials",
+    staleTime: 30000,
   });
-  const [leadSearch, setLeadSearch] = useState("");
+
+  const addStaffMutation = useMutation({
+    mutationFn: (data: any) => postJson("/ops/staff", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ops-staff"] });
+      refetchStaff();
+      setAddingStaff(false);
+      setStaffForm({ fullName: "", email: "", phone: "", role: "physician", specialty: "", password: "" });
+      toast({ title: "Staff member added successfully" });
+    },
+    onError: () => toast({ title: "Failed to add staff member", variant: "destructive" }),
+  });
 
   const { data: pendingPatients = [], isLoading: pendingLoading, refetch: refetchPending } = useQuery({
     queryKey: ["ops-pending"],
@@ -1080,7 +1115,6 @@ export default function OpsDashboard() {
     { label: "High Risk", value: kpi?.highRiskCount ?? "—", icon: <ShieldAlert className="w-3 h-3" />, bg: "bg-rose-50", color: "text-rose-700" },
     { label: "Appointments", value: kpi?.upcomingAppointments ?? "—", icon: <CalendarDays className="w-3 h-3" />, bg: "bg-purple-50", color: "text-purple-700" },
     { label: "Escalations", value: kpi?.escalationsPending ?? "—", icon: <Bell className="w-3 h-3" />, bg: "bg-orange-50", color: "text-orange-700" },
-    { label: "Total Leads", value: kpi?.totalLeads ?? "—", icon: <TrendingUp className="w-3 h-3" />, bg: "bg-indigo-50", color: "text-indigo-700" },
     { label: "Staff", value: kpi?.totalStaff ?? "—", icon: <HeartPulse className="w-3 h-3" />, bg: "bg-pink-50", color: "text-pink-700" },
   ];
 
@@ -1121,11 +1155,6 @@ export default function OpsDashboard() {
               onClick={() => exportCSV(patients as any[])}>
               <Download className="w-3.5 h-3.5" /> Export CSV
             </Button>
-            {(kpi?.highRiskCount ?? 0) > 0 && (
-              <Button size="sm" variant="destructive" className="h-8 text-xs gap-1.5">
-                <Bell className="w-3.5 h-3.5" /> {kpi?.highRiskCount} Alert{kpi?.highRiskCount > 1 ? "s" : ""}
-              </Button>
-            )}
           </div>
         </div>
 
@@ -1145,7 +1174,7 @@ export default function OpsDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border/60 overflow-x-auto">
-          {(["pending", "patients", "registrations", "leads", "staff", "credentials"] as TabType[]).map(t => (
+          {(["pending", "patients", "registrations", "staff", "credentials"] as TabType[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-5 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${tab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               {t === "pending" ? (
@@ -1159,7 +1188,6 @@ export default function OpsDashboard() {
                 </span>
               ) : t === "patients" ? `Patient Roster (${(patients as any[]).length})`
                 : t === "registrations" ? `Registrations (${(patients as any[]).length})`
-                : t === "leads" ? `Leads (${(leads as any[]).length})`
                 : t === "staff" ? `Care Team (${(staff as any[]).length})`
                 : "Credentials"}
             </button>
@@ -1510,116 +1538,6 @@ export default function OpsDashboard() {
           </div>
         )}
 
-        {/* ── LEADS TAB ────────────────────────────────────────────── */}
-        {tab === "leads" && (
-          <div className="space-y-4">
-            <Card className="border-border shadow-sm overflow-hidden">
-              <CardHeader className="border-b bg-muted/20 py-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-base text-foreground flex items-center gap-2">
-                      <ClipboardList className="w-4 h-4 text-primary" /> Inbound Leads
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">Prospective patients from the website lead form. Convert to active patients by clicking "Onboard".</p>
-                  </div>
-                  <div className="relative w-full sm:w-48">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <Input placeholder="Search leads..." value={leadSearch} onChange={e => setLeadSearch(e.target.value)}
-                      className="pl-8 h-8 text-xs rounded-lg border-border/60" />
-                  </div>
-                </div>
-              </CardHeader>
-
-              {lLoading ? (
-                <div className="py-12 text-center text-sm text-muted-foreground">Loading leads...</div>
-              ) : (leads as any[]).length === 0 ? (
-                <div className="py-16 text-center space-y-3">
-                  <ClipboardList className="w-10 h-10 text-muted-foreground/30 mx-auto" />
-                  <p className="text-sm font-medium text-muted-foreground">No leads yet</p>
-                  <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                    Leads are created when a prospective patient fills out the website enquiry form. They'll appear here for follow-up and onboarding.
-                  </p>
-                  <Button size="sm" variant="outline" className="text-xs" onClick={() => navigate("/connect")}>
-                    View Lead Form →
-                  </Button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-muted-foreground bg-muted/20 border-b uppercase">
-                      <tr>
-                        <th className="px-5 py-3 font-medium">Name</th>
-                        <th className="px-5 py-3 font-medium">Phone</th>
-                        <th className="px-5 py-3 font-medium">Email</th>
-                        <th className="px-5 py-3 font-medium">City</th>
-                        <th className="px-5 py-3 font-medium">Goal</th>
-                        <th className="px-5 py-3 font-medium">Callback Time</th>
-                        <th className="px-5 py-3 font-medium">Submitted</th>
-                        <th className="px-5 py-3 font-medium text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/40">
-                      {(leads as any[]).filter((l: any) =>
-                        !leadSearch || l.fullName?.toLowerCase().includes(leadSearch.toLowerCase()) ||
-                        l.phone?.includes(leadSearch) || l.email?.toLowerCase().includes(leadSearch.toLowerCase())
-                      ).map((l: any) => (
-                        <tr key={l.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-5 py-3 font-semibold text-foreground">{l.fullName}</td>
-                          <td className="px-5 py-3">
-                            <div className="flex items-center gap-1.5 text-xs font-mono">
-                              <Phone className="w-3 h-3 text-muted-foreground" />{l.phone}
-                            </div>
-                          </td>
-                          <td className="px-5 py-3 text-xs text-muted-foreground">{l.email || "—"}</td>
-                          <td className="px-5 py-3 text-xs text-muted-foreground">{l.city}</td>
-                          <td className="px-5 py-3"><Badge variant="outline" className="text-[10px] capitalize">{goalLabel(l.primaryGoal)}</Badge></td>
-                          <td className="px-5 py-3 text-xs text-muted-foreground">{l.preferredCallbackTime || "Any time"}</td>
-                          <td className="px-5 py-3 text-xs text-muted-foreground">
-                            {l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—"}
-                          </td>
-                          <td className="px-5 py-3 text-right">
-                            <Button size="sm" className="h-7 text-[10px] px-3 bg-primary hover:bg-primary/90"
-                              onClick={() => navigate(`/patient/signup`)}>
-                              Onboard
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
-
-            {/* Summary card */}
-            <Card className="border-indigo-200 bg-indigo-50/50 shadow-sm">
-              <CardContent className="pt-4 pb-4">
-                <p className="text-sm font-semibold text-indigo-800 mb-2 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" /> Lead Pipeline Summary
-                </p>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-indigo-700">{(leads as any[]).length}</p>
-                    <p className="text-xs text-indigo-600">Total Leads</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-emerald-700">{(patients as any[]).length}</p>
-                    <p className="text-xs text-emerald-600">Active Patients</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-sky-700">
-                      {(leads as any[]).length + (patients as any[]).length > 0
-                        ? Math.round(((patients as any[]).length / ((leads as any[]).length + (patients as any[]).length)) * 100)
-                        : 0}%
-                    </p>
-                    <p className="text-xs text-sky-600">Conversion Rate</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* ── STAFF TAB ────────────────────────────────────────────── */}
         {tab === "staff" && (
           <div className="space-y-4">
@@ -1627,13 +1545,69 @@ export default function OpsDashboard() {
               <CardHeader className="border-b bg-muted/20 py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <CardTitle className="text-base text-foreground">Care Team Management</CardTitle>
-                  <div className="relative w-full sm:w-48">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <Input placeholder="Search staff..." value={staffSearch} onChange={e => setStaffSearch(e.target.value)}
-                      className="pl-8 h-8 text-xs rounded-lg border-border/60" />
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-full sm:w-48">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                      <Input placeholder="Search staff..." value={staffSearch} onChange={e => setStaffSearch(e.target.value)}
+                        className="pl-8 h-8 text-xs rounded-lg border-border/60" />
+                    </div>
+                    <Button size="sm" className="h-8 text-xs gap-1.5 whitespace-nowrap" onClick={() => setAddingStaff(v => !v)}>
+                      <Plus className="w-3.5 h-3.5" /> Add Staff
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
+
+              {/* Add Staff Form */}
+              {addingStaff && (
+                <div className="border-b bg-primary/5 px-5 py-4">
+                  <p className="text-xs font-semibold text-foreground mb-3">New Staff Member</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Full Name *</label>
+                      <Input value={staffForm.fullName} onChange={e => setStaffForm(f => ({ ...f, fullName: e.target.value }))}
+                        placeholder="Dr. Jane Doe" className="h-8 text-xs rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Email *</label>
+                      <Input type="email" value={staffForm.email} onChange={e => setStaffForm(f => ({ ...f, email: e.target.value }))}
+                        placeholder="jane@cloudberry.health" className="h-8 text-xs rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Phone</label>
+                      <Input value={staffForm.phone} onChange={e => setStaffForm(f => ({ ...f, phone: e.target.value }))}
+                        placeholder="+91 99999 00000" className="h-8 text-xs rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Role *</label>
+                      <select value={staffForm.role} onChange={e => setStaffForm(f => ({ ...f, role: e.target.value }))}
+                        className="flex h-8 w-full rounded-lg border border-border/60 bg-white px-3 text-xs outline-none focus:ring-2 focus:ring-primary/30">
+                        <option value="physician">Physician</option>
+                        <option value="dietician">Dietician</option>
+                        <option value="caretaker">Caretaker</option>
+                        <option value="ops">Ops</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Specialty</label>
+                      <Input value={staffForm.specialty} onChange={e => setStaffForm(f => ({ ...f, specialty: e.target.value }))}
+                        placeholder="Endocrinology" className="h-8 text-xs rounded-lg" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground mb-1 block">Password *</label>
+                      <Input type="password" value={staffForm.password} onChange={e => setStaffForm(f => ({ ...f, password: e.target.value }))}
+                        placeholder="Set initial password" className="h-8 text-xs rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-8 text-xs" disabled={addStaffMutation.isPending || !staffForm.fullName || !staffForm.email || !staffForm.password}
+                      onClick={() => addStaffMutation.mutate(staffForm)}>
+                      {addStaffMutation.isPending ? "Adding..." : "Add Staff Member"}
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAddingStaff(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
 
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
@@ -1729,7 +1703,7 @@ export default function OpsDashboard() {
               </div>
             </Card>
 
-            {/* Staff credentials — live from DB */}
+            {/* Staff credentials — live from DB with passwords */}
             <Card className="border-border shadow-sm overflow-hidden">
               <CardHeader className="border-b bg-muted/20 py-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1747,8 +1721,8 @@ export default function OpsDashboard() {
                       <th className="px-5 py-3 font-medium">Name</th>
                       <th className="px-5 py-3 font-medium">Role</th>
                       <th className="px-5 py-3 font-medium">Email</th>
-                      <th className="px-5 py-3 font-medium">Specialty</th>
-                      <th className="px-5 py-3 font-medium">Patients</th>
+                      <th className="px-5 py-3 font-medium">Phone</th>
+                      <th className="px-5 py-3 font-medium">Password</th>
                       <th className="px-5 py-3 font-medium text-right">Portal Access</th>
                     </tr>
                   </thead>
@@ -1756,13 +1730,10 @@ export default function OpsDashboard() {
                     {sLoading ? (
                       <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading staff from database…</td></tr>
                     ) : (staff as any[]).map((s: any) => {
-                      const dest = s.role === "physician" ? "/physician/dashboard"
-                        : s.role === "dietician" ? "/dietician/dashboard"
-                        : s.role === "caretaker" ? "/caretaker/dashboard"
-                        : "/ops/dashboard";
-                      const isOpsRole = s.role === "ops";
+                      const credRow = (credentials as any[]).find((c: any) => c.id === s.id);
+                      const isPhysician = s.role === "physician";
                       const accessPortal = () => {
-                        if (isOpsRole) return;
+                        if (!isPhysician) return;
                         const currentToken = localStorage.getItem("cloudberry_token");
                         const currentRole = localStorage.getItem("cloudberry_role");
                         const currentName = localStorage.getItem("cloudberry_name");
@@ -1772,7 +1743,7 @@ export default function OpsDashboard() {
                         localStorage.setItem("cloudberry_role", s.role);
                         localStorage.setItem("cloudberry_name", s.fullName);
                         if (s.specialty) localStorage.setItem("cloudberry_specialty", s.specialty);
-                        navigate(dest);
+                        navigate("/physician/dashboard");
                       };
                       return (
                         <tr key={s.id} className="hover:bg-muted/30 transition-colors">
@@ -1787,19 +1758,22 @@ export default function OpsDashboard() {
                               <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />{s.email}
                             </div>
                           </td>
-                          <td className="px-5 py-3 text-xs text-muted-foreground">{s.specialty || "—"}</td>
+                          <td className="px-5 py-3 text-xs text-muted-foreground font-mono">{credRow?.phone || s.phone || "—"}</td>
                           <td className="px-5 py-3">
-                            <span className="text-sm font-medium text-primary">{s.patientCount ?? 0}</span>
-                            <span className="text-xs text-muted-foreground ml-1">assigned</span>
+                            {credRow?.password ? (
+                              <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded select-all">{credRow.password}</span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">—</span>
+                            )}
                           </td>
                           <td className="px-5 py-3 text-right">
-                            {!isOpsRole ? (
+                            {isPhysician ? (
                               <Button size="sm" variant="outline" className="h-7 text-[10px] px-3 border-primary/30 text-primary hover:bg-primary/5"
                                 onClick={accessPortal}>
                                 <ExternalLink className="w-3 h-3 mr-1" /> Open Portal
                               </Button>
                             ) : (
-                              <span className="text-[10px] text-muted-foreground italic">current portal</span>
+                              <span className="text-[10px] text-muted-foreground italic">—</span>
                             )}
                           </td>
                         </tr>

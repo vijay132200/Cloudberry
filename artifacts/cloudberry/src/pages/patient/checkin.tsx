@@ -274,10 +274,40 @@ export default function CheckinPage() {
           />
         </div>
 
-        {/* Comprehensive / Premium extras */}
-        {(plan === "comprehensive" || plan === "premium") && (
+        {/* Comprehensive extras — meal photo only */}
+        {plan === "comprehensive" && (
           <div className="bg-white border border-border rounded-2xl shadow-sm px-4 py-4 space-y-4">
-            {/* Glucose */}
+            {/* Meal photo */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Camera className="w-4 h-4 text-orange-500" />
+                <p className="text-sm font-semibold text-foreground">Share a photo of one meal today
+                  <span className="text-xs font-normal text-muted-foreground ml-1">(optional — team will review)</span>
+                </p>
+              </div>
+              {mealPhoto ? (
+                <div className="relative inline-block">
+                  <img src={mealPhoto} alt="Meal" className="h-24 w-24 object-cover rounded-xl border" />
+                  <button onClick={() => setMealPhoto(null)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-white rounded-full text-[10px] flex items-center justify-center font-bold shadow">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-orange-300 bg-orange-50/60 rounded-xl text-sm text-orange-600 hover:bg-orange-50 transition-colors">
+                  <Upload className="w-4 h-4" /> Upload Photo
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+            </div>
+          </div>
+        )}
+
+        {/* Premium extras — glucose readings + meal photo */}
+        {plan === "premium" && (
+          <div className="bg-white border border-border rounded-2xl shadow-sm px-4 py-4 space-y-4">
+            {/* Fasting glucose */}
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Droplets className="w-4 h-4 text-blue-500" />
@@ -317,7 +347,7 @@ export default function CheckinPage() {
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
             </div>
 
-            {/* Please share post meal glucose */}
+            {/* Post meal glucose */}
             <div className="bg-blue-50/60 border border-blue-100 rounded-xl px-3 py-2.5">
               <p className="text-xs text-blue-700 font-medium">Please share your post meal glucose reading today <span className="font-normal opacity-80">(if available)</span></p>
               <div className="relative max-w-[160px] mt-1.5">

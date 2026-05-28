@@ -147,9 +147,14 @@ router.post("/physician/signup", async (req, res) => {
 router.post("/coach/signin", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email) { res.status(400).json({ error: "Email required" }); return; }
+    if (!email) { res.status(400).json({ error: "Email or phone required" }); return; }
 
-    const [staff] = await db.select().from(staffTable).where(eq(staffTable.email, email)).limit(1);
+    let staff: typeof staffTable.$inferSelect | undefined;
+    if (email.includes("@")) {
+      [staff] = await db.select().from(staffTable).where(eq(staffTable.email, email)).limit(1);
+    } else {
+      [staff] = await db.select().from(staffTable).where(eq(staffTable.phone, email)).limit(1);
+    }
     if (!staff || !["coach", "physician", "dietician", "caretaker"].includes(staff.role)) {
       res.status(401).json({ error: "Invalid credentials" }); return;
     }

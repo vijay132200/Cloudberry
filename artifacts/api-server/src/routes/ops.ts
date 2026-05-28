@@ -1,7 +1,10 @@
 import { Router } from "express";
+import { createHash } from "crypto";
 import { db } from "@workspace/db";
 import { usersTable, patientsTable, checkinsTable, leadsTable, staffTable, appointmentsTable, patientNotesTable, patientPlansTable, metricsTable } from "@workspace/db";
 import { eq, desc, sql, or, and, asc, gte } from "drizzle-orm";
+
+const DEMO_PW_HASH = createHash("sha256").update("demo123").digest("hex");
 
 const router = Router();
 
@@ -246,9 +249,69 @@ router.get("/staff", async (req, res) => {
             eq(patientsTable.assignedCaretakerId, s.id)
           )!
         );
-      return { id: s.id, fullName: s.fullName, email: s.email, role: s.role, specialty: s.specialty, patientCount, createdAt: s.createdAt };
+      return { id: s.id, fullName: s.fullName, email: s.email, phone: s.phone, role: s.role, specialty: s.specialty, patientCount, password: (s.passwordHash === DEMO_PW_HASH || s.passwordHash === "demo") ? "demo123" : "Custom", createdAt: s.createdAt };
     }));
     res.json(rows);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/staff — create a new staff member (dietician or caretaker)
+router.post("/staff", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const { fullName, email, phone, role } = req.body;
+    if (!fullName || !email || !role) { res.status(400).json({ error: "Name, email, and role required" }); return; }
+    if (!["physician", "dietician", "caretaker", "ops"].includes(role)) { res.status(400).json({ error: "Invalid role" }); return; }
+    const existing = await db.select().from(staffTable).where(eq(staffTable.email, email)).limit(1);
+    if (existing.length > 0) { res.status(409).json({ error: "A staff member with this email already exists" }); return; }
+    const [staff] = await db.insert(staffTable).values({
+      fullName, email, phone: phone || null, role,
+      passwordHash: DEMO_PW_HASH,
+      specialty: role === "dietician" ? "Nutrition" : "Care Coordination",
+    }).returning();
+    res.status(201).json({ id: staff.id, fullName: staff.fullName, email: staff.email, phone: staff.phone, role: staff.role, specialty: staff.specialty, patientCount: 0, password: "demo123" });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// PATCH /api/ops/patients/:id/target-weight — update patient target weight
+router.patch("/patients/:id/target-weight", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const { targetWeight } = req.body;
+    if (targetWeight === undefined || isNaN(Number(targetWeight))) { res.status(400).json({ error: "Valid target weight required" }); return; }
+    const [patient] = await db.update(patientsTable).set({ targetWeight: Number(targetWeight) }).where(eq(patientsTable.id, patientId)).returning();
+    res.json({ ok: true, targetWeight: patient.targetWeight });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/ops/credentials — return patients + staff with password reveal
+router.get("/credentials", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const staffList = await db.select().from(staffTable).orderBy(staffTable.role, staffTable.id);
+    const patientRows = await db.select({
+      id: patientsTable.id,
+      fullName: usersTable.fullName,
+      phone: usersTable.phone,
+      email: usersTable.email,
+      passwordHash: usersTable.passwordHash,
+      plan: patientsTable.plan,
+    }).from(patientsTable)
+      .innerJoin(usersTable, eq(patientsTable.userId, usersTable.id))
+      .where(eq(patientsTable.status, "active"))
+      .orderBy(patientsTable.id);
+    res.json({
+      patients: patientRows.map(p => ({
+        id: p.id, fullName: p.fullName, phone: p.phone, email: p.email, plan: p.plan,
+        password: (p.passwordHash === DEMO_PW_HASH || p.passwordHash === "demo") ? "demo123" : "Custom",
+      })),
+      staff: staffList.filter(s => s.role !== "ops").map(s => ({
+        id: s.id, fullName: s.fullName, email: s.email, phone: s.phone, role: s.role, specialty: s.specialty,
+        password: (s.passwordHash === DEMO_PW_HASH || s.passwordHash === "demo") ? "demo123" : "Custom",
+      })),
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

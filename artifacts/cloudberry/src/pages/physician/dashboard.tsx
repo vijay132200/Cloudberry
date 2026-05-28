@@ -378,6 +378,7 @@ export default function PhysicianDashboard() {
   const [editName, setEditName] = useState("");
   const [editSpecialty, setEditSpecialty] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [profileEditing, setProfileEditing] = useState(false);
 
   const storedName = localStorage.getItem("cloudberry_name") || "Physician";
@@ -527,9 +528,10 @@ export default function PhysicianDashboard() {
             <p className="text-xs text-muted-foreground">Dr. {storedName} · {storedSpecialty}</p>
           </div>
           <div className="flex-1" />
-          <span className="text-xs text-muted-foreground bg-slate-100 px-3 py-1.5 rounded-full">
-            {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-          </span>
+          <div className="text-right hidden sm:block">
+            <p className="font-bold text-sm text-foreground leading-tight">Cloudberry</p>
+            <p className="text-[10px] text-muted-foreground">Doctor-Led Care for Long-Term Metabolic Health</p>
+          </div>
         </header>
 
         <main className="flex-1 p-6 overflow-y-auto">
@@ -646,8 +648,12 @@ export default function PhysicianDashboard() {
                         <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">Phone</label>
                         <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Contact number" className="rounded-xl" />
                       </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">New Password <span className="font-normal normal-case">(leave blank to keep current)</span></label>
+                        <Input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="New password" className="rounded-xl" />
+                      </div>
                       <Button className="rounded-full gap-2 w-full" disabled={profileMut.isPending}
-                        onClick={() => profileMut.mutate({ fullName: editName, specialty: editSpecialty, phone: editPhone })}>
+                        onClick={() => profileMut.mutate({ fullName: editName, specialty: editSpecialty, phone: editPhone, ...(editPassword ? { password: editPassword } : {}) })}>
                         <Save className="w-4 h-4" />{profileMut.isPending ? "Saving…" : "Save Changes"}
                       </Button>
                     </div>

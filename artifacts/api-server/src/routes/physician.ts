@@ -1,7 +1,12 @@
 import { Router } from "express";
+import { createHash } from "crypto";
 import { db } from "@workspace/db";
 import { usersTable, staffTable, patientsTable, checkinsTable, metricsTable, appointmentsTable, patientNotesTable, patientPlansTable } from "@workspace/db";
 import { eq, desc, and, or, gte, asc, sql } from "drizzle-orm";
+
+function hashPassword(password: string): string {
+  return createHash("sha256").update(password).digest("hex");
+}
 
 const router = Router();
 
@@ -166,11 +171,12 @@ router.patch("/me", async (req, res) => {
     if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
     const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
     if (!staff || staff.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return; }
-    const { fullName, specialty, phone } = req.body ?? {};
+    const { fullName, specialty, phone, password } = req.body ?? {};
     const update: any = {};
     if (typeof fullName === "string" && fullName.trim()) update.fullName = fullName.trim();
     if (typeof specialty === "string") update.specialty = specialty.trim() || null;
     if (typeof phone === "string") update.phone = phone.trim() || null;
+    if (typeof password === "string" && password.length >= 6) update.passwordHash = hashPassword(password);
     if (Object.keys(update).length) {
       await db.update(staffTable).set(update).where(eq(staffTable.id, parsed.userId));
     }

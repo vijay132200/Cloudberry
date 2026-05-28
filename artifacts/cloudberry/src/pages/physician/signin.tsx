@@ -77,10 +77,10 @@ export default function PhysicianSignin() {
           <CardContent className="pt-7 pb-8 px-7">
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Mail</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Email or Phone</label>
                 <Input
-                  type="email"
-                  placeholder=""
+                  type="text"
+                  placeholder="Email address or phone number"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="rounded-xl border-border/60 bg-white h-11"

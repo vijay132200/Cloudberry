@@ -62,6 +62,7 @@ export default function PhysicianSignupPage() {
         <div className="container mx-auto px-4 max-w-lg">
           <Card className="border-border/50 shadow-xl rounded-2xl overflow-hidden bg-white">
             <div className="h-1.5 bg-gradient-to-r from-primary via-blue-400 to-primary/60" />
+            {!submitted && (
             <CardHeader className="text-center pb-7 border-b border-border/40 pt-8 bg-gradient-to-br from-primary/5 to-blue-50/50">
               <div className="flex justify-center mb-3">
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full">
@@ -72,7 +73,12 @@ export default function PhysicianSignupPage() {
               <CardDescription className="mt-2">
                 Leave your details and our clinical partnership team will reach out to discuss collaboration.
               </CardDescription>
+              <p className="text-sm text-muted-foreground mt-3">
+                Already registered?{" "}
+                <a href="/physician/signin" className="text-primary hover:underline font-medium">Log in instead →</a>
+              </p>
             </CardHeader>
+            )}
             <CardContent className="pt-8 px-7 pb-8">
               {submitted ? (
                 <div className="text-center py-10">

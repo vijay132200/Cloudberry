@@ -102,7 +102,7 @@ function WeightCard({ weightSeries, weightChange, patient }: { weightSeries: any
         {pctChange !== null && <p className="text-xs text-muted-foreground mb-2">{lost ? "↓" : "↑"} {pctChange}% vs starting weight</p>}
         {weightSeries.length > 1 ? (
           <ResponsiveContainer width="100%" height={100}>
-            <LineChart data={weightSeries} margin={{ top: 4, right: 10, bottom: 4, left: -10 }}>
+            <LineChart data={weightSeries} margin={{ top: 4, right: 10, bottom: 4, left: 5 }}>
               <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
               <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} width={28} />
               <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} labelFormatter={fmt} />
@@ -624,7 +624,8 @@ export default function PatientDashboard() {
                     <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">This Week's Focus</p>
                     {(opsContent?.thisWeekFocus || []).length > 0 ? (opsContent.thisWeekFocus as any[]).map((item: any, i: number) => (
                       <div key={i} className="flex items-start gap-1.5 text-xs text-white/90">
-                        <CheckCircle2 className="w-3 h-3 text-white/50 shrink-0 mt-0.5" />{item.text}
+                        <span className="shrink-0 mt-0.5">{ ({salad:"🥗",walk:"🚶",sleep:"😴",water:"💧",medicine:"💊"} as Record<string,string>)[item.icon] || "✓"}</span>
+                        <span>{item.text}</span>
                       </div>
                     )) : (
                       <p className="text-xs text-white/60 italic">Your care team will set your weekly focus soon.</p>
@@ -744,7 +745,8 @@ export default function PatientDashboard() {
                   <p className="text-[10px] font-bold text-white/60 uppercase tracking-wide">This Week's Focus</p>
                   {(opsContent?.thisWeekFocus || []).length > 0 ? (opsContent.thisWeekFocus as any[]).map((item: any, i: number) => (
                     <div key={i} className="flex items-start gap-2 text-xs text-white/90">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white/50 shrink-0 mt-0.5" /><span>{item.text}</span>
+                      <span className="shrink-0 mt-0.5">{ ({salad:"🥗",walk:"🚶",sleep:"😴",water:"💧",medicine:"💊"} as Record<string,string>)[item.icon] || "✓"}</span>
+                      <span>{item.text}</span>
                     </div>
                   )) : (
                     <p className="text-xs text-white/60 italic">Your care team will set your weekly focus soon.</p>

@@ -33,9 +33,10 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
       <header className="border-b sticky top-0 z-20 px-4 py-3 flex items-center justify-between bg-white/90 backdrop-blur-sm border-border/60 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <span className="font-sans text-xl font-bold tracking-tight text-foreground">
-              Cloudberry
-            </span>
+            <div>
+              <span className="font-sans text-xl font-bold tracking-tight text-foreground">Cloudberry</span>
+              <p className="text-[9px] text-primary/70 leading-tight">Doctor-Led Care for Long-Term Metabolic Health</p>
+            </div>
           </Link>
           <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
             {type === "ops" ? "Operations" : "Coach Portal"}

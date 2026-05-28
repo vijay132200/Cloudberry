@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, ClipboardCheck, LogOut, User } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, LogOut, User, FileText } from "lucide-react";
 import { useEffect } from "react";
 
 export function PatientLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
     { name: "Daily Check-in", href: "/patient/checkin", icon: ClipboardCheck },
+    { name: "Health Records", href: "/patient/records", icon: FileText },
     { name: "My Profile", href: "/patient/settings", icon: User },
   ];
 
@@ -33,7 +34,8 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
           <Link href="/">
             <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
           </Link>
-          <p className="text-[10px] text-muted-foreground mt-1 ml-9">Patient Portal</p>
+          <p className="text-[9px] text-primary/70 leading-tight mt-0.5">Doctor-Led Care for Long-Term Metabolic Health</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Patient Portal</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
@@ -69,7 +71,10 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 md:ml-48 relative min-h-[100dvh]">
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-border/60 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
-          <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
+          <div>
+            <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
+            <p className="text-[9px] text-primary/70 leading-tight">Doctor-Led Care for Long-Term Metabolic Health</p>
+          </div>
           <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground p-1">
             <LogOut className="w-5 h-5" />
           </button>
