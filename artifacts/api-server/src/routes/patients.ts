@@ -97,9 +97,11 @@ router.patch("/me/password", async (req, res) => {
     }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, parsed.userId)).limit(1);
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    const DEMO_PW_HASH = createHash("sha256").update("demo123").digest("hex");
     if (currentPassword) {
       const hashed = createHash("sha256").update(currentPassword).digest("hex");
-      if (user.passwordHash !== hashed && user.passwordHash !== "demo") {
+      const isDemo = user.passwordHash === DEMO_PW_HASH && currentPassword === "demo123";
+      if (user.passwordHash !== hashed && !isDemo) {
         res.status(401).json({ error: "Current password is incorrect" }); return;
       }
     }

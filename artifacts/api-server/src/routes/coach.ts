@@ -7,8 +7,9 @@ import {
   metricsTable,
   patientNotesTable,
   patientPlansTable,
+  appointmentsTable,
 } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, gte, asc } from "drizzle-orm";
 
 const router = Router();
 
@@ -51,6 +52,14 @@ router.get("/patients", async (req, res) => {
       const adherencePct = checkins.length > 0
         ? Math.round((checkins.filter(c => c.mealsFollowed === "yes").length / checkins.length) * 100)
         : 0;
+      const [nextAppt] = await db.select().from(appointmentsTable)
+        .where(and(
+          eq(appointmentsTable.patientId, p.patientId),
+          eq(appointmentsTable.status, "upcoming"),
+          gte(appointmentsTable.scheduledAt, new Date()),
+        ))
+        .orderBy(asc(appointmentsTable.scheduledAt))
+        .limit(1);
       return {
         id: p.patientId,
         fullName: p.fullName,
@@ -58,7 +67,7 @@ router.get("/patients", async (req, res) => {
         status: p.status,
         riskLevel: p.riskLevel,
         lastCheckinAt: lastCheckin?.createdAt.toISOString() ?? null,
-        nextSessionAt: null,
+        nextSessionAt: nextAppt?.scheduledAt?.toISOString() ?? null,
         adherencePct,
         weekNumber: p.weekNumber,
       };

@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 
 const router = Router();
 
+const DEMO_PW_HASH = createHash("sha256").update("demo123").digest("hex");
+
 function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex");
 }
@@ -19,6 +21,11 @@ function validatePassword(password: string): string | null {
   if (!/\d/.test(password)) return "Password must include at least one number";
   if (!/[^a-zA-Z0-9]/.test(password)) return "Password must include at least one special character";
   return null;
+}
+
+function checkPasswordHash(provided: string, stored: string): boolean {
+  const hashed = hashPassword(provided);
+  return hashed === stored || stored === DEMO_PW_HASH && provided === "demo123";
 }
 
 // Patient signup
@@ -55,7 +62,7 @@ router.post("/patient/signup", async (req, res) => {
 
     const [user] = await db.insert(usersTable).values({
       fullName, phone, email,
-      passwordHash: password ? hashPassword(password) : hashPassword("demo123"),
+      passwordHash: password ? hashPassword(password) : DEMO_PW_HASH,
       role: "patient", city,
     }).returning();
 
@@ -79,6 +86,7 @@ router.post("/patient/signin", async (req, res) => {
   try {
     const { phone, password } = req.body;
     if (!phone) { res.status(400).json({ error: "Email or phone required" }); return; }
+    if (!password) { res.status(400).json({ error: "Password required" }); return; }
 
     let users;
     if (phone.includes("@")) {
@@ -92,11 +100,8 @@ router.post("/patient/signin", async (req, res) => {
       res.status(401).json({ error: "Invalid credentials" }); return;
     }
 
-    if (password) {
-      const hashed = hashPassword(password);
-      if (user.passwordHash !== hashed && user.passwordHash !== "demo") {
-        res.status(401).json({ error: "Invalid credentials" }); return;
-      }
+    if (!checkPasswordHash(password, user.passwordHash ?? "")) {
+      res.status(401).json({ error: "Invalid credentials" }); return;
     }
 
     const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, user.id)).limit(1);
@@ -147,7 +152,8 @@ router.post("/physician/signup", async (req, res) => {
 router.post("/coach/signin", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email) { res.status(400).json({ error: "Email or phone required" }); return; }
+    if (!email) { res.status(400).json({ error: "Email required" }); return; }
+    if (!password) { res.status(400).json({ error: "Password required" }); return; }
 
     let staff: typeof staffTable.$inferSelect | undefined;
     if (email.includes("@")) {
@@ -158,11 +164,8 @@ router.post("/coach/signin", async (req, res) => {
     if (!staff || !["coach", "physician", "dietician", "caretaker"].includes(staff.role)) {
       res.status(401).json({ error: "Invalid credentials" }); return;
     }
-    if (password) {
-      const hashed = hashPassword(password);
-      if (staff.passwordHash !== hashed && staff.passwordHash !== "demo") {
-        res.status(401).json({ error: "Invalid credentials" }); return;
-      }
+    if (!checkPasswordHash(password, staff.passwordHash ?? "")) {
+      res.status(401).json({ error: "Invalid credentials" }); return;
     }
 
     const token = generateToken(staff.id, staff.role);
@@ -178,16 +181,14 @@ router.post("/ops/signin", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email) { res.status(400).json({ error: "Email required" }); return; }
+    if (!password) { res.status(400).json({ error: "Password required" }); return; }
 
     const [staff] = await db.select().from(staffTable).where(eq(staffTable.email, email)).limit(1);
     if (!staff || staff.role !== "ops") {
       res.status(401).json({ error: "Invalid credentials" }); return;
     }
-    if (password) {
-      const hashed = hashPassword(password);
-      if (staff.passwordHash !== hashed && staff.passwordHash !== "demo") {
-        res.status(401).json({ error: "Invalid credentials" }); return;
-      }
+    if (!checkPasswordHash(password, staff.passwordHash ?? "")) {
+      res.status(401).json({ error: "Invalid credentials" }); return;
     }
 
     const token = generateToken(staff.id, "ops");

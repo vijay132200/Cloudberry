@@ -97,6 +97,7 @@ async function buildPatientRow(p: any) {
 
 router.get("/dashboard", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const [{ count: activePatients }] = await db.select({ count: sql<number>`count(*)::int` })
       .from(patientsTable).where(eq(patientsTable.status, "active"));
     const [{ count: highRiskCount }] = await db.select({ count: sql<number>`count(*)::int` })
@@ -130,13 +131,14 @@ router.get("/dashboard", async (req, res) => {
       escalationsPending: highRiskCount,
       totalLeads,
       totalStaff,
-      conversionRate: totalLeads > 0 ? Math.round((activePatients / totalLeads) * 100) : 0,
+      conversionRate: totalLeads > 0 ? Math.min(100, Math.round((activePatients / totalLeads) * 100)) : 0,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/patients", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patients = await db.select({
       patientId: patientsTable.id,
       userId: patientsTable.userId,
@@ -169,6 +171,7 @@ router.get("/patients", async (req, res) => {
 // Full patient detail for ops
 router.get("/patients/:id/detail", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patientId = parseInt(req.params.id);
     const [pat] = await db.select().from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
     if (!pat) { res.status(404).json({ error: "Patient not found" }); return; }
@@ -238,6 +241,7 @@ router.get("/patients/:id/detail", async (req, res) => {
 // Get all staff grouped by role
 router.get("/staff", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const staff = await db.select().from(staffTable).orderBy(staffTable.role, staffTable.id);
     const rows = await Promise.all(staff.map(async (s) => {
       const [{ count: patientCount }] = await db.select({ count: sql<number>`count(*)::int` })
@@ -318,6 +322,7 @@ router.get("/credentials", async (req, res) => {
 // Assign care team to patient
 router.patch("/patients/:id/assign-team", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patientId = parseInt(req.params.id);
     const { physicianId, dieticianId, caretakerId } = req.body;
 
@@ -358,6 +363,7 @@ router.patch("/patients/:id/assign-team", async (req, res) => {
 // Legacy single assign
 router.patch("/patients/:id/assign", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patientId = parseInt(req.params.id);
     const { coachId } = req.body;
     const [patient] = await db.update(patientsTable)
@@ -371,6 +377,7 @@ router.patch("/patients/:id/assign", async (req, res) => {
 
 router.patch("/patients/:id/escalate", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patientId = parseInt(req.params.id);
     const [patient] = await db.update(patientsTable)
       .set({ riskLevel: "high" }).where(eq(patientsTable.id, patientId)).returning();
@@ -381,6 +388,7 @@ router.patch("/patients/:id/escalate", async (req, res) => {
 
 router.patch("/patients/:id/deescalate", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patientId = parseInt(req.params.id);
     const [patient] = await db.update(patientsTable)
       .set({ riskLevel: "low" }).where(eq(patientsTable.id, patientId)).returning();
@@ -392,12 +400,12 @@ router.patch("/patients/:id/deescalate", async (req, res) => {
 // Notes endpoint for ops
 router.post("/patients/:id/notes", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patientId = parseInt(req.params.id);
-    const parsed = parseToken(req.headers.authorization);
     const { content, category } = req.body;
     if (!content) { res.status(400).json({ error: "Content required" }); return; }
     const [note] = await db.insert(patientNotesTable).values({
-      patientId, coachId: parsed?.userId ?? null, content, category: category ?? "ops",
+      patientId, coachId: auth.staffId, content, category: category ?? "ops",
     }).returning();
     res.status(201).json({ ...note, createdAt: note.createdAt.toISOString() });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -456,6 +464,7 @@ router.post("/patients/:id/reject", async (req, res) => {
 // GET /api/ops/leads — list all inbound leads
 router.get("/leads", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const rows = await db.select().from(leadsTable).orderBy(desc(leadsTable.createdAt)).limit(500);
     res.json(rows.map(l => ({
       ...l,
@@ -632,6 +641,7 @@ router.patch("/patients/:id/plan", async (req, res) => {
 // POST /api/ops/patients/:id/appointments — schedule appointment for a patient
 router.post("/patients/:id/appointments", async (req, res) => {
   try {
+    const auth = await requireOps(req, res); if (!auth) return;
     const patientId = parseInt(req.params.id);
     if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
     const { careTeamMember, role, scheduledAt, notes } = req.body;
