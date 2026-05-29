@@ -1,0 +1,274 @@
+Before marking this task complete, perform the following audits, validations, and corrective actions.
+
+IMPORTANT:
+
+If any issue, inconsistency, missing relationship, schema problem, synchronization issue, responsive issue, security issue, authorization issue, data isolation issue, API issue, dashboard discrepancy, migration issue, or database integrity issue is discovered during any audit below, fix it completely before proceeding to the next phase.
+
+Do not merely report issues.
+
+Investigate, repair, validate, retest, and then provide evidence of resolution.
+
+========================================
+
+1. DATABASE ARCHITECTURE REPORT
+   ========================================
+
+Generate and provide a complete database architecture report including:
+
+* all tables
+* all columns
+* primary keys
+* foreign keys
+* indexes
+* constraints
+* relationship mappings
+* table dependencies
+* cascade behaviors
+* orphaned record analysis
+* duplicate data analysis
+* schema inconsistencies
+
+If any issue is discovered:
+
+* repair it
+* rerun validation
+* document the fix
+
+========================================
+2. NEON SCHEMA VALIDATION REPORT
+================================
+
+Verify:
+
+* Neon connection health
+* migration status
+* schema synchronization status
+* table synchronization status
+* ORM synchronization status
+* database persistence status
+* connection recovery behavior
+* application restart behavior
+
+If any mismatch exists between:
+
+* ORM
+* migrations
+* database schema
+* API models
+
+repair all inconsistencies and revalidate.
+
+========================================
+3. PATIENT DATA ISOLATION AUDIT
+===============================
+
+Prove that one patient's data cannot appear in another patient's records.
+
+Validate:
+
+* API responses
+* dashboard queries
+* filters
+* joins
+* assignments
+* caching
+* session behavior
+* authorization rules
+
+Examples:
+
+* Karan data never appears in Rahul records.
+* Rahul data never appears in Karan records.
+
+Validate:
+
+* metrics
+* check-ins
+* assessments
+* appointments
+* messages
+* notes
+* plans
+* uploads
+* dashboards
+* behavioral scores
+
+If any leakage is discovered:
+
+* fix immediately
+* retest
+* document resolution
+
+========================================
+4. RELATIONSHIP VALIDATION REPORT
+=================================
+
+Validate and repair all relationships:
+
+* patient ↔ physician
+* patient ↔ dietician (if present)
+* patient ↔ caretaker (if present)
+* appointments ↔ staff
+* messages ↔ patients
+* plans ↔ patients
+* notes ↔ patients
+* metrics ↔ patients
+* check-ins ↔ patients
+
+Verify:
+
+* foreign keys
+* joins
+* assignments
+* API lookups
+* cascade behavior
+
+Repair all issues found and rerun validation.
+
+========================================
+5. RESPONSIVE DESIGN VALIDATION REPORT
+======================================
+
+Perform a device-by-device validation.
+
+Validate:
+
+* Mobile
+* Tablet
+* Laptop
+* Desktop
+* Ultra-wide
+
+Inspect:
+
+* patient portal
+* physician portal
+* operations portal
+
+Check:
+
+* overflow
+* clipping
+* broken cards
+* broken tables
+* chart rendering
+* navigation
+* forms
+* modals
+* spacing
+* typography
+
+Fix every issue discovered.
+
+Retest after fixes.
+
+========================================
+6. BEHAVIORAL SCORE CONSISTENCY AUDIT
+=====================================
+
+Provide proof that the same patient now returns identical behavioral consistency scores across:
+
+* Patient Portal
+* Operations Portal
+* Physician Portal
+
+For at least 3 separate patients provide:
+
+* patient identifier
+* score source
+* score values
+* calculation inputs
+* validation result
+
+If any discrepancy exists:
+
+* identify root cause
+* repair it
+* rerun validation
+
+Do not mark complete until all portals return identical values for the same patient.
+
+========================================
+7. END-TO-END TEST CYCLE REPORT
+===============================
+
+Provide results for all 4 testing cycles exactly as requested.
+
+TEST CYCLE 1
+
+* Sign in
+* Create patient
+* Assign physician
+* Submit check-in
+* Verify dashboards
+* Verify persistence
+
+TEST CYCLE 2
+
+* Update metrics
+* Verify score recalculation
+* Verify synchronization across portals
+
+TEST CYCLE 3
+
+* Create appointments
+* Send messages
+* Upload files
+* Update patient information
+* Verify persistence after refresh
+
+TEST CYCLE 4
+
+* Restart application
+* Reload database connection
+* Verify all data remains intact
+* Verify all dashboards remain synchronized
+* Verify authentication remains functional
+
+For each cycle provide:
+
+* actions performed
+* expected result
+* actual result
+* pass/fail outcome
+
+========================================
+8. FINAL CORRECTIVE ACTION SWEEP
+================================
+
+Before completion:
+
+* scan entire codebase
+* scan database schema
+* scan API layer
+* scan dashboard calculations
+* scan authentication
+* scan authorization
+* scan responsive layouts
+
+Identify any remaining issues introduced during migration or discovered during testing.
+
+Fix all issues found.
+
+Retest all affected functionality.
+
+========================================
+9. PRODUCTION READINESS CERTIFICATION
+=====================================
+
+Only after all audits, fixes, validations, and retests are complete, provide:
+
+* Database Connected: YES/NO
+* Neon Schema Synced: YES/NO
+* CRUD Operations Working: YES/NO
+* Authentication Working: YES/NO
+* Authorization Working: YES/NO
+* Patient Isolation Verified: YES/NO
+* Relationships Validated: YES/NO
+* Behavioral Scores Synchronized: YES/NO
+* Responsive Issues Fixed: YES/NO
+* Application Restart Tested: YES/NO
+* Persistence Verified: YES/NO
+* Production Ready: YES/NO
+
+Do not provide a completion message until every item above is validated, any issues discovered are repaired, and all retesting passes successfully.
