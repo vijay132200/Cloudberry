@@ -34,7 +34,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
           <Link href="/">
             <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
           </Link>
-          <p className="text-[9px] text-primary/70 leading-tight mt-0.5">Doctor-Led Care for Long-Term Metabolic Health</p>
+          <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
           <p className="text-[10px] text-muted-foreground mt-0.5">Patient Portal</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
@@ -73,7 +73,7 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
         <header className="md:hidden bg-white border-b border-border/60 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
           <div>
             <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
-            <p className="text-[9px] text-primary/70 leading-tight">Doctor-Led Care for Long-Term Metabolic Health</p>
+            <span className="text-[10px] text-muted-foreground leading-tight font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
           </div>
           <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground p-1">
             <LogOut className="w-5 h-5" />

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, FileText, Eye, Trash2, Download, FolderOpen, Plus, X } from "lucide-react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -68,6 +68,26 @@ export default function PatientRecords() {
   const [form, setForm] = useState({ name: "", category: "prescription" as DocCategory });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [viewUrl, setViewUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (!viewDoc) {
+      setViewUrl("");
+      return;
+    }
+    try {
+      const [, base64] = viewDoc.data.split(",");
+      const byteChars = atob(base64);
+      const arr = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([arr], { type: viewDoc.mimeType });
+      const url = URL.createObjectURL(blob);
+      setViewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } catch {
+      setViewUrl(viewDoc.data);
+    }
+  }, [viewDoc?.id]);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -353,9 +373,9 @@ export default function PatientRecords() {
             {viewDoc && (
               <div className="rounded-xl overflow-hidden border border-border/60 max-h-[60vh] overflow-y-auto">
                 {viewDoc.mimeType.startsWith("image/") ? (
-                  <img src={viewDoc.data} alt={viewDoc.name} className="w-full object-contain" />
+                  <img src={viewUrl} alt={viewDoc.name} className="w-full object-contain" />
                 ) : viewDoc.mimeType === "application/pdf" ? (
-                  <iframe src={viewDoc.data} className="w-full h-[55vh]" title={viewDoc.name} />
+                  <iframe src={viewUrl} className="w-full h-[55vh]" title={viewDoc.name} />
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 gap-4">
                     <FileText className="w-10 h-10 text-muted-foreground/40" />

@@ -334,19 +334,19 @@ function PatientDetailPanel({
       <div className="w-full max-w-xl bg-white shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className={`px-5 py-4 border-b flex items-start justify-between ${p.riskLevel === "high" ? "bg-rose-50" : "bg-white"}`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${p.riskLevel === "high" ? "bg-rose-100 text-rose-700" : "bg-primary/10 text-primary"}`}>
+          <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${p.riskLevel === "high" ? "bg-rose-100 text-rose-700" : "bg-primary/10 text-primary"}`}>
               {p.fullName?.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
             </div>
-            <div>
-              <h2 className="font-bold text-foreground flex items-center gap-2">
-                {p.fullName}
-                {p.riskLevel === "high" && <ShieldAlert className="w-4 h-4 text-rose-500" />}
+            <div className="min-w-0">
+              <h2 className="font-bold text-foreground flex items-center gap-1.5 min-w-0">
+                <span className="truncate">{p.fullName}</span>
+                {p.riskLevel === "high" && <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />}
               </h2>
-              <p className="text-xs text-muted-foreground">Patient ID #{p.id} · {p.city}</p>
+              <p className="text-xs text-muted-foreground truncate">Patient ID #{p.id} · {p.city}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Badge variant="outline" className={`text-[10px] ${getRiskStyle(p.riskLevel)}`}>{p.riskLevel} risk</Badge>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
               <X className="w-4 h-4 text-muted-foreground" />
@@ -595,7 +595,7 @@ function PatientDetailPanel({
                 ].map(item => (
                   <div key={item.label} className="bg-muted/40 rounded-xl p-3">
                     <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1 mb-1">{item.icon} {item.label}</div>
-                    <div className={`text-sm font-semibold text-foreground ${item.label !== "Password" ? "capitalize" : "font-mono"}`}>{item.val || "—"}</div>
+                    <div className={`text-sm font-semibold text-foreground break-all leading-snug ${item.label !== "Password" ? "capitalize" : "font-mono"}`}>{item.val || "—"}</div>
                   </div>
                 ))}
               </div>
@@ -685,7 +685,7 @@ function PatientDetailPanel({
                     <span>Mood: <span className="font-medium text-foreground capitalize">{c.mood}</span></span>
                     {c.glucoseReading && <span>Glucose: <span className="font-medium text-foreground">{c.glucoseReading} mg/dL</span></span>}
                   </div>
-                  {c.notes && <p className="text-muted-foreground italic">"{c.notes}"</p>}
+                  {c.notes && <p className="text-muted-foreground italic break-words">"{c.notes}"</p>}
                 </div>
               ))}
             </div>
@@ -708,7 +708,7 @@ function PatientDetailPanel({
                     <div key={item.label} className="flex items-center gap-2 text-sm">
                       {item.icon}
                       <span className="text-muted-foreground w-20">{item.label}:</span>
-                      <span className={`font-medium ${item.val ? "text-foreground" : "text-muted-foreground italic"}`}>
+                      <span className={`font-medium truncate flex-1 ${item.val ? "text-foreground" : "text-muted-foreground italic"}`}>
                         {item.val || "Unassigned"}
                       </span>
                     </div>

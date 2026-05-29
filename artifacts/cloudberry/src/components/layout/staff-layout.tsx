@@ -35,7 +35,7 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
           <Link href="/" className="flex items-center gap-2">
             <div>
               <span className="font-sans text-xl font-bold tracking-tight text-foreground">Cloudberry</span>
-              <p className="text-[9px] text-primary/70 leading-tight">Doctor-Led Care for Long-Term Metabolic Health</p>
+              <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
             </div>
           </Link>
           <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">

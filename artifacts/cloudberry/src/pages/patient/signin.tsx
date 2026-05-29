@@ -65,18 +65,22 @@ export default function PatientSignin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/60 via-white to-blue-50/60 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50/60 via-white to-blue-50/60 flex flex-col">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-5 shrink-0">
+        <Link href="/" className="flex flex-col">
+          <span className="font-bold text-lg tracking-tight text-foreground leading-none">Cloudberry</span>
+          <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
+        </Link>
+        <Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
+      </div>
+
+      {/* Centered form area */}
+      <div className="flex-1 flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-md">
-        <div className="mb-3">
-          <Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to Home
-          </Link>
-        </div>
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-1">
-            <span className="font-bold text-2xl tracking-tight text-foreground">Cloudberry</span>
-          </Link>
-          <p className="text-xs text-muted-foreground mb-5">Doctor-Led Care for Long-Term Metabolic Health</p>
           <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
           <p className="text-muted-foreground mt-1 text-sm">Sign in to your Patient's Portal</p>
         </div>
@@ -133,6 +137,7 @@ export default function PatientSignin() {
           Doctor?{" "}
           <Link href="/physician/signin" className="text-primary hover:underline">Access Doctor's Portal →</Link>
         </p>
+      </div>
       </div>
     </div>
   );
