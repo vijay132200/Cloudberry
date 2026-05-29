@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Users, AlertTriangle, CheckCircle, Clock, ShieldAlert, HeartPulse, CalendarDays,
-  Bell, Download, Search, Phone, Mail, TrendingUp, Activity, Star,
+  Users, AlertTriangle, CheckCircle, Clock, ShieldAlert, HeartPulse,
+  Download, Search, Phone, Mail, TrendingUp, Activity, Star,
   Stethoscope, Target, Dumbbell, Salad, UserCheck, Shield, ChevronRight,
   X, ChevronDown, Weight, MapPin, CalendarCheck, User, FileText,
   MessageSquare, Plus, ExternalLink, ArrowUp, ArrowDown, CalendarPlus, ClipboardList,
@@ -1115,9 +1115,6 @@ export default function OpsDashboard() {
     { label: "Active Patients", value: kpi?.activePatients ?? "—", icon: <Users className="w-3 h-3" />, bg: "bg-sky-50", color: "text-sky-700" },
     { label: "Daily Adherence", value: kpi?.dailyAdherencePct ? `${kpi.dailyAdherencePct}%` : "—", icon: <CheckCircle className="w-3 h-3" />, bg: "bg-emerald-50", color: "text-emerald-700" },
     { label: "Missed Check-ins", value: kpi?.missedCheckins ?? "—", icon: <AlertTriangle className="w-3 h-3" />, bg: "bg-amber-50", color: "text-amber-700" },
-    { label: "High Risk", value: kpi?.highRiskCount ?? "—", icon: <ShieldAlert className="w-3 h-3" />, bg: "bg-rose-50", color: "text-rose-700" },
-    { label: "Appointments", value: kpi?.upcomingAppointments ?? "—", icon: <CalendarDays className="w-3 h-3" />, bg: "bg-purple-50", color: "text-purple-700" },
-    { label: "Escalations", value: kpi?.escalationsPending ?? "—", icon: <Bell className="w-3 h-3" />, bg: "bg-orange-50", color: "text-orange-700" },
     { label: "Staff", value: kpi?.totalStaff ?? "—", icon: <HeartPulse className="w-3 h-3" />, bg: "bg-pink-50", color: "text-pink-700" },
   ];
 

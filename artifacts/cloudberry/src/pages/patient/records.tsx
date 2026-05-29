@@ -75,6 +75,7 @@ export default function PatientRecords() {
       setViewUrl("");
       return;
     }
+    let cleanup: (() => void) | undefined;
     try {
       const [, base64] = viewDoc.data.split(",");
       const byteChars = atob(base64);
@@ -83,10 +84,11 @@ export default function PatientRecords() {
       const blob = new Blob([arr], { type: viewDoc.mimeType });
       const url = URL.createObjectURL(blob);
       setViewUrl(url);
-      return () => URL.revokeObjectURL(url);
+      cleanup = () => URL.revokeObjectURL(url);
     } catch {
       setViewUrl(viewDoc.data);
     }
+    return cleanup;
   }, [viewDoc?.id]);
 
   const handleFileSelect = (file: File) => {

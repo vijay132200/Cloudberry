@@ -1,9 +1,10 @@
 import { PatientLayout } from "@/components/layout/patient-layout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { CheckCircle2, Upload, Camera, Droplets, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = `${BASE}/api`;
@@ -28,6 +29,16 @@ function getISOWeekKey() {
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
   return `${now.getFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function getUserId(): string {
+  try {
+    const token = localStorage.getItem("cloudberry_token") || "";
+    const data = JSON.parse(atob(token));
+    return String(data.userId ?? "anon");
+  } catch {
+    return "anon";
+  }
 }
 
 /* ─── Slider question component ─────────────────────────────── */
@@ -124,10 +135,15 @@ export default function CheckinPage() {
   const storedName = localStorage.getItem("cloudberry_name") || "there";
   const firstName = storedName.split(" ")[0];
 
+  // Per-patient keys — prevents shared state across different patients on same browser
+  const userId = getUserId();
   const todayKey = getTodayKey();
   const weekKey = getISOWeekKey();
-  const alreadyCheckedIn = localStorage.getItem("cloudberry_checkin_date") === todayKey;
-  const weightDoneThisWeek = !!localStorage.getItem(`cloudberry_weight_week_${weekKey}`);
+  const lsCheckinKey = `cloudberry_checkin_date_${userId}`;
+  const lsScoreKey = `cloudberry_checkin_score_${userId}`;
+  const lsWeightKey = `cloudberry_weight_week_${userId}_${weekKey}`;
+  const alreadyCheckedInLocally = localStorage.getItem(lsCheckinKey) === todayKey;
+  const weightDoneThisWeek = !!localStorage.getItem(lsWeightKey);
 
   const [nutrition, setNutrition] = useState(0);
   const [activity, setActivity] = useState(0);
@@ -138,12 +154,34 @@ export default function CheckinPage() {
   const [postGlucose, setPostGlucose] = useState("");
   const [mealPhoto, setMealPhoto] = useState<string | null>(null);
   const [hardest, setHardest] = useState<string[]>([]);
-  const [submitted, setSubmitted] = useState(alreadyCheckedIn);
+  const [submitted, setSubmitted] = useState(alreadyCheckedInLocally);
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [weight, setWeight] = useState("");
-  const [savedScore] = useState(() => Number(localStorage.getItem("cloudberry_checkin_score") || "0"));
+  const [savedScore] = useState(() => Number(localStorage.getItem(lsScoreKey) || "0"));
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Server-authoritative check — catches cases where localStorage is stale
+  // (e.g. different device, cleared storage) — only fires when local state says not done
+  const { data: todayCheckinData } = useQuery({
+    queryKey: ["checkins-today", userId],
+    queryFn: async () => {
+      const token = localStorage.getItem("cloudberry_token");
+      const r = await fetch(`${API}/checkins/today`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) return null;
+      return r.json() as Promise<{ done: boolean; checkin: any }>;
+    },
+    enabled: !alreadyCheckedInLocally,
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (todayCheckinData?.done && !submitted) {
+      setSubmitted(true);
+    }
+  }, [todayCheckinData, submitted]);
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -170,7 +208,9 @@ export default function CheckinPage() {
       const token = localStorage.getItem("cloudberry_token");
       const mealsFollowed = nutrition >= 70 ? "yes" : nutrition >= 40 ? "partially" : "no";
       const energyLevel = energy >= 70 ? "good" : energy >= 40 ? "moderate" : "low";
-      await fetch(`${API}/checkins`, {
+      const weightNum = weight.trim() ? parseFloat(weight) : null;
+
+      const resp = await fetch(`${API}/checkins`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -179,24 +219,32 @@ export default function CheckinPage() {
           energyLevel,
           mood: energy >= 70 ? "good" : "neutral",
           glucoseReading: glucose ? Number(glucose) : undefined,
+          // weight is persisted server-side to metricsTable and updates patient.currentWeight
+          weight: (!weightDoneThisWeek && weightNum && weightNum > 0) ? weightNum : undefined,
           notes: [
             hardest.length > 0 ? `Hardest today: ${hardest.join(", ")}` : null,
             postGlucose ? `Post-meal glucose: ${postGlucose} mg/dL` : null,
           ].filter(Boolean).join(". ") || undefined,
         }),
       });
-      localStorage.setItem("cloudberry_first_checkin_done", "1");
-      localStorage.setItem("cloudberry_checkin_date", todayKey);
-      localStorage.setItem("cloudberry_checkin_score", String(avgScore));
-      if (!weightDoneThisWeek && weight.trim()) {
-        const weightNum = parseFloat(weight);
-        if (!isNaN(weightNum) && weightNum > 0) {
-          localStorage.setItem(`cloudberry_weight_week_${weekKey}`, String(weightNum));
-          const history = JSON.parse(localStorage.getItem("cloudberry_weight_history") || "[]");
-          history.push({ date: todayKey, weight: weightNum });
-          localStorage.setItem("cloudberry_weight_history", JSON.stringify(history));
-        }
+
+      if (resp.status === 409) {
+        // Server says already done today — sync local state
+        localStorage.setItem(lsCheckinKey, todayKey);
+        setSubmitted(true);
+        setJustSubmitted(false);
+        return;
       }
+
+      // Mark done in per-patient localStorage
+      localStorage.setItem(`cloudberry_first_checkin_done_${userId}`, "1");
+      localStorage.setItem(lsCheckinKey, todayKey);
+      localStorage.setItem(lsScoreKey, String(avgScore));
+      // Track weight week locally (prevents re-showing the weight field this week)
+      if (!weightDoneThisWeek && weightNum && weightNum > 0) {
+        localStorage.setItem(lsWeightKey, String(weightNum));
+      }
+
       setJustSubmitted(true);
       setSubmitted(true);
     } catch {

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { checkinsTable, patientsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { checkinsTable, patientsTable, metricsTable } from "@workspace/db";
+import { eq, desc, and, gte, lt } from "drizzle-orm";
 
 const router = Router();
 
@@ -15,6 +15,15 @@ function parseToken(authHeader: string | undefined): { userId: number; role: str
   }
 }
 
+function getDayBounds() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+// GET /api/checkins — recent check-ins for this patient
 router.get("/", async (req, res) => {
   try {
     const parsed = parseToken(req.headers.authorization);
@@ -32,13 +41,55 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/checkins/today — server-authoritative check for today's check-in
+router.get("/today", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const { start, end } = getDayBounds();
+    const [checkin] = await db.select().from(checkinsTable)
+      .where(and(
+        eq(checkinsTable.patientId, patient.id),
+        gte(checkinsTable.createdAt, start),
+        lt(checkinsTable.createdAt, end),
+      ))
+      .orderBy(desc(checkinsTable.createdAt))
+      .limit(1);
+    res.json({
+      done: !!checkin,
+      checkin: checkin ? { ...checkin, createdAt: checkin.createdAt.toISOString() } : null,
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/checkins — submit today's check-in (one per calendar day per patient)
 router.post("/", async (req, res) => {
   try {
     const parsed = parseToken(req.headers.authorization);
     if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
     const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
     if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
-    const { mealsFollowed, activityCompleted, energyLevel, mood, glucoseReading, notes } = req.body;
+
+    // Enforce one check-in per calendar day
+    const { start, end } = getDayBounds();
+    const [existing] = await db.select({ id: checkinsTable.id }).from(checkinsTable)
+      .where(and(
+        eq(checkinsTable.patientId, patient.id),
+        gte(checkinsTable.createdAt, start),
+        lt(checkinsTable.createdAt, end),
+      ))
+      .limit(1);
+    if (existing) {
+      res.status(409).json({ error: "Check-in already submitted for today", alreadyDone: true });
+      return;
+    }
+
+    const { mealsFollowed, activityCompleted, energyLevel, mood, glucoseReading, notes, weight } = req.body;
     const [checkin] = await db.insert(checkinsTable).values({
       patientId: patient.id,
       mealsFollowed,
@@ -48,6 +99,33 @@ router.post("/", async (req, res) => {
       glucoseReading: glucoseReading ?? null,
       notes: notes ?? null,
     }).returning();
+
+    const todayIso = start.toISOString().slice(0, 10);
+
+    // Persist glucose reading as a metric
+    if (glucoseReading != null && !isNaN(Number(glucoseReading)) && Number(glucoseReading) > 0) {
+      await db.insert(metricsTable).values({
+        patientId: patient.id,
+        type: "glucose",
+        value: Number(glucoseReading),
+        date: todayIso,
+      });
+    }
+
+    // Persist weight as a metric and update patient's currentWeight
+    const weightNum = Number(weight);
+    if (weight != null && !isNaN(weightNum) && weightNum > 0) {
+      await db.insert(metricsTable).values({
+        patientId: patient.id,
+        type: "weight",
+        value: weightNum,
+        date: todayIso,
+      });
+      await db.update(patientsTable)
+        .set({ currentWeight: weightNum })
+        .where(eq(patientsTable.id, patient.id));
+    }
+
     res.status(201).json({ ...checkin, createdAt: checkin.createdAt.toISOString() });
   } catch (err) {
     req.log.error(err);

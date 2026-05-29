@@ -98,40 +98,30 @@ async function buildPatientRow(p: any) {
 router.get("/dashboard", async (req, res) => {
   try {
     const auth = await requireOps(req, res); if (!auth) return;
-    const [{ count: activePatients }] = await db.select({ count: sql<number>`count(*)::int` })
-      .from(patientsTable).where(eq(patientsTable.status, "active"));
-    const [{ count: highRiskCount }] = await db.select({ count: sql<number>`count(*)::int` })
-      .from(patientsTable).where(eq(patientsTable.riskLevel, "high"));
-    const [{ count: totalLeads }] = await db.select({ count: sql<number>`count(*)::int` }).from(leadsTable);
-    const [{ count: totalStaff }] = await db.select({ count: sql<number>`count(*)::int` }).from(staffTable);
-    const [{ count: upcomingAppts }] = await db.select({ count: sql<number>`count(*)::int` })
-      .from(appointmentsTable).where(eq(appointmentsTable.status, "upcoming"));
 
-    const allPatients = await db.select({ id: patientsTable.id }).from(patientsTable);
-    let totalAdherence = 0;
-    let missedCheckins = 0;
-    const allPatientsFull = await db.select().from(patientsTable);
-    for (const p of allPatientsFull) {
-      const checkins = await db.select().from(checkinsTable)
-        .where(eq(checkinsTable.patientId, p.id)).limit(14);
-      if (checkins.length === 0) {
-        missedCheckins++;
-      } else {
-        const pct = checkins.filter(c => c.mealsFollowed === "yes").length / checkins.length;
-        totalAdherence += pct * 100;
-      }
-    }
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+
+    const [[{ count: activePatients }], [{ count: totalLeads }], [{ count: totalStaff }], [{ count: checkedInToday }]] =
+      await Promise.all([
+        db.select({ count: sql<number>`count(*)::int` }).from(patientsTable).where(eq(patientsTable.status, "active")),
+        db.select({ count: sql<number>`count(*)::int` }).from(leadsTable),
+        db.select({ count: sql<number>`count(*)::int` }).from(staffTable),
+        db.select({ count: sql<number>`count(distinct patient_id)::int` }).from(checkinsTable).where(gte(checkinsTable.createdAt, todayStart)),
+      ]);
+
+    const active = Number(activePatients);
+    const checkedIn = Number(checkedInToday);
+    const leads = Number(totalLeads);
+    const missedCheckins = Math.max(0, active - checkedIn);
+    const dailyAdherencePct = active > 0 ? Math.round((checkedIn / active) * 100) : 0;
 
     res.json({
-      activePatients,
-      dailyAdherencePct: allPatients.length > 0 ? Math.round(totalAdherence / allPatients.length) : 0,
+      activePatients: active,
+      dailyAdherencePct,
       missedCheckins,
-      highRiskCount,
-      upcomingAppointments: upcomingAppts,
-      escalationsPending: highRiskCount,
-      totalLeads,
-      totalStaff,
-      conversionRate: totalLeads > 0 ? Math.min(100, Math.round((activePatients / totalLeads) * 100)) : 0,
+      totalLeads: leads,
+      totalStaff: Number(totalStaff),
+      conversionRate: leads > 0 ? Math.min(100, Math.round((active / leads) * 100)) : 0,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
