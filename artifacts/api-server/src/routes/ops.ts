@@ -625,6 +625,29 @@ router.post("/patients/:id/content", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// PATCH /api/ops/patients/:id — general patient field updates (plan, weekNumber, status, etc.)
+router.patch("/patients/:id", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const { plan, weekNumber, status, riskLevel, primaryGoal, targetWeight, currentWeight } = req.body;
+    const updateData: Record<string, unknown> = {};
+    if (plan !== undefined) updateData.plan = plan;
+    if (weekNumber !== undefined) updateData.weekNumber = weekNumber;
+    if (status !== undefined) updateData.status = status;
+    if (riskLevel !== undefined) updateData.riskLevel = riskLevel;
+    if (primaryGoal !== undefined) updateData.primaryGoal = primaryGoal;
+    if (targetWeight !== undefined) updateData.targetWeight = targetWeight;
+    if (currentWeight !== undefined) updateData.currentWeight = currentWeight;
+    if (Object.keys(updateData).length === 0) { res.status(400).json({ error: "No updatable fields provided" }); return; }
+    const [patient] = await db.update(patientsTable).set(updateData)
+      .where(eq(patientsTable.id, patientId)).returning();
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    res.json({ ok: true, id: patient.id, ...updateData });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // PATCH /api/ops/patients/:id/plan
 router.patch("/patients/:id/plan", async (req, res) => {
   try {

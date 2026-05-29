@@ -1,10 +1,11 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { patientsTable } from "./patients";
 
 export const appointmentsTable = pgTable("appointments", {
   id: serial("id").primaryKey(),
-  patientId: integer("patient_id").notNull(),
+  patientId: integer("patient_id").notNull().references(() => patientsTable.id, { onDelete: "cascade" }),
   careTeamMember: text("care_team_member").notNull(),
   role: text("role").notNull(),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
@@ -12,7 +13,11 @@ export const appointmentsTable = pgTable("appointments", {
   notes: text("notes"),
   imageUrl: text("image_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  patientIdIdx: index("appointments_patient_id_idx").on(t.patientId),
+  patientStatusIdx: index("appointments_patient_status_idx").on(t.patientId, t.status),
+  scheduledAtIdx: index("appointments_scheduled_at_idx").on(t.scheduledAt),
+}));
 
 export const insertAppointmentSchema = createInsertSchema(appointmentsTable).omit({ id: true, createdAt: true });
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;

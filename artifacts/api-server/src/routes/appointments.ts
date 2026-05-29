@@ -38,12 +38,17 @@ router.post("/", async (req, res) => {
     if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
     const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
     if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
-    const { careTeamMember, role, preferredDate, notes } = req.body;
+    // Accept both preferredDate (legacy) and scheduledAt
+    const { careTeamMember, role, preferredDate, scheduledAt, notes } = req.body;
+    const dateStr = scheduledAt ?? preferredDate;
+    if (!dateStr) { res.status(400).json({ error: "scheduledAt is required" }); return; }
+    const dateVal = new Date(dateStr);
+    if (isNaN(dateVal.getTime())) { res.status(400).json({ error: "Invalid date format" }); return; }
     const [appt] = await db.insert(appointmentsTable).values({
       patientId: patient.id,
       careTeamMember: careTeamMember ?? "Care Team",
       role: role ?? "coach",
-      scheduledAt: new Date(preferredDate),
+      scheduledAt: dateVal,
       status: "requested",
       notes: notes ?? null,
     }).returning();
