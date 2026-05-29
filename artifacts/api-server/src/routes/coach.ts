@@ -26,7 +26,9 @@ function parseToken(authHeader: string | undefined): { userId: number; role: str
 router.get("/patients", async (req, res) => {
   try {
     const parsed = parseToken(req.headers.authorization);
-    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    if (!parsed || !["physician","dietician","caretaker","ops"].includes(parsed.role)) {
+      res.status(403).json({ error: "Forbidden" }); return;
+    }
 
     const patients = await db.select({
       patientId: patientsTable.id,

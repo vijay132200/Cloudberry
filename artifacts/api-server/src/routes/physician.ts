@@ -19,6 +19,7 @@ function parseToken(authHeader: string | undefined): { userId: number; role: str
 async function requirePhysician(req: any, res: any): Promise<{ staffId: number } | null> {
   const parsed = parseToken(req.headers.authorization);
   if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return null; }
+  if (parsed.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return null; }
   const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
   if (!staff || staff.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return null; }
   return { staffId: staff.id };
@@ -27,7 +28,7 @@ async function requirePhysician(req: any, res: any): Promise<{ staffId: number }
 router.get("/me", async (req, res) => {
   try {
     const parsed = parseToken(req.headers.authorization);
-    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    if (!parsed || parsed.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return; }
     const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
     if (!staff || staff.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return; }
     res.json({ id: staff.id, fullName: staff.fullName, email: staff.email, specialty: staff.specialty, role: staff.role });
@@ -168,7 +169,7 @@ router.patch("/patients/:id/plan", async (req, res) => {
 router.patch("/me", async (req, res) => {
   try {
     const parsed = parseToken(req.headers.authorization);
-    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    if (!parsed || parsed.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return; }
     const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
     if (!staff || staff.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return; }
     const { fullName, specialty, phone, password } = req.body ?? {};

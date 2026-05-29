@@ -13,6 +13,7 @@ function parseToken(h: string | undefined) {
 async function requireDietician(req: any, res: any) {
   const parsed = parseToken(req.headers.authorization);
   if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return null; }
+  if (parsed.role !== "dietician") { res.status(403).json({ error: "Forbidden" }); return null; }
   const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
   if (!staff || staff.role !== "dietician") { res.status(403).json({ error: "Forbidden" }); return null; }
   return { staffId: staff.id, fullName: staff.fullName };
@@ -21,7 +22,7 @@ async function requireDietician(req: any, res: any) {
 router.get("/me", async (req, res) => {
   try {
     const parsed = parseToken(req.headers.authorization);
-    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    if (!parsed || parsed.role !== "dietician") { res.status(403).json({ error: "Forbidden" }); return; }
     const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
     if (!staff || staff.role !== "dietician") { res.status(403).json({ error: "Forbidden" }); return; }
     res.json({ id: staff.id, fullName: staff.fullName, email: staff.email, specialty: staff.specialty, role: staff.role });

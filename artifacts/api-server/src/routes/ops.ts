@@ -16,6 +16,7 @@ function parseToken(h: string | undefined) {
 async function requireOps(req: any, res: any) {
   const parsed = parseToken(req.headers.authorization);
   if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return null; }
+  if (parsed.role !== "ops") { res.status(403).json({ error: "Forbidden" }); return null; }
   const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
   if (!staff || staff.role !== "ops") { res.status(403).json({ error: "Forbidden" }); return null; }
   return { staffId: staff.id };
