@@ -31,11 +31,13 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-48 bg-white border-r border-border/60 fixed h-screen top-0 left-0 z-20 shadow-sm">
         <div className="px-5 py-5 border-b border-border/60">
-          <Link href="/">
-            <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
-          </Link>
-          <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
-          <p className="text-[10px] text-muted-foreground mt-0.5">Patient Portal</p>
+          <div className="flex flex-col">
+            <Link href="/">
+              <span className="font-bold text-base tracking-tight text-foreground leading-none">Cloudberry</span>
+            </Link>
+            <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Patient Portal</p>
+          </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
@@ -72,8 +74,8 @@ export function PatientLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile Header */}
         <header className="md:hidden bg-white border-b border-border/60 sticky top-0 z-20 px-4 py-3 flex items-center justify-between">
           <div>
-            <span className="font-bold text-base tracking-tight text-foreground">Cloudberry</span>
-            <span className="text-[10px] text-muted-foreground leading-tight font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
+            <span className="font-bold text-base tracking-tight text-foreground leading-none">Cloudberry</span>
+            <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</p>
           </div>
           <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground p-1">
             <LogOut className="w-5 h-5" />

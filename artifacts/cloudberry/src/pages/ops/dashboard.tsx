@@ -364,17 +364,6 @@ function PatientDetailPanel({
             onClick={() => { navigator.clipboard?.writeText(p.email || ""); toast({ title: "Email copied" }); }}>
             <Mail className="w-3 h-3" /> Copy Email
           </Button>
-          {p.riskLevel !== "high" ? (
-            <Button size="sm" variant="outline" className="h-7 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 gap-1"
-              onClick={() => escalate.mutate()}>
-              <ShieldAlert className="w-3 h-3" /> Escalate
-            </Button>
-          ) : (
-            <Button size="sm" variant="outline" className="h-7 text-xs text-green-600 border-green-200 hover:bg-green-50 gap-1"
-              onClick={() => deescalate.mutate()}>
-              <CheckCircle className="w-3 h-3" /> De-escalate
-            </Button>
-          )}
         </div>
 
         {/* Tabs */}
@@ -552,7 +541,7 @@ function PatientDetailPanel({
                       <Card className="border-border">
                         <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5 text-primary" /> Care Content Published</CardTitle></CardHeader>
                         <CardContent className="pb-3 space-y-2">
-                          {d.opsContent.weeklyMessage && <p className="text-xs text-foreground italic">"{d.opsContent.weeklyMessage}"</p>}
+                          {d.opsContent.weeklyMessage && <p className="text-xs text-foreground italic break-words">"{d.opsContent.weeklyMessage}"</p>}
                           {(d.opsContent.insights || []).length > 0 && (
                             <div className="text-xs text-muted-foreground">{d.opsContent.insights.length} insight(s) published · {(d.opsContent.thisWeekFocus || []).length} focus item(s)</div>
                           )}
@@ -1200,7 +1189,7 @@ export default function OpsDashboard() {
                 <div className="col-span-2">
                   <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Full Name *</label>
                   <Input value={coachDietForm.fullName} onChange={e => setCoachDietForm(f => ({ ...f, fullName: e.target.value }))}
-                    placeholder={coachDietRole === "dietician" ? "Dr. Priya Sharma" : "Vikram Singh"} className="h-9 text-sm rounded-lg" />
+                    placeholder={coachDietRole === "dietician" ? "Priya Sharma" : "Vikram Singh"} className="h-9 text-sm rounded-lg" />
                 </div>
                 <div>
                   <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Email *</label>
@@ -1217,11 +1206,6 @@ export default function OpsDashboard() {
                   <Input value={coachDietForm.specialty} onChange={e => setCoachDietForm(f => ({ ...f, specialty: e.target.value }))}
                     placeholder={coachDietRole === "dietician" ? "Clinical Nutrition" : "Strength & Conditioning"} className="h-9 text-sm rounded-lg" />
                 </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground mb-1 block font-medium">Password *</label>
-                  <Input type="password" value={coachDietForm.password} onChange={e => setCoachDietForm(f => ({ ...f, password: e.target.value }))}
-                    placeholder="Initial password" className="h-9 text-sm rounded-lg" />
-                </div>
               </div>
             </div>
           )}
@@ -1235,7 +1219,7 @@ export default function OpsDashboard() {
                     onSuccess: closeCoachDiet,
                   });
                 }}
-                disabled={addStaffMutation.isPending || !coachDietForm.fullName || !coachDietForm.email || !coachDietForm.password}
+                disabled={addStaffMutation.isPending || !coachDietForm.fullName || !coachDietForm.email}
                 className="text-sm"
               >
                 {addStaffMutation.isPending ? "Adding…" : `Add ${coachDietRole === "dietician" ? "Dietician" : "Coach"}`}
@@ -1501,26 +1485,6 @@ export default function OpsDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Risk summary */}
-              <Card className="border-border shadow-sm">
-                <CardHeader className="border-b pb-3">
-                  <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2"><ShieldAlert className="w-4 h-4 text-rose-500" /> Risk Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-2">
-                  {["high", "medium", "low"].map(risk => {
-                    const count = (patients as any[]).filter((p: any) => p.riskLevel === risk).length;
-                    return (
-                      <div key={risk} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${getRiskDot(risk)}`} />
-                          <span className="text-sm capitalize text-foreground">{risk} risk</span>
-                        </div>
-                        <Badge variant="outline" className={`text-xs ${getRiskStyle(risk)}`}>{count}</Badge>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
 
               {/* Unassigned */}
               <Card className="border-border shadow-sm">

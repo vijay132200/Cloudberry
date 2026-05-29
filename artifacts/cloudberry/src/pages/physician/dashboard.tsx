@@ -315,9 +315,9 @@ function PhysicianPatientDashboard({ patient, dashData }: { patient: any; dashDa
         <Card className="border-border/40 rounded-xl">
           <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm">Care Plan</CardTitle></CardHeader>
           <CardContent className="px-4 pb-4 space-y-3 text-xs text-muted-foreground">
-            <div><p className="font-semibold text-foreground text-xs mb-1">Nutrition Plan</p><p>{d.carePlan.nutritionPlan}</p></div>
-            <div><p className="font-semibold text-foreground text-xs mb-1">Activity Plan</p><p>{d.carePlan.activityPlan}</p></div>
-            <div><p className="font-semibold text-foreground text-xs mb-1">Weekly Goals</p><p>{d.carePlan.weeklyGoals}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Nutrition Plan</p><p className="break-words">{d.carePlan.nutritionPlan}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Activity Plan</p><p className="break-words">{d.carePlan.activityPlan}</p></div>
+            <div><p className="font-semibold text-foreground text-xs mb-1">Weekly Goals</p><p className="break-words">{d.carePlan.weeklyGoals}</p></div>
           </CardContent>
         </Card>
       )}
@@ -760,9 +760,9 @@ export default function PhysicianDashboard() {
                       { label: "Target Weight", value: selectedPatient.targetWeight ? `${selectedPatient.targetWeight} kg` : "—" },
                       { label: "Adherence", value: `${selectedPatient.adherencePct ?? "—"}%` },
                     ].map(item => (
-                      <div key={item.label} className="bg-slate-50 rounded-xl p-3 border border-border/40">
+                      <div key={item.label} className="bg-slate-50 rounded-xl p-3 border border-border/40 overflow-hidden">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{item.label}</p>
-                        <p className="text-sm font-semibold text-foreground">{item.value}</p>
+                        <p className="text-sm font-semibold text-foreground break-all leading-snug">{item.value}</p>
                       </div>
                     ))}
                   </div>

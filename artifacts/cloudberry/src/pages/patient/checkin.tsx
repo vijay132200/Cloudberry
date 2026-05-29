@@ -19,6 +19,17 @@ function getToday() {
   return new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
+function getTodayKey() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getISOWeekKey() {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
 /* ─── Slider question component ─────────────────────────────── */
 interface SliderQuestionProps {
   icon: React.ReactNode;
@@ -113,6 +124,11 @@ export default function CheckinPage() {
   const storedName = localStorage.getItem("cloudberry_name") || "there";
   const firstName = storedName.split(" ")[0];
 
+  const todayKey = getTodayKey();
+  const weekKey = getISOWeekKey();
+  const alreadyCheckedIn = localStorage.getItem("cloudberry_checkin_date") === todayKey;
+  const weightDoneThisWeek = !!localStorage.getItem(`cloudberry_weight_week_${weekKey}`);
+
   const [nutrition, setNutrition] = useState(0);
   const [activity, setActivity] = useState(0);
   const [hunger, setHunger] = useState(0);
@@ -122,8 +138,11 @@ export default function CheckinPage() {
   const [postGlucose, setPostGlucose] = useState("");
   const [mealPhoto, setMealPhoto] = useState<string | null>(null);
   const [hardest, setHardest] = useState<string[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(alreadyCheckedIn);
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [weight, setWeight] = useState("");
+  const [savedScore] = useState(() => Number(localStorage.getItem("cloudberry_checkin_score") || "0"));
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,6 +186,18 @@ export default function CheckinPage() {
         }),
       });
       localStorage.setItem("cloudberry_first_checkin_done", "1");
+      localStorage.setItem("cloudberry_checkin_date", todayKey);
+      localStorage.setItem("cloudberry_checkin_score", String(avgScore));
+      if (!weightDoneThisWeek && weight.trim()) {
+        const weightNum = parseFloat(weight);
+        if (!isNaN(weightNum) && weightNum > 0) {
+          localStorage.setItem(`cloudberry_weight_week_${weekKey}`, String(weightNum));
+          const history = JSON.parse(localStorage.getItem("cloudberry_weight_history") || "[]");
+          history.push({ date: todayKey, weight: weightNum });
+          localStorage.setItem("cloudberry_weight_history", JSON.stringify(history));
+        }
+      }
+      setJustSubmitted(true);
       setSubmitted(true);
     } catch {
       setSubmitted(true);
@@ -176,6 +207,13 @@ export default function CheckinPage() {
   };
 
   if (submitted) {
+    const score = justSubmitted ? avgScore : savedScore;
+    const scoreColor = score >= 70 ? "#22c55e" : score >= 45 ? "#f59e0b" : "#ef4444";
+    const msg = justSubmitted ? motivationMsg
+      : score >= 70 ? "Great job staying consistent! Keep going – you're doing amazing! 🌟"
+      : score >= 45 ? "Good effort yesterday. Keep showing up – every day counts! 💪"
+      : "Don't worry – today is a fresh start. Your team is here to support you. 🤝";
+
     return (
       <PatientLayout>
         <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -184,15 +222,21 @@ export default function CheckinPage() {
               <CheckCircle2 className="w-10 h-10 text-green-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">Check-in Complete!</h2>
-              <p className="text-muted-foreground text-sm mt-1.5 leading-relaxed">Your responses have been sent to your care team. They'll review and be in touch.</p>
+              <h2 className="text-xl font-bold text-foreground">
+                {justSubmitted ? "Check-in Complete!" : "Already Checked In Today"}
+              </h2>
+              <p className="text-muted-foreground text-sm mt-1.5 leading-relaxed">
+                {justSubmitted
+                  ? "Your responses have been sent to your care team. They'll review and be in touch."
+                  : "You've already completed today's check-in. Come back tomorrow!"}
+              </p>
             </div>
             <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4">
-              <p className="text-sm text-green-800 font-medium">{motivationMsg}</p>
+              <p className="text-sm text-green-800 font-medium">{msg}</p>
             </div>
             <div className="bg-muted/40 rounded-2xl px-5 py-4">
               <p className="text-xs text-muted-foreground mb-1">Today's overall score</p>
-              <span className="text-4xl font-extrabold" style={{ color: overallColor }}>{avgScore}</span>
+              <span className="text-4xl font-extrabold" style={{ color: scoreColor }}>{score}</span>
               <span className="text-sm text-muted-foreground">/100</span>
             </div>
             <p className="text-xs text-muted-foreground">Your daily check-ins help personalise your plan and celebrate your progress 💙</p>
@@ -363,6 +407,33 @@ export default function CheckinPage() {
         {plan === "premium" && (
           <div className="bg-white border border-border rounded-2xl shadow-sm px-4 py-4">
             <PremiumExtras hardest={hardest} setHardest={setHardest} />
+          </div>
+        )}
+
+        {/* Weekly weight input */}
+        {!weightDoneThisWeek && (
+          <div className="bg-white border border-border rounded-2xl shadow-sm px-4 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">⚖️</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Weekly Weight Check-in</p>
+                <p className="text-xs text-muted-foreground">Logged once a week until you submit</p>
+              </div>
+            </div>
+            <div className="relative max-w-[180px]">
+              <input
+                type="number"
+                placeholder="e.g. 72.5"
+                value={weight}
+                onChange={e => setWeight(e.target.value)}
+                step="0.1"
+                min="20"
+                max="300"
+                className="flex h-10 w-full rounded-xl border border-border/60 bg-muted/30 px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1.5">Optional — helps track your progress over time</p>
           </div>
         )}
 

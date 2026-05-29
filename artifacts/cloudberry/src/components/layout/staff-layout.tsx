@@ -33,8 +33,8 @@ export function StaffLayout({ children, type }: { children: React.ReactNode, typ
       <header className="border-b sticky top-0 z-20 px-4 py-3 flex items-center justify-between bg-white/90 backdrop-blur-sm border-border/60 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <div>
-              <span className="font-sans text-xl font-bold tracking-tight text-foreground">Cloudberry</span>
+            <div className="flex flex-col">
+              <span className="font-sans text-xl font-bold tracking-tight text-foreground leading-none">Cloudberry</span>
               <span className="text-[10px] text-muted-foreground leading-tight mt-0.5 font-normal">Doctor-Led Care for Long-Term Metabolic Health</span>
             </div>
           </Link>

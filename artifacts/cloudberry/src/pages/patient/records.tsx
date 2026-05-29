@@ -373,9 +373,13 @@ export default function PatientRecords() {
             {viewDoc && (
               <div className="rounded-xl overflow-hidden border border-border/60 max-h-[60vh] overflow-y-auto">
                 {viewDoc.mimeType.startsWith("image/") ? (
-                  <img src={viewUrl} alt={viewDoc.name} className="w-full object-contain" />
+                  <img src={viewDoc.data} alt={viewDoc.name} className="w-full object-contain max-h-[55vh]" />
                 ) : viewDoc.mimeType === "application/pdf" ? (
-                  <iframe src={viewUrl} className="w-full h-[55vh]" title={viewDoc.name} />
+                  viewUrl ? (
+                    <embed src={viewUrl} type="application/pdf" className="w-full" style={{ height: "55vh" }} />
+                  ) : (
+                    <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">Loading…</div>
+                  )
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 gap-4">
                     <FileText className="w-10 h-10 text-muted-foreground/40" />
