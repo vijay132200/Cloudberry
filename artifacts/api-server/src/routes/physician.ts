@@ -272,7 +272,7 @@ router.get("/patients/:id/dashboard", async (req, res) => {
       if (sm && sm.value >= 7) goodSleepDays++;
     }
     const consistencyBreakdown = last7.length === 0 ? null : {
-      mealLogging: Math.round((last7.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly").length / 7) * 100),
+      mealLogging: Math.round((last7.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "partially").length / 7) * 100),
       checkIns: Math.round((last7.length / 7) * 100),
       activity: Math.round((last7.filter(c => c.activityCompleted).length / 7) * 100),
       sleep: Math.round((goodSleepDays / 7) * 100),

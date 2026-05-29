@@ -89,7 +89,7 @@ router.post("/", async (req, res) => {
       return;
     }
 
-    const { mealsFollowed, activityCompleted, energyLevel, mood, glucoseReading, notes, weight } = req.body;
+    const { mealsFollowed, activityCompleted, energyLevel, mood, glucoseReading, notes, weight, sleepHours } = req.body;
     const [checkin] = await db.insert(checkinsTable).values({
       patientId: patient.id,
       mealsFollowed,
@@ -124,6 +124,22 @@ router.post("/", async (req, res) => {
       await db.update(patientsTable)
         .set({ currentWeight: weightNum })
         .where(eq(patientsTable.id, patient.id));
+    }
+
+    // Persist sleep hours as a metric (used by behavioral consistency score)
+    const sleepNum = Number(sleepHours);
+    if (sleepHours != null && !isNaN(sleepNum) && sleepNum > 0) {
+      const existing = await db.select({ id: metricsTable.id }).from(metricsTable)
+        .where(and(eq(metricsTable.patientId, patient.id), eq(metricsTable.type, "sleep_hours"), eq(metricsTable.date, todayIso)))
+        .limit(1);
+      if (existing.length === 0) {
+        await db.insert(metricsTable).values({
+          patientId: patient.id,
+          type: "sleep_hours",
+          value: sleepNum,
+          date: todayIso,
+        });
+      }
     }
 
     res.status(201).json({ ...checkin, createdAt: checkin.createdAt.toISOString() });

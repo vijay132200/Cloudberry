@@ -402,9 +402,9 @@ function PatientDetailPanel({
                         { label: "Adherence", value: `${d.adherencePct ?? "—"}%` },
                         { label: "Check-ins", value: `${completedDays}/7` },
                       ].map(s => (
-                        <div key={s.label} className="bg-muted/40 rounded-xl p-2.5">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{s.label}</p>
-                          <p className="font-bold text-foreground text-sm">{s.value}</p>
+                        <div key={s.label} className="bg-muted/40 rounded-xl p-2.5 min-w-0">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5 truncate">{s.label}</p>
+                          <p className="font-bold text-foreground text-xs leading-snug break-words">{s.value}</p>
                         </div>
                       ))}
                     </div>
@@ -507,16 +507,18 @@ function PatientDetailPanel({
                       <Card className="border-border">
                         <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase">Energy & Wellbeing (Self-Reported)</CardTitle></CardHeader>
                         <CardContent className="pb-3">
-                          <BarChart width={380} height={80} data={d.energySeries} style={{ maxWidth: "100%" }} barCategoryGap="30%">
-                            <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
-                            <YAxis tick={false} domain={[0,3]} hide />
-                            <Tooltip formatter={(v: number) => [v===3?"High":v===2?"Moderate":"Low","Energy"]} labelFormatter={fmt} />
-                            <Bar dataKey="value" radius={[3,3,0,0]}>
-                              {d.energySeries.map((e: any, i: number) => (
-                                <Cell key={i} fill={energyMap[e.value as number] || "#94a3b8"} />
-                              ))}
-                            </Bar>
-                          </BarChart>
+                          <ResponsiveContainer width="100%" height={80}>
+                            <BarChart data={d.energySeries} barCategoryGap="30%">
+                              <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
+                              <YAxis tick={false} domain={[0,3]} hide />
+                              <Tooltip formatter={(v: number) => [v===3?"High":v===2?"Moderate":"Low","Energy"]} labelFormatter={fmt} />
+                              <Bar dataKey="value" radius={[3,3,0,0]}>
+                                {d.energySeries.map((e: any, i: number) => (
+                                  <Cell key={i} fill={energyMap[e.value as number] || "#94a3b8"} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
                         </CardContent>
                       </Card>
                     )}
@@ -526,12 +528,14 @@ function PatientDetailPanel({
                       <Card className="border-border">
                         <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">Glucose Trend {d.avgGlucose && <span className="ml-1 text-foreground">avg {d.avgGlucose} mg/dL</span>}</CardTitle></CardHeader>
                         <CardContent className="pb-3">
-                          <LineChart width={380} height={90} data={d.glucoseSeries} style={{ maxWidth: "100%" }}>
-                            <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
-                            <YAxis tick={{ fontSize: 8 }} domain={[60,180]} width={28} />
-                            <Tooltip formatter={(v: number) => [`${v} mg/dL`,"Glucose"]} labelFormatter={fmt} />
-                            <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
-                          </LineChart>
+                          <ResponsiveContainer width="100%" height={90}>
+                            <LineChart data={d.glucoseSeries} margin={{ top: 4, right: 10, bottom: 4, left: -10 }}>
+                              <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
+                              <YAxis tick={{ fontSize: 8 }} domain={[60,180]} width={28} />
+                              <Tooltip formatter={(v: number) => [`${v} mg/dL`,"Glucose"]} labelFormatter={fmt} />
+                              <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
                         </CardContent>
                       </Card>
                     )}

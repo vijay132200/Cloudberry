@@ -221,6 +221,8 @@ export default function CheckinPage() {
           glucoseReading: glucose ? Number(glucose) : undefined,
           // weight is persisted server-side to metricsTable and updates patient.currentWeight
           weight: (!weightDoneThisWeek && weightNum && weightNum > 0) ? weightNum : undefined,
+          // sleepHours derived from 0-100 sleep quality slider: maps to 4-9 hours
+          sleepHours: Math.round(4 + (sleepQ / 100) * 5),
           notes: [
             hardest.length > 0 ? `Hardest today: ${hardest.join(", ")}` : null,
             postGlucose ? `Post-meal glucose: ${postGlucose} mg/dL` : null,

@@ -1,0 +1,343 @@
+CLOUDBERRY HEALTH — FULL NEON DATABASE INTEGRATION, DATA CONSISTENCY FIXES, UI FIXES, AND COMPLETE END-TO-END VALIDATION
+
+The DATABASE_URL environment variable for the Neon PostgreSQL production database has already been configured successfully in Replit.
+
+Your task is to fully connect, validate, repair, synchronize, and test the entire platform so that the application becomes a production-ready healthcare continuity-care platform with complete database persistence and role-based functionality.
+
+========================================
+PHASE 1 — DATABASE INTEGRATION
+==============================
+
+1. Connect the entire application backend to Neon PostgreSQL using the existing DATABASE_URL.
+
+2. Verify the database connection is healthy, persistent, and reconnects gracefully if interrupted.
+
+3. Verify all schema tables are correctly created, migrated, mapped, and synchronized, including but not limited to:
+
+* users
+* staff
+* patients
+* patient_plans
+* patient_notes
+* checkins
+* metrics
+* appointments
+* leads
+* tips
+* messages
+* uploads
+* support_tickets
+* assessments
+* notifications
+* auth/session tables
+* any additional operational tables
+
+4. Fix all ORM, schema, migration, API, and database synchronization issues automatically.
+
+5. Ensure no patient data is lost during migration, synchronization, or reconnection.
+
+========================================
+PHASE 2 — REMOVE MOCK DATA
+==========================
+
+1. Remove all frontend-only state management that simulates data.
+
+2. Remove all hardcoded analytics, demo values, mock dashboards, placeholder metrics, and temporary data sources.
+
+3. Ensure every dashboard, chart, graph, score, table, card, metric, and patient record loads exclusively from Neon PostgreSQL.
+
+4. Ensure all updates are persisted permanently in Neon.
+
+========================================
+PHASE 3 — PATIENT DATA ISOLATION
+================================
+
+Patient data must remain completely isolated.
+
+Example:
+
+* Karan's records must only appear in Karan's dashboards and assigned staff views.
+* Rahul's records must only appear in Rahul's dashboards and assigned staff views.
+
+No patient should ever inherit, share, display, calculate, or reuse another patient's:
+
+* check-ins
+* metrics
+* appointments
+* notes
+* care plans
+* messages
+* assessments
+* uploads
+* dashboards
+* analytics
+* behavioral scores
+
+Audit all APIs, database queries, joins, filters, selectors, caching layers, React state management, and dashboard aggregation logic to ensure strict patient-level isolation.
+
+========================================
+PHASE 4 — BEHAVIORAL CONSISTENCY SCORE BUG FIX
+==============================================
+
+A critical bug currently exists.
+
+Observed issue:
+
+For patient Karan Malhotra:
+
+Patient Dashboard:
+
+* Behavioral Consistency Score = 62
+* All metrics are recorded properly
+
+Operations Portal:
+
+* Sleep value shows 0
+* Behavioral Consistency Score differs from patient dashboard
+
+Root Cause:
+
+Sleep data is not being correctly synchronized into the Operations Portal calculation pipeline.
+
+Required Fix:
+
+1. Identify the exact source of truth for behavioral calculations.
+
+2. Ensure all metrics used by the patient dashboard are pulled from the same database records used by the operations portal.
+
+3. Ensure sleep metrics update correctly for every patient.
+
+4. Ensure behavioral scores are calculated from one shared calculation service.
+
+5. Ensure:
+
+# Patient Dashboard Score
+
+# Operations Portal Score
+
+Physician Portal Score
+
+when viewing the same patient.
+
+6. Validate consistency across all patients.
+
+7. Recalculate and repair any incorrect stored scores.
+
+========================================
+PHASE 5 — ROLE PORTAL VALIDATION
+================================
+
+Ensure every portal is fully database-driven:
+
+* Patient Portal
+* Physician Portal
+* Operations Portal
+
+Verify:
+
+* role permissions
+* protected routes
+* authorization
+* visibility rules
+* assignment logic
+* patient ownership logic
+
+========================================
+PHASE 6 — PERSISTENCE VALIDATION
+================================
+
+Ensure the following persist permanently in Neon:
+
+* daily check-ins
+* assessments
+* metrics
+* care plans
+* patient notes
+* appointments
+* messages
+* uploads
+* profile updates
+* staff assignments
+* lead forms
+* support tickets
+
+Refresh the application after each operation and verify records remain intact.
+
+========================================
+PHASE 7 — RELATIONSHIP VALIDATION
+=================================
+
+Verify and repair all relational mappings:
+
+patient ↔ physician
+
+appointments ↔ assigned staff
+
+messages ↔ patient records
+
+care plans ↔ assigned patients
+
+notes ↔ patients
+
+metrics ↔ patients
+
+check-ins ↔ patients
+
+Ensure all foreign keys, joins, lookups, and API responses are correct.
+
+========================================
+PHASE 8 — OPERATIONS PORTAL UI FIXES
+====================================
+
+Issue:
+
+Inside the patient details view of the Operations Portal, the text:
+
+"Comprehensive"
+
+within the plan card is overflowing outside its container.
+
+Fix:
+
+1. Ensure text wraps correctly.
+2. Prevent overflow.
+3. Preserve design consistency.
+4. Maintain responsive behavior.
+
+========================================
+PHASE 9 — RESPONSIVE DESIGN AUDIT
+=================================
+
+Perform a full responsive audit.
+
+Requirements:
+
+1. All pages must adapt correctly across:
+
+* Mobile
+* Tablet
+* Laptop
+* Desktop
+* Ultra-wide displays
+
+2. Fix:
+
+* overflow issues
+* clipping
+* misalignment
+* scaling issues
+* broken cards
+* broken tables
+* inconsistent spacing
+
+3. Maintain the same UI/UX quality across all screen sizes.
+
+4. Ensure dashboard cards, graphs, tables, forms, modals, and navigation remain usable everywhere.
+
+========================================
+PHASE 10 — COMPLETE CRUD VALIDATION
+===================================
+
+Verify all CRUD operations:
+
+* CREATE
+* READ
+* UPDATE
+* DELETE
+
+for:
+
+* patients
+* staff
+* appointments
+* plans
+* notes
+* metrics
+* check-ins
+* leads
+* messages
+* uploads
+* support tickets
+
+Repair any failing endpoints automatically.
+
+========================================
+PHASE 11 — DYNAMIC DASHBOARD VALIDATION
+=======================================
+
+Ensure every dashboard updates dynamically from database changes.
+
+Examples:
+
+* New check-in updates charts immediately.
+* New metrics update scores immediately.
+* New appointment appears immediately.
+* Updated care plan appears immediately.
+* Assigned staff changes appear immediately.
+
+No dashboard should require manual data editing.
+
+========================================
+PHASE 12 — FULL END-TO-END TESTING
+==================================
+
+Execute at least 4 complete end-to-end test cycles.
+
+TEST CYCLE 1
+
+* Sign in
+* Create patient
+* Assign physician
+* Submit check-in
+* Verify dashboards
+
+TEST CYCLE 2
+
+* Update metrics
+* Verify score recalculation
+* Verify all portals show identical values
+
+TEST CYCLE 3
+
+* Create appointments
+* Send messages
+* Upload files
+* Verify persistence after refresh
+
+TEST CYCLE 4
+
+* Restart application
+* Reload database connection
+* Verify all data remains intact
+* Verify all dashboards remain synchronized
+
+========================================
+PHASE 13 — FINAL VERIFICATION REPORT
+====================================
+
+After implementation provide a complete report containing:
+
+1. Database integration status
+2. Tables validated
+3. ORM issues fixed
+4. APIs repaired
+5. Behavioral score bug resolution
+6. Patient isolation validation results
+7. CRUD validation results
+8. Portal validation results
+9. Responsive fixes completed
+10. End-to-end test results
+11. Remaining issues (if any)
+
+Do not stop at partial completion.
+
+Continue until:
+
+* all portals are database-driven,
+* all patient data is isolated correctly,
+* behavioral scores are synchronized,
+* UI issues are fixed,
+* responsive issues are fixed,
+* all tests pass,
+* and the application successfully restarts and runs using Neon PostgreSQL as the persistent production database.
+At last, Generate and provide a database architecture report showing all tables, foreign keys, relationships, indexes, and any orphaned records discovered during validation.
