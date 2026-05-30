@@ -30,7 +30,30 @@ app.use(
     },
   }),
 );
-app.use(cors());
+// In production, restrict CORS to known frontend origins.
+// ALLOWED_ORIGINS env var accepts a comma-separated list of allowed origins
+// (e.g. "https://www.cloudberryhealth.in,https://cloudberryhealth.in").
+// Falls back to open CORS when not set (safe for Replit / local dev).
+const rawAllowedOrigins = process.env.ALLOWED_ORIGINS;
+const allowedOrigins = rawAllowedOrigins
+  ? rawAllowedOrigins.split(",").map((o) => o.trim()).filter(Boolean)
+  : null;
+
+app.use(
+  cors({
+    origin: allowedOrigins
+      ? (origin, cb) => {
+          // Allow requests with no Origin header (server-to-server, curl, etc.)
+          if (!origin) return cb(null, true);
+          if (allowedOrigins.includes(origin)) return cb(null, true);
+          cb(new Error(`CORS: origin ${origin} not allowed`));
+        }
+      : true,
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
