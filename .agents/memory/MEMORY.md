@@ -1,0 +1,3 @@
+- [Auth endpoints](auth-endpoints.md) — staff signin is `/api/auth/ops/signin` and `/api/auth/coach/signin`; patient is `/api/auth/patient/signin`
+- [Coach route isolation](coach-isolation.md) — coach `/patients` route must filter by assigned staff ID using OR across all 4 assignment fields
+- [Ops KPI fields](ops-kpi.md) — `/api/ops/dashboard` returns 8 fields including highRiskCount and upcomingAppointments; frontend grid is lg:grid-cols-8

@@ -256,7 +256,7 @@ function PatientDetailPanel({
       setSelPhysician(detail.assignedPhysicianId ? String(detail.assignedPhysicianId) : "none");
       setSelDietician(detail.assignedDieticianId ? String(detail.assignedDieticianId) : "none");
       setSelCaretaker(detail.assignedCaretakerId ? String(detail.assignedCaretakerId) : "none");
-      setTargetWeightInput(p.targetWeight ? String(p.targetWeight) : "");
+      setTargetWeightInput(detail.targetWeight ? String(detail.targetWeight) : "");
     }
   }, [detail]);
 
@@ -1117,9 +1117,13 @@ export default function OpsDashboard() {
 
   const metrics = [
     { label: "Active Patients", value: kpi?.activePatients ?? "—", icon: <Users className="w-3 h-3" />, bg: "bg-sky-50", color: "text-sky-700" },
-    { label: "Daily Adherence", value: kpi?.dailyAdherencePct ? `${kpi.dailyAdherencePct}%` : "—", icon: <CheckCircle className="w-3 h-3" />, bg: "bg-emerald-50", color: "text-emerald-700" },
+    { label: "Daily Adherence", value: kpi?.dailyAdherencePct !== undefined ? `${kpi.dailyAdherencePct}%` : "—", icon: <CheckCircle className="w-3 h-3" />, bg: "bg-emerald-50", color: "text-emerald-700" },
     { label: "Missed Check-ins", value: kpi?.missedCheckins ?? "—", icon: <AlertTriangle className="w-3 h-3" />, bg: "bg-amber-50", color: "text-amber-700" },
-    { label: "Staff", value: kpi?.totalStaff ?? "—", icon: <HeartPulse className="w-3 h-3" />, bg: "bg-pink-50", color: "text-pink-700" },
+    { label: "High Risk", value: kpi?.highRiskCount ?? "—", icon: <ShieldAlert className="w-3 h-3" />, bg: "bg-rose-50", color: "text-rose-700" },
+    { label: "Total Leads", value: kpi?.totalLeads ?? "—", icon: <TrendingUp className="w-3 h-3" />, bg: "bg-violet-50", color: "text-violet-700" },
+    { label: "Conversion", value: kpi?.conversionRate !== undefined ? `${kpi.conversionRate}%` : "—", icon: <Activity className="w-3 h-3" />, bg: "bg-teal-50", color: "text-teal-700" },
+    { label: "Upcoming Appts", value: kpi?.upcomingAppointments ?? "—", icon: <CalendarCheck className="w-3 h-3" />, bg: "bg-indigo-50", color: "text-indigo-700" },
+    { label: "Care Team", value: kpi?.totalStaff ?? "—", icon: <HeartPulse className="w-3 h-3" />, bg: "bg-pink-50", color: "text-pink-700" },
   ];
 
   const staffByRole = {
@@ -1433,7 +1437,7 @@ export default function OpsDashboard() {
                           <div className="text-[10px] text-muted-foreground mt-0.5 ml-4">{p.city} · Week {p.weekNumber}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 border ${planColor(p.plan)}`}>{p.plan}</Badge>
+                          <Badge variant="outline" className={`capitalize text-[10px] px-2 py-0.5 border whitespace-nowrap ${planColor(p.plan)}`}>{p.plan}</Badge>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -1572,7 +1576,7 @@ export default function OpsDashboard() {
                           </td>
                           <td className="px-5 py-3 text-xs text-muted-foreground">{p.city}</td>
                           <td className="px-5 py-3">
-                            <Badge variant="outline" className={`capitalize text-[10px] ${planColor(p.plan)}`}>{p.plan}</Badge>
+                            <Badge variant="outline" className={`capitalize text-[10px] whitespace-nowrap ${planColor(p.plan)}`}>{p.plan}</Badge>
                           </td>
                           <td className="px-5 py-3 text-xs text-muted-foreground">{goalLabel(p.primaryGoal)}</td>
                           <td className="px-5 py-3 text-xs text-muted-foreground">

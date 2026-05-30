@@ -1,0 +1,542 @@
+CLOUDBERRY HEALTH — COMPLETE PRODUCTION INTEGRATION, AUTHENTICATION, DATABASE CONNECTIVITY, DATA CONSISTENCY, AND END-TO-END VALIDATION
+
+IMPORTANT
+
+The objective is NOT merely to fix the login page.
+
+The objective is to make the entire production environment function correctly from end to end.
+
+The complete production chain must be validated:
+
+Frontend (Vercel)
+→ Railway Backend API
+→ Neon PostgreSQL
+→ Authentication
+→ Patient Portal
+→ Physician Portal
+→ Operations Portal
+
+Do not stop after fixing one issue.
+
+Continue until the complete production stack is functioning correctly.
+
+==================================================
+CURRENT OBSERVED PRODUCTION ISSUE
+=================================
+
+Operations Portal login fails.
+
+Network tab shows:
+
+POST https://www.cloudberryhealth.in/api/auth/ops/signin
+
+Response:
+
+405 Method Not Allowed
+
+Response Headers:
+
+Server: Vercel
+
+This proves the request is reaching Vercel and not Railway.
+
+Backend health endpoint works:
+
+https://api.cloudberryhealth.in/api/healthz
+
+returns:
+
+{"status":"ok"}
+
+Vercel contains:
+
+VITE_API_URL=https://workspaceapi-server-production-4503.up.railway.app
+
+Yet frontend requests are still being generated as relative URLs.
+
+==================================================
+PHASE 1 — FRONTEND TO BACKEND CONNECTIVITY
+==========================================
+
+Locate and inspect:
+
+* setBaseUrl(
+* VITE_API_URL
+* custom-fetch.ts
+* customFetch
+* useOpsSignin
+* createClient
+* baseUrl
+* generated API hooks
+* generated API client configuration
+
+Trace:
+
+useOpsSignin()
+→ generated hook
+→ generated client
+→ customFetch()
+→ final request URL
+
+Determine why requests are being generated as:
+
+https://www.cloudberryhealth.in/api/auth/ops/signin
+
+instead of:
+
+https://api.cloudberryhealth.in/api/auth/ops/signin
+
+or
+
+https://workspaceapi-server-production-4503.up.railway.app/api/auth/ops/signin
+
+Verify whether:
+
+setBaseUrl(import.meta.env.VITE_API_URL)
+
+is executed during application startup.
+
+If missing:
+
+implement it.
+
+Verify all generated API requests use the configured base URL.
+
+If necessary, add Vercel rewrites so API traffic reaches Railway correctly.
+
+Example:
+
+{
+"rewrites": [
+{
+"source": "/api/:path*",
+"destination": "https://api.cloudberryhealth.in/api/:path*"
+}
+]
+}
+
+Do not stop until login requests are reaching Railway.
+
+==================================================
+PHASE 2 — DATABASE CONNECTION VALIDATION
+========================================
+
+The production Neon PostgreSQL connection string has already been configured through:
+
+DATABASE_URL
+
+The backend must use DATABASE_URL as the sole production database source.
+
+Locate and audit:
+
+* ORM initialization files
+* database clients
+* connection factories
+* repository initialization code
+* environment loaders
+* migration configuration
+* schema configuration
+* connection pools
+
+Verify:
+
+* DATABASE_URL loads correctly
+* DATABASE_URL is not ignored
+* DATABASE_URL is not overridden
+* Railway PostgreSQL is not accidentally being used
+* local development databases are not accidentally being used
+* hardcoded connection strings do not exist
+* legacy database providers do not override production configuration
+
+Trace the complete database initialization flow:
+
+* application startup
+* environment loading
+* ORM initialization
+* database client creation
+* connection establishment
+* repository usage
+* service layer usage
+* authentication usage
+
+Determine the actual database currently being used at runtime.
+
+Confirm runtime queries resolve to the Neon PostgreSQL instance specified by DATABASE_URL.
+
+Do not create a new database.
+
+Do not migrate data into Railway PostgreSQL.
+
+Do not switch providers.
+
+Do not replace Neon.
+
+Use the existing DATABASE_URL configuration already present in the environment.
+
+==================================================
+PHASE 3 — DATABASE_URL SOURCE OF TRUTH ENFORCEMENT
+==================================================
+
+Confirm all modules use the same database connection derived from DATABASE_URL:
+
+* authentication
+* users
+* staff
+* patients
+* patient_plans
+* patient_notes
+* checkins
+* metrics
+* appointments
+* leads
+* tips
+* messages
+* uploads
+* support_tickets
+* assessments
+* notifications
+* auth/session tables
+* reporting modules
+* physician modules
+* operations modules
+* any additional discovered tables
+
+Audit for:
+
+* multiple database clients
+* duplicate connection pools
+* abandoned configurations
+* Railway PostgreSQL references
+* unused ORM configurations
+* legacy providers
+* conflicting runtime paths
+
+If multiple providers exist:
+
+* preserve compatibility where required
+* ensure production runtime uses DATABASE_URL
+* eliminate conflicting execution paths
+* prevent writes to unintended databases
+
+Validate that all discovered schema tables are accessible through DATABASE_URL.
+
+==================================================
+PHASE 4 — AUTHENTICATION VALIDATION
+===================================
+
+Validate:
+
+* Operations Portal login
+* Physician login
+* Patient login
+
+Verify:
+
+* credential lookup
+* password verification
+* session creation
+* token creation
+* token validation
+* authorization
+* protected routes
+
+Confirm authentication reads and writes through DATABASE_URL.
+
+==================================================
+PHASE 5 — REMOVE MOCK DATA
+==========================
+
+Remove all frontend-only state management that simulates data.
+
+Remove:
+
+* mock dashboards
+* hardcoded analytics
+* demo metrics
+* placeholder data
+* temporary state-based persistence
+
+Ensure every dashboard, graph, score, chart, metric, and table loads exclusively from Neon PostgreSQL.
+
+Ensure all updates persist permanently.
+
+==================================================
+PHASE 6 — PATIENT DATA ISOLATION
+================================
+
+Patient data must remain completely isolated.
+
+Examples:
+
+Karan must only see Karan's records.
+
+Rahul must only see Rahul's records.
+
+No patient should inherit, display, calculate, reuse, or access another patient's:
+
+* check-ins
+* metrics
+* appointments
+* notes
+* plans
+* messages
+* assessments
+* uploads
+* dashboards
+* analytics
+* scores
+
+Audit:
+
+* APIs
+* queries
+* joins
+* selectors
+* caching
+* dashboard logic
+* state management
+
+Ensure strict patient-level isolation.
+
+==================================================
+PHASE 7 — BEHAVIORAL SCORE CONSISTENCY
+======================================
+
+Current issue:
+
+Patient Dashboard and Operations Portal show different values.
+
+Sleep values are not syncing correctly.
+
+Requirements:
+
+Identify a single source of truth.
+
+Ensure:
+
+# Patient Dashboard Score
+
+# Operations Portal Score
+
+Physician Portal Score
+
+for the same patient.
+
+Remove duplicate calculation logic.
+
+Create one shared calculation service.
+
+Repair incorrect stored values if necessary.
+
+==================================================
+PHASE 8 — ROLE PORTAL VALIDATION
+================================
+
+Fully validate:
+
+* Patient Portal
+* Physician Portal
+* Operations Portal
+
+Preserve all additional modules including:
+
+* Dietician Portal
+* Caretaker Portal
+* Coach Portal
+* Admin modules
+* dormant modules
+
+Do not remove:
+
+* APIs
+* routes
+* schemas
+* tables
+* permissions
+* relationships
+
+==================================================
+PHASE 9 — CRUD VALIDATION
+=========================
+
+Validate:
+
+CREATE
+READ
+UPDATE
+DELETE
+
+for:
+
+* patients
+* staff
+* appointments
+* plans
+* notes
+* metrics
+* check-ins
+* leads
+* messages
+* uploads
+* support tickets
+
+Repair all failing endpoints.
+
+==================================================
+PHASE 10 — PERSISTENCE VALIDATION
+=================================
+
+Verify persistence for:
+
+* check-ins
+* assessments
+* metrics
+* plans
+* notes
+* appointments
+* messages
+* uploads
+* profile updates
+* assignments
+* support tickets
+
+Validate after:
+
+* refresh
+* logout/login
+* backend restart
+* application restart
+
+==================================================
+PHASE 11 — RELATIONSHIP VALIDATION
+==================================
+
+Verify and repair:
+
+patient ↔ physician
+
+patient ↔ dietician (if present)
+
+patient ↔ caretaker (if present)
+
+appointments ↔ staff
+
+messages ↔ patients
+
+plans ↔ patients
+
+notes ↔ patients
+
+metrics ↔ patients
+
+check-ins ↔ patients
+
+Ensure:
+
+* foreign keys are valid
+* joins are correct
+* lookups are correct
+* API responses are correct
+* no orphaned records exist
+
+==================================================
+PHASE 12 — RESPONSIVE AND UI FIXES
+==================================
+
+Fix all:
+
+* overflow issues
+* clipping
+* alignment problems
+* broken cards
+* broken tables
+* responsive issues
+* modal issues
+
+Specific issue:
+
+The word "Comprehensive" overflows outside the plan card in the Operations Portal.
+
+Fix wrapping and responsiveness.
+
+==================================================
+PHASE 13 — END-TO-END TESTING
+=============================
+
+Run complete validation cycles.
+
+Cycle 1:
+
+* Login
+* Create patient
+* Assign physician
+* Submit check-in
+* Verify persistence
+
+Cycle 2:
+
+* Update metrics
+* Verify recalculation
+* Verify sleep synchronization
+* Verify portal consistency
+
+Cycle 3:
+
+* Create appointments
+* Send messages
+* Upload files
+* Update records
+* Verify persistence
+
+Cycle 4:
+
+* Restart backend
+* Reload application
+* Verify persistence
+* Verify authentication
+* Verify synchronization
+
+==================================================
+PHASE 14 — FINAL REPORT
+=======================
+
+Provide:
+
+1. Exact files modified
+
+2. Exact code changes
+
+3. API routing fixes performed
+
+4. Database connection verification
+
+5. Active runtime database provider
+
+6. Proof DATABASE_URL is being used
+
+7. Authentication validation results
+
+8. CRUD validation results
+
+9. Portal validation results
+
+10. Patient isolation validation
+
+11. Behavioral score validation
+
+12. Responsive fixes completed
+
+13. Remaining issues
+
+14. Screenshots, logs, or evidence proving:
+
+Frontend
+→ Railway
+→ Neon
+→ Authentication
+→ Dashboards
+→ Persistence
+
+are functioning successfully.
+
+Do not mark the task complete until the entire production flow is operational.

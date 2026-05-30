@@ -102,12 +102,14 @@ router.get("/dashboard", async (req, res) => {
 
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
 
-    const [[{ count: activePatients }], [{ count: totalLeads }], [{ count: totalStaff }], [{ count: checkedInToday }]] =
+    const [[{ count: activePatients }], [{ count: totalLeads }], [{ count: totalStaff }], [{ count: checkedInToday }], [{ count: highRiskPatients }], [{ count: upcomingAppts }]] =
       await Promise.all([
         db.select({ count: sql<number>`count(*)::int` }).from(patientsTable).where(eq(patientsTable.status, "active")),
         db.select({ count: sql<number>`count(*)::int` }).from(leadsTable),
         db.select({ count: sql<number>`count(*)::int` }).from(staffTable),
         db.select({ count: sql<number>`count(distinct patient_id)::int` }).from(checkinsTable).where(gte(checkinsTable.createdAt, todayStart)),
+        db.select({ count: sql<number>`count(*)::int` }).from(patientsTable).where(and(eq(patientsTable.status, "active"), eq(patientsTable.riskLevel, "high"))),
+        db.select({ count: sql<number>`count(*)::int` }).from(appointmentsTable).where(and(eq(appointmentsTable.status, "upcoming"), gte(appointmentsTable.scheduledAt, new Date()))),
       ]);
 
     const active = Number(activePatients);
@@ -123,6 +125,8 @@ router.get("/dashboard", async (req, res) => {
       totalLeads: leads,
       totalStaff: Number(totalStaff),
       conversionRate: leads > 0 ? Math.min(100, Math.round((active / leads) * 100)) : 0,
+      highRiskCount: Number(highRiskPatients),
+      upcomingAppointments: Number(upcomingAppts),
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

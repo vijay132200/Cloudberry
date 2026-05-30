@@ -9,7 +9,7 @@ import {
   patientPlansTable,
   appointmentsTable,
 } from "@workspace/db";
-import { eq, desc, and, gte, asc } from "drizzle-orm";
+import { eq, desc, and, gte, asc, or } from "drizzle-orm";
 
 const router = Router();
 
@@ -30,7 +30,19 @@ router.get("/patients", async (req, res) => {
       res.status(403).json({ error: "Forbidden" }); return;
     }
 
-    const patients = await db.select({
+    const staffId = parsed.userId;
+
+    // Build filter: each role sees only patients assigned to them via the appropriate field
+    // Ops sees all patients; others see only their assigned patients
+    const assignmentFilter = parsed.role === "ops" ? undefined :
+      or(
+        eq(patientsTable.assignedPhysicianId, staffId),
+        eq(patientsTable.assignedDieticianId, staffId),
+        eq(patientsTable.assignedCaretakerId, staffId),
+        eq(patientsTable.assignedCoachId, staffId),
+      )!;
+
+    const query = db.select({
       patientId: patientsTable.id,
       userId: patientsTable.userId,
       plan: patientsTable.plan,
@@ -40,8 +52,11 @@ router.get("/patients", async (req, res) => {
       fullName: usersTable.fullName,
     })
       .from(patientsTable)
-      .innerJoin(usersTable, eq(patientsTable.userId, usersTable.id))
-      .limit(50);
+      .innerJoin(usersTable, eq(patientsTable.userId, usersTable.id));
+
+    const patients = assignmentFilter
+      ? await query.where(assignmentFilter).limit(100)
+      : await query.limit(100);
 
     const rows = await Promise.all(patients.map(async (p) => {
       const [lastCheckin] = await db.select().from(checkinsTable)
