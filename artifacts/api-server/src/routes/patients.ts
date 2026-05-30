@@ -12,6 +12,7 @@ import {
   appointmentsTable,
 } from "@workspace/db";
 import { eq, desc, and, asc, gte, sql } from "drizzle-orm";
+import { computeConsistency } from "../lib/consistency";
 
 const router = Router();
 
@@ -141,6 +142,9 @@ router.get("/me/dashboard", async (req, res) => {
     const glucoseSeries = allMetrics
       .filter(m => m.type === "glucose")
       .map(m => ({ date: m.date, value: m.value }));
+    const postGlucoseSeries = allMetrics
+      .filter(m => m.type === "post_glucose")
+      .map(m => ({ date: m.date, value: m.value }));
 
     // Recent 30 check-ins for trend math
     const allCheckins = await db.select().from(checkinsTable)
@@ -164,51 +168,13 @@ router.get("/me/dashboard", async (req, res) => {
       label: c.energyLevel,
     }));
 
-    // Adherence: last 7 calendar days, true if a check-in exists that day with mealsFollowed=yes
+    // Behavioral Consistency — enrollment-aware (denominator starts from patient.createdAt)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const adherence7Day: Array<{ date: string; dow: string; completed: boolean | null }> = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      const dow = d.toLocaleDateString("en-US", { weekday: "short" });
-      const ci = allCheckins.find(c => c.createdAt.toISOString().slice(0, 10) === iso);
-      adherence7Day.push({ date: iso, dow, completed: ci ? ci.mealsFollowed === "yes" : null });
-    }
-
-    const completedCount = adherence7Day.filter(d => d.completed === true).length;
-    const dataCount = adherence7Day.filter(d => d.completed !== null).length;
-    const adherencePct = dataCount > 0 ? Math.round((completedCount / 7) * 100) : null;
-
-    // Consistency breakdown: last 7 check-ins
-    const last7 = allCheckins.slice(0, 7);
-    // Sleep consistency: count days in last 7 with sleep_hours >= 7
     const sleepMetrics = allMetrics.filter(m => m.type === "sleep_hours");
-    let goodSleepDays = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      const sm = sleepMetrics.find(m => m.date === iso);
-      if (sm && sm.value >= 7) goodSleepDays++;
-    }
-    const consistencyBreakdown = last7.length === 0 ? null : {
-      mealLogging: Math.round((last7.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "partially").length / 7) * 100),
-      checkIns: Math.round((last7.length / 7) * 100),
-      activity: Math.round((last7.filter(c => c.activityCompleted).length / 7) * 100),
-      sleep: Math.round((goodSleepDays / 7) * 100),
-    };
-
-    // Streak: consecutive days from today backwards with a check-in
-    let streak = 0;
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      if (allCheckins.find(c => c.createdAt.toISOString().slice(0, 10) === iso)) streak++;
-      else if (i > 0) break;
-    }
+    const { adherence7Day, adherencePct, consistencyBreakdown, streak } = computeConsistency(
+      allCheckins, sleepMetrics, patient.createdAt,
+    );
 
     // Today check-in done?
     const todayIso = today.toISOString().slice(0, 10);
@@ -219,13 +185,18 @@ router.get("/me/dashboard", async (req, res) => {
       ? +(weightSeries[weightSeries.length - 1].value - weightSeries[0].value).toFixed(1)
       : null;
 
-    // Glucose stats
+    // Glucose stats (fasting)
     const last7Glucose = glucoseSeries.slice(-7).map(g => g.value);
     const avgGlucose = last7Glucose.length > 0
       ? Math.round(last7Glucose.reduce((a, b) => a + b, 0) / last7Glucose.length)
       : null;
     const timeInRange = last7Glucose.length > 0
       ? Math.round((last7Glucose.filter(g => g >= 80 && g <= 140).length / last7Glucose.length) * 100)
+      : null;
+    // Post-meal glucose stats
+    const last7PostGlucose = postGlucoseSeries.slice(-7).map(g => g.value);
+    const avgPostGlucose = last7PostGlucose.length > 0
+      ? Math.round(last7PostGlucose.reduce((a, b) => a + b, 0) / last7PostGlucose.length)
       : null;
 
     // Messages — patient_notes with category='message' (patient-facing notes from care team)
@@ -300,6 +271,7 @@ router.get("/me/dashboard", async (req, res) => {
       weekNumber: patient.weekNumber,
       weightSeries,
       glucoseSeries,
+      postGlucoseSeries,
       energySeries,
       adherence7Day,
       adherencePct,
@@ -308,6 +280,7 @@ router.get("/me/dashboard", async (req, res) => {
       checkinDoneToday,
       weightChange,
       avgGlucose,
+      avgPostGlucose,
       timeInRange,
       mood: allCheckins[0]?.mood ?? null,
       messages,

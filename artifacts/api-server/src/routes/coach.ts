@@ -50,6 +50,7 @@ router.get("/patients", async (req, res) => {
       riskLevel: patientsTable.riskLevel,
       weekNumber: patientsTable.weekNumber,
       fullName: usersTable.fullName,
+      createdAt: patientsTable.createdAt,
     })
       .from(patientsTable)
       .innerJoin(usersTable, eq(patientsTable.userId, usersTable.id));
@@ -66,8 +67,13 @@ router.get("/patients", async (req, res) => {
       const checkins = await db.select().from(checkinsTable)
         .where(eq(checkinsTable.patientId, p.patientId))
         .limit(14);
-      const adherencePct = checkins.length > 0
-        ? Math.round((checkins.filter(c => c.mealsFollowed === "yes").length / checkins.length) * 100)
+      // Enrollment-aware adherence: use min(14, daysSinceEnrollment+1) as denominator
+      const _coachToday = new Date(); _coachToday.setHours(0, 0, 0, 0);
+      const _coachEnroll = new Date(p.createdAt); _coachEnroll.setHours(0, 0, 0, 0);
+      const _coachDays = Math.max(0, Math.floor((_coachToday.getTime() - _coachEnroll.getTime()) / 86_400_000));
+      const _coachWindow = Math.min(14, _coachDays + 1);
+      const adherencePct = _coachWindow > 0
+        ? Math.round((checkins.filter(c => c.mealsFollowed === "yes").length / _coachWindow) * 100)
         : 0;
       const [nextAppt] = await db.select().from(appointmentsTable)
         .where(and(
