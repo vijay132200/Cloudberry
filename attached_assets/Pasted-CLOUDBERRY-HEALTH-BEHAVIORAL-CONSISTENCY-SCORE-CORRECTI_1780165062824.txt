@@ -1,0 +1,297 @@
+CLOUDBERRY HEALTH — BEHAVIORAL CONSISTENCY SCORE CORRECTION AND GLUCOSE TREND VISUALIZATION FIX
+
+IMPORTANT
+
+Do not implement superficial UI fixes.
+
+Review the complete calculation pipeline, data flow, APIs, services, database queries, aggregations, dashboards, reports, and visualizations that use Behavioral Consistency or Glucose metrics.
+
+The objective is to ensure the system accurately reflects patient engagement and glucose trends using real patient data.
+
+==================================================
+PHASE 1 — BEHAVIORAL CONSISTENCY SCORE CALCULATION FIX
+======================================================
+
+Current Problem:
+
+Behavioral Consistency is currently calculated using the entire calendar week beginning on Sunday.
+
+This creates inaccurate scores for newly enrolled patients because the system assumes data should exist before the patient joined the program.
+
+Example:
+
+Patient joins on Friday.
+
+Current behavior:
+
+The score calculation assumes the patient should have submitted data from Sunday through Friday.
+
+Since no data exists before enrollment, the patient receives an artificially low Behavioral Consistency score.
+
+This is incorrect.
+
+==================================================
+REQUIRED FIX
+============
+
+Behavioral Consistency must be calculated only from the patient's actual onboarding/enrollment date.
+
+The calculation window must begin at:
+
+patient.createdAt
+or
+patient.enrollmentDate
+or
+the actual onboarding date field used by the platform
+
+Determine the correct enrollment source of truth and use it consistently.
+
+Requirements:
+
+* Days before enrollment must never be counted.
+* Missing submissions before enrollment must never reduce the score.
+* The denominator must dynamically adjust based on enrollment date.
+* The score must only consider days where the patient was actually enrolled and expected to submit data.
+
+Examples:
+
+Example 1:
+
+Enrollment Date:
+Friday
+
+Current Date:
+Sunday
+
+Expected denominator:
+Friday, Saturday, Sunday only
+
+NOT:
+
+Sunday through Sunday of the calendar week
+
+Example 2:
+
+Enrollment Date:
+Wednesday
+
+Current Date:
+Saturday
+
+Expected denominator:
+Wednesday through Saturday only
+
+==================================================
+CALCULATION AUDIT
+=================
+
+Locate every place where Behavioral Consistency is calculated, aggregated, displayed, cached, or reported.
+
+Review:
+
+* calculation services
+* utility functions
+* backend APIs
+* database queries
+* dashboard aggregations
+* analytics services
+* report generation logic
+* scheduled jobs
+* cached metrics
+* historical trend calculations
+
+Ensure every implementation uses the same corrected calculation logic.
+
+==================================================
+SINGLE SOURCE OF TRUTH
+======================
+
+If multiple Behavioral Consistency calculations exist:
+
+* remove duplicate logic
+* centralize calculation into one shared service
+* ensure all portals consume the same result
+
+Required consistency:
+
+# Patient Dashboard Score
+
+# Operations Portal Score
+
+# Physician Portal Score
+
+# Analytics Score
+
+Reports Score
+
+for the same patient and time period.
+
+==================================================
+VALIDATION REQUIREMENTS
+=======================
+
+Test:
+
+Patient enrolled today
+
+Patient enrolled yesterday
+
+Patient enrolled mid-week
+
+Patient enrolled near week end
+
+Patient enrolled several weeks ago
+
+Verify:
+
+* denominator is correct
+* numerator is correct
+* no pre-enrollment days are counted
+* score is identical across all portals
+
+Provide examples of before and after calculations.
+
+==================================================
+PHASE 2 — GLUCOSE TREND GRAPH FIX
+=================================
+
+Current Problem:
+
+The Glucose Trend graph currently displays only one glucose metric.
+
+The graph is incomplete and does not properly represent patient glucose patterns.
+
+==================================================
+REQUIRED FIX
+============
+
+Add a second trend line for Post-Meal Glucose.
+
+The graph must display:
+
+1. Fasting Glucose
+2. Post-Meal Glucose
+
+Both trend lines must appear simultaneously.
+
+==================================================
+DATA REQUIREMENTS
+=================
+
+Use actual patient data only.
+
+Do not use:
+
+* mock values
+* placeholder values
+* estimated values
+* generated values
+* fallback values
+* hardcoded values
+
+Locate the source of truth for:
+
+* fasting glucose
+* post-meal glucose
+
+Verify data is retrieved from the production database.
+
+==================================================
+VISUALIZATION REQUIREMENTS
+==========================
+
+Requirements:
+
+* Two clearly distinguishable trend lines
+* Different colors
+* Proper labels
+* Proper tooltips
+* Responsive rendering
+* Accessible color contrast
+
+Add a legend identifying:
+
+* Fasting Glucose
+* Post-Meal Glucose
+
+Users must immediately understand which line corresponds to which metric.
+
+==================================================
+HISTORICAL TREND VALIDATION
+===========================
+
+Verify both glucose metrics display correctly for:
+
+* daily view
+* weekly view
+* monthly view
+* historical trend analysis
+
+Ensure both lines remain synchronized with actual stored measurements.
+
+==================================================
+SYSTEM-WIDE VALIDATION
+======================
+
+Review every location where glucose trends appear:
+
+* Patient Dashboard
+* Operations Portal
+* Physician Portal
+* Reports
+* Analytics views
+* Historical trend visualizations
+
+Ensure the same fasting and post-meal glucose data is displayed consistently everywhere.
+
+==================================================
+DATABASE VALIDATION
+===================
+
+Verify:
+
+* fasting glucose fields exist
+* post-meal glucose fields exist
+* queries retrieve both correctly
+* APIs return both correctly
+* charts consume both correctly
+
+Repair any schema mappings, DTOs, serializers, API contracts, or frontend models that currently omit post-meal glucose.
+
+==================================================
+FINAL REPORT
+============
+
+After implementation provide:
+
+1. Exact files modified
+
+2. Behavioral Consistency calculation locations discovered
+
+3. Previous calculation logic
+
+4. Corrected calculation logic
+
+5. Proof denominator now respects enrollment date
+
+6. Example patient calculations before and after fix
+
+7. Glucose trend graph files modified
+
+8. Database fields used for fasting glucose
+
+9. Database fields used for post-meal glucose
+
+10. API changes made
+
+11. Frontend changes made
+
+12. Screenshots or evidence proving:
+
+* Behavioral Consistency is calculated from enrollment date
+* Pre-enrollment days are excluded
+* Fasting Glucose trend line displays correctly
+* Post-Meal Glucose trend line displays correctly
+* Both metrics use real patient data
+
+Do not mark this task complete until both fixes are fully implemented, validated, and verified across all affected portals and dashboards.
