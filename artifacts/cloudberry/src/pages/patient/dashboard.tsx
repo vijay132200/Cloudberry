@@ -191,7 +191,7 @@ function ConsistencyCard({ consistencyBreakdown }: { consistencyBreakdown: any }
         </div>
 
         <p className="text-[10px] text-muted-foreground mt-3 pt-3 border-t border-border/40">
-          Score = average of Sleep, Nutrition & Activity · from enrollment date (up to 7 days)
+          Score = average of Sleep, Nutrition & Activity · last 7 days
         </p>
       </CardContent>
     </Card>
@@ -238,107 +238,53 @@ function EnergyCard({ energySeries }: { energySeries: any[] }) {
 }
 
 /* ─── Glucose Card ───────────────────────────────────────── */
-function GlucoseCard({
-  glucoseSeries,
-  postGlucoseSeries,
-  avgGlucose,
-  avgPostGlucose,
-  compact,
-}: {
-  glucoseSeries: any[];
-  postGlucoseSeries: any[];
-  avgGlucose: number | null;
-  avgPostGlucose: number | null;
-  compact?: boolean;
-}) {
-  // Merge fasting + post-meal readings by date for a unified dual-line chart
-  const merged = useMemo(() => {
-    const byDate: Record<string, { date: string; fasting?: number; postMeal?: number }> = {};
-    glucoseSeries.forEach(g => { byDate[g.date] = { date: g.date, fasting: g.value }; });
-    postGlucoseSeries.forEach(g => {
-      byDate[g.date] = { ...(byDate[g.date] ?? { date: g.date }), postMeal: g.value };
-    });
-    return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
-  }, [glucoseSeries, postGlucoseSeries]);
-
-  const hasFasting = glucoseSeries.length > 0;
-  const hasPostMeal = postGlucoseSeries.length > 0;
-  const hasData = merged.length > 1;
+function GlucoseCard({ glucoseSeries, avgGlucose, compact }: { glucoseSeries: any[]; avgGlucose: number | null; compact?: boolean }) {
   const improving = avgGlucose !== null && avgGlucose < 120;
-
   return (
     <Card className="border-border/50 rounded-2xl shadow-sm bg-white">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Droplets className="w-4 h-4 text-rose-500" />
-            <h3 className="text-sm font-bold text-foreground">Glucose Readings</h3>
-          </div>
+          <div className="flex items-center gap-2"><Droplets className="w-4 h-4 text-rose-500" /><h3 className="text-sm font-bold text-foreground">Glucose Readings</h3></div>
           {avgGlucose !== null && (
             <Badge variant="outline" className={`text-xs border ${improving ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
               {improving ? "In Range" : "Above Range"}
             </Badge>
           )}
         </div>
-        {/* Avg stats row */}
-        <div className="flex flex-wrap gap-4 mb-2">
-          {avgGlucose !== null && (
-            <p className="text-xs text-muted-foreground">
-              Fasting avg: <strong className="text-rose-600">{avgGlucose} mg/dL</strong>
-            </p>
-          )}
-          {avgPostGlucose !== null && (
-            <p className="text-xs text-muted-foreground">
-              Post-meal avg: <strong className="text-indigo-600">{avgPostGlucose} mg/dL</strong>
-            </p>
-          )}
-        </div>
-        {hasData ? (
-          <ResponsiveContainer width="100%" height={compact ? 110 : 145}>
-            <LineChart data={merged} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+        {avgGlucose !== null && <p className="text-xs text-muted-foreground mb-2">7-day avg: <strong className="text-foreground">{avgGlucose} mg/dL</strong></p>}
+        {glucoseSeries.length > 1 ? (
+          <ResponsiveContainer width="100%" height={compact ? 110 : 140}>
+            <LineChart data={glucoseSeries} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
               <ReferenceArea y1={80} y2={100} fill="#d1fae5" fillOpacity={0.45} />
               <ReferenceArea y1={100} y2={140} fill="#fef3c7" fillOpacity={0.35} />
-              <ReferenceArea y1={140} y2={220} fill="#fee2e2" fillOpacity={0.3} />
-              <ReferenceLine y={100} stroke="#16a34a" strokeWidth={1.5} strokeDasharray="5 3"
-                label={{ value: "Fasting limit (100)", position: "insideTopRight", fill: "#16a34a", fontSize: 9 }} />
-              <ReferenceLine y={140} stroke="#d97706" strokeWidth={1.5} strokeDasharray="5 3"
-                label={{ value: "Post-meal limit (140)", position: "insideTopRight", fill: "#d97706", fontSize: 9 }} />
+              <ReferenceArea y1={140} y2={200} fill="#fee2e2" fillOpacity={0.3} />
+              {/* Normal fasting threshold */}
+              <ReferenceLine
+                y={100}
+                stroke="#16a34a"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                label={{ value: "Normal fasting (100)", position: "insideTopRight", fill: "#16a34a", fontSize: 9 }}
+              />
+              {/* Post-meal target threshold */}
+              <ReferenceLine
+                y={140}
+                stroke="#d97706"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                label={{ value: "Post-meal target (140)", position: "insideTopRight", fill: "#d97706", fontSize: 9 }}
+              />
               <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
-              <YAxis tick={{ fontSize: 9 }} domain={[60, 220]} width={30} />
+              <YAxis tick={{ fontSize: 9 }} domain={[60, 190]} width={30} />
               <Tooltip
-                formatter={(v: any, name: string) => [
-                  `${Number(v).toFixed(0)} mg/dL`,
-                  name === "fasting" ? "Fasting Glucose" : "Post-Meal Glucose",
-                ]}
+                formatter={(v: number) => [`${Number(v).toFixed(0)} mg/dL`, "Fasting glucose"]}
                 labelFormatter={fmt}
               />
-              {hasFasting && (
-                <Line type="monotone" dataKey="fasting" stroke="#ef4444" strokeWidth={2}
-                  dot={{ r: 2 }} activeDot={{ r: 4 }} connectNulls name="fasting" />
-              )}
-              {hasPostMeal && (
-                <Line type="monotone" dataKey="postMeal" stroke="#6366f1" strokeWidth={2}
-                  dot={{ r: 2 }} activeDot={{ r: 4 }} connectNulls name="postMeal" />
-              )}
+              <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
-        ) : (
-          <div className={`${compact ? "h-20" : "h-28"} flex items-center justify-center text-xs text-muted-foreground`}>
-            Not enough glucose data yet
-          </div>
-        )}
-        {/* Legend */}
+        ) : <div className={`${compact ? "h-20" : "h-28"} flex items-center justify-center text-xs text-muted-foreground`}>Not enough glucose data yet</div>}
         <div className="flex flex-wrap gap-3 mt-2 pt-2 border-t border-border/40">
-          {hasFasting && (
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <span className="inline-block w-5 border-t-2 border-rose-500" />Fasting Glucose
-            </span>
-          )}
-          {hasPostMeal && (
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <span className="inline-block w-5 border-t-2 border-indigo-500" />Post-Meal Glucose
-            </span>
-          )}
           <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <span className="w-2.5 h-2.5 rounded-sm bg-emerald-200" />Normal (≤100)
           </span>
@@ -347,6 +293,9 @@ function GlucoseCard({
           </span>
           <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <span className="w-2.5 h-2.5 rounded-sm bg-rose-200" />High (&gt;140)
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground ml-auto">
+            <span className="inline-block w-6 border-t-2 border-dashed border-amber-600" />Post-meal limit
           </span>
         </div>
       </CardContent>
@@ -580,8 +529,6 @@ export default function PatientDashboard() {
   const adherencePct: number | null = dash.adherencePct ?? null;
   const weightSeries: any[] = dash.weightSeries || [];
   const glucoseSeries: any[] = dash.glucoseSeries || [];
-  const postGlucoseSeries: any[] = dash.postGlucoseSeries || [];
-  const avgPostGlucose: number | null = dash.avgPostGlucose ?? null;
   const energySeries: any[] = dash.energySeries || [];
   const consistencyBreakdown = dash.consistencyBreakdown || {};
   const opsContent = dash.opsContent ?? null;
@@ -729,7 +676,7 @@ export default function PatientDashboard() {
                   <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">3</span>
                   <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Glucose Readings</h2>
                 </div>
-                <GlucoseCard glucoseSeries={glucoseSeries} postGlucoseSeries={postGlucoseSeries} avgGlucose={avgGlucose} avgPostGlucose={avgPostGlucose} />
+                <GlucoseCard glucoseSeries={glucoseSeries} avgGlucose={avgGlucose} />
               </div>
             )}
 
@@ -822,7 +769,7 @@ export default function PatientDashboard() {
               <ConsistencyCard consistencyBreakdown={consistencyBreakdown} />
               <EnergyCard energySeries={energySeries} />
               {plan === "comprehensive" && glucoseSeries.length > 0 && (
-                <GlucoseCard glucoseSeries={glucoseSeries} postGlucoseSeries={postGlucoseSeries} avgGlucose={avgGlucose} avgPostGlucose={avgPostGlucose} compact />
+                <GlucoseCard glucoseSeries={glucoseSeries} avgGlucose={avgGlucose} compact />
               )}
             </div>
 

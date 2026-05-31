@@ -149,8 +149,6 @@ async function seed() {
       const ds = d.toISOString().split("T")[0];
       if (isMetabolic) {
         metricValues.push({ patientId: patient.id, type: "glucose", value: Number((glucoseBase - i * 0.6 + (Math.random() * 8 - 4)).toFixed(1)), date: ds });
-        // Post-meal glucose typically 25–50 mg/dL above fasting
-        metricValues.push({ patientId: patient.id, type: "post_glucose", value: Number((glucoseBase + 35 - i * 0.5 + (Math.random() * 15 - 7)).toFixed(1)), date: ds });
       }
       metricValues.push({ patientId: patient.id, type: "sleep_hours", value: Number((5.5 + Math.random() * 3).toFixed(1)), date: ds });
       metricValues.push({ patientId: patient.id, type: "hunger_score", value: Math.floor(1 + Math.random() * 5), date: ds });

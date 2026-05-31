@@ -89,7 +89,7 @@ router.post("/", async (req, res) => {
       return;
     }
 
-    const { mealsFollowed, activityCompleted, energyLevel, mood, glucoseReading, postGlucose, notes, weight, sleepHours } = req.body;
+    const { mealsFollowed, activityCompleted, energyLevel, mood, glucoseReading, notes, weight, sleepHours } = req.body;
     const [checkin] = await db.insert(checkinsTable).values({
       patientId: patient.id,
       mealsFollowed,
@@ -102,24 +102,14 @@ router.post("/", async (req, res) => {
 
     const todayIso = start.toISOString().slice(0, 10);
 
-    // Persist fasting glucose reading as a metric
+    // Persist glucose reading as a metric
     if (glucoseReading != null && !isNaN(Number(glucoseReading)) && Number(glucoseReading) > 0) {
       await db.insert(metricsTable).values({
         patientId: patient.id,
         type: "glucose",
         value: Number(glucoseReading),
         date: todayIso,
-      }).onConflictDoNothing();
-    }
-
-    // Persist post-meal glucose as a separate metric (type: post_glucose)
-    if (postGlucose != null && !isNaN(Number(postGlucose)) && Number(postGlucose) > 0) {
-      await db.insert(metricsTable).values({
-        patientId: patient.id,
-        type: "post_glucose",
-        value: Number(postGlucose),
-        date: todayIso,
-      }).onConflictDoNothing();
+      });
     }
 
     // Persist weight as a metric and update patient's currentWeight
