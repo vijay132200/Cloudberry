@@ -45,6 +45,7 @@ import CaretakerDashboard from "@/pages/caretaker/dashboard";
 import OpsDashboard from "@/pages/ops/dashboard";
 import OpsAnalytics from "@/pages/ops/analytics";
 import OpsSettings from "@/pages/ops/settings";
+import OpsFormulaManagement from "@/pages/ops/FormulaManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -103,6 +104,7 @@ function Router() {
       <Route path="/ops/dashboard" component={OpsDashboard} />
       <Route path="/ops/analytics" component={OpsAnalytics} />
       <Route path="/ops/settings" component={OpsSettings} />
+      <Route path="/ops/formula-management" component={OpsFormulaManagement} />
 
       {/* 404 */}
       <Route component={NotFound} />

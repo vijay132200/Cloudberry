@@ -3,7 +3,8 @@ import { createHash } from "crypto";
 import { db } from "@workspace/db";
 import { usersTable, patientsTable, checkinsTable, leadsTable, staffTable, appointmentsTable, patientNotesTable, patientPlansTable, metricsTable } from "@workspace/db";
 import { eq, desc, sql, or, and, asc, gte } from "drizzle-orm";
-import { computeConsistency, computeWeeklyHistory } from "../lib/consistency";
+import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
+import { getActiveParams } from "../lib/formula-engine";
 
 const DEMO_PW_HASH = createHash("sha256").update("demo123").digest("hex");
 
@@ -538,9 +539,11 @@ router.get("/patients/:id/dashboard", async (req, res) => {
     // Consistency breakdown: last 7 check-ins only — missing days excluded from denominator
     const last7 = allCheckins.slice(0, 7);
     const sleepMets = allMetrics.filter(m => m.type === "sleep_hours");
+    const rawCParams = await getActiveParams("behavioral_consistency_score", patient.id);
     const consistencyBreakdown = computeConsistency(
       last7,
       sleepMets.map(m => ({ date: m.date, value: m.value })),
+      toConsistencyParams(rawCParams),
     );
 
     let streak = 0;
@@ -703,9 +706,11 @@ router.get("/patients/:id/consistency-history", async (req, res) => {
         .where(and(eq(metricsTable.patientId, patientId), eq(metricsTable.type, "sleep_hours"))),
     ]);
 
+    const rawHParams = await getActiveParams("behavioral_consistency_score", patientId);
     const history = computeWeeklyHistory(
       allCheckins,
       sleepMetrics.map(m => ({ date: m.date, value: m.value })),
+      toConsistencyParams(rawHParams),
     );
     res.json(history);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

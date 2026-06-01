@@ -12,7 +12,8 @@ import {
   appointmentsTable,
 } from "@workspace/db";
 import { eq, desc, and, asc, gte, sql } from "drizzle-orm";
-import { computeConsistency, computeWeeklyHistory } from "../lib/consistency";
+import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
+import { getActiveParams } from "../lib/formula-engine";
 
 const router = Router();
 
@@ -191,9 +192,11 @@ router.get("/me/dashboard", async (req, res) => {
     // Consistency breakdown: last 7 check-ins only — missing days excluded from denominator
     const last7 = allCheckins.slice(0, 7);
     const sleepMetrics = allMetrics.filter(m => m.type === "sleep_hours");
+    const rawCParams = await getActiveParams("behavioral_consistency_score", patient.id);
     const consistencyBreakdown = computeConsistency(
       last7,
       sleepMetrics.map(m => ({ date: m.date, value: m.value })),
+      toConsistencyParams(rawCParams),
     );
 
     // Streak: consecutive days from today backwards with a check-in
@@ -337,9 +340,11 @@ router.get("/me/consistency-history", async (req, res) => {
         .where(and(eq(metricsTable.patientId, patient.id), eq(metricsTable.type, "sleep_hours"))),
     ]);
 
+    const rawHParams = await getActiveParams("behavioral_consistency_score", patient.id);
     const history = computeWeeklyHistory(
       allCheckins,
       sleepMetrics.map(m => ({ date: m.date, value: m.value })),
+      toConsistencyParams(rawHParams),
     );
     res.json(history);
   } catch (err) {

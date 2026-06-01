@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import {
   Settings, Shield, Bell, Database, Users, Stethoscope, Salad, UserCheck,
-  ExternalLink, CheckCircle2, LayoutDashboard, ChevronRight, LogOut
+  ExternalLink, CheckCircle2, LayoutDashboard, ChevronRight, LogOut, FlaskConical
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "");
@@ -61,6 +61,29 @@ export default function OpsSettings() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Configure Operations portal preferences and access care team portals</p>
         </div>
+
+        {/* Formula Management */}
+        <Card className="border-primary/30 shadow-sm bg-gradient-to-br from-primary/5 to-background">
+          <CardHeader className="border-b bg-muted/20 pb-3">
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <FlaskConical className="w-4 h-4 text-primary" /> Formula Management & Governance
+              <Badge className="ml-auto text-[10px] bg-primary/10 text-primary border-primary/20" variant="outline">Admin</Badge>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Govern scoring formulas, thresholds, and calculation weights with versioning, approval workflows, impact simulation, and full audit trail.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-4 pb-4 flex items-center justify-between gap-4">
+            <div className="flex gap-3 text-[10px] text-muted-foreground">
+              {["6 Formulas", "Versioned", "Audit Trail", "Patient Overrides"].map(f => (
+                <span key={f} className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" />{f}</span>
+              ))}
+            </div>
+            <Button className="gap-1.5 shrink-0" onClick={() => setLocation("/ops/formula-management")}>
+              <FlaskConical className="w-3.5 h-3.5" /> Open Formula Registry <ChevronRight className="w-3.5 h-3.5" />
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Portal Access */}
         <Card className="border-border shadow-sm">
