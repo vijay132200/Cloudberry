@@ -1,0 +1,235 @@
+CLOUDBERRY HEALTH — DATABASE_URL VALIDATION, NEON INTEGRATION VERIFICATION, AND GLUCOSE TREND VISUALIZATION FIX
+
+IMPORTANT
+
+This task is strictly limited to:
+
+1. Verifying and enforcing the production Neon PostgreSQL integration through DATABASE_URL.
+2. Fixing the Glucose Trend visualization to correctly display both Fasting and Post-Meal glucose trends.
+
+Do NOT modify unrelated functionality.
+
+Do NOT modify:
+
+* Authentication
+* Login flow
+* API routing
+* Vercel configuration
+* Railway deployment configuration
+* Patient assignment logic
+* Behavioral Consistency calculation
+* Dashboard layouts
+* KPI cards
+* UI styling unrelated to the glucose graph
+* Permissions
+* CRUD functionality
+* Existing business logic unrelated to glucose data
+
+If unrelated issues are discovered, document them but do not change them.
+
+==================================================
+PHASE 1 — DATABASE_URL VALIDATION AND ENFORCEMENT
+=================================================
+
+The production Neon PostgreSQL connection string has already been configured through:
+
+DATABASE_URL
+
+The application must use DATABASE_URL as the sole production database source.
+
+Requirements:
+
+1. Locate all database initialization code.
+
+Review:
+
+* ORM initialization
+* Database clients
+* Connection factories
+* Repository initialization
+* Environment variable loaders
+* Connection pools
+
+2. Verify DATABASE_URL is being loaded correctly.
+
+3. Verify DATABASE_URL is not being overridden by:
+
+* Railway PostgreSQL variables
+* Local development variables
+* Hardcoded connection strings
+* Fallback database configurations
+* Legacy providers
+
+4. Determine the actual database being used at runtime.
+
+5. Verify the active runtime connection resolves to the Neon PostgreSQL instance defined by DATABASE_URL.
+
+6. Audit for:
+
+* Multiple database clients
+* Duplicate connection pools
+* Abandoned database configurations
+* Railway PostgreSQL references
+* Unused ORM configurations
+* Conflicting runtime paths
+
+7. If multiple database providers exist:
+
+* Preserve compatibility where necessary
+* Ensure production runtime uses DATABASE_URL
+* Eliminate conflicting execution paths
+* Prevent writes to unintended databases
+
+8. Verify all patient, physician, operations, metrics, glucose, assessment, and reporting modules read and write through the DATABASE_URL connection.
+
+IMPORTANT
+
+Do not create a new database.
+
+Do not migrate data into Railway PostgreSQL.
+
+Do not switch database providers.
+
+Do not replace Neon.
+
+Use the existing DATABASE_URL configuration already present in the environment.
+
+==================================================
+PHASE 2 — GLUCOSE TREND VISUALIZATION FIX
+=========================================
+
+Current Issue:
+
+The Glucose Trend graph currently displays only a single glucose metric.
+
+This does not accurately represent patient glucose behavior.
+
+==================================================
+REQUIRED FIX
+============
+
+The Glucose Trend graph must display:
+
+1. Fasting Glucose
+2. Post-Meal Glucose
+
+Both metrics must appear simultaneously on the same chart.
+
+==================================================
+DATA VALIDATION REQUIREMENT
+===========================
+
+Identify:
+
+* Where fasting glucose is stored
+* Where post-meal glucose is stored
+* How both values are retrieved
+* Which APIs return the glucose data
+
+Verify that both metrics originate from real database records.
+
+Do not use:
+
+* Mock data
+* Placeholder values
+* Demo values
+* Hardcoded values
+* Estimated values
+* Generated values
+
+==================================================
+VISUALIZATION REQUIREMENTS
+==========================
+
+Requirements:
+
+* Separate line for Fasting Glucose
+* Separate line for Post-Meal Glucose
+* Distinct colors
+* Proper labels
+* Proper tooltips
+* Responsive behavior
+* Accessible color contrast
+
+Add a legend showing:
+
+* Fasting Glucose
+* Post-Meal Glucose
+
+Users should immediately understand which line corresponds to which metric.
+
+==================================================
+SYSTEM-WIDE VALIDATION
+======================
+
+Review every location where glucose trends appear.
+
+Verify consistency across:
+
+* Patient Dashboard
+* Operations Portal
+* Physician Portal
+* Reports
+* Analytics
+* Historical trend views
+
+Ensure both glucose metrics display correctly everywhere.
+
+==================================================
+API AND DATA FLOW VALIDATION
+============================
+
+Trace:
+
+Database
+→ Backend Query
+→ API Response
+→ Frontend Data Model
+→ Graph Component
+
+Verify:
+
+* fasting glucose is returned correctly
+* post-meal glucose is returned correctly
+* graph receives both datasets
+* graph renders both datasets
+
+Repair any broken DTOs, serializers, mappers, API contracts, or frontend models that currently omit post-meal glucose.
+
+==================================================
+FINAL REPORT
+============
+
+After implementation provide:
+
+1. Exact files modified
+
+2. Database provider detected
+
+3. Active runtime database source
+
+4. Proof DATABASE_URL is being used
+
+5. Any conflicting database configurations discovered
+
+6. Database connection validation results
+
+7. Glucose-related database fields identified
+
+8. API changes made
+
+9. Frontend changes made
+
+10. Evidence that both glucose metrics originate from real patient data
+
+11. Evidence that both trend lines render correctly
+
+12. Screenshots or logs proving:
+
+* Runtime uses DATABASE_URL
+* Neon is the active production database
+* Fasting Glucose is displayed
+* Post-Meal Glucose is displayed
+* Both metrics remain synchronized with stored patient data
+
+Do not mark this task complete until both the DATABASE_URL validation and Glucose Trend visualization have been fully implemented and verified.
