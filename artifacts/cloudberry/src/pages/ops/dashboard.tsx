@@ -489,7 +489,7 @@ function PatientDetailPanel({
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pb-3">
-                        <StaffConsistencyHistory patientId={selectedPatient.id} role="ops" compact />
+                        <StaffConsistencyHistory patientId={p.id} role="ops" compact />
                       </CardContent>
                     </Card>
 
