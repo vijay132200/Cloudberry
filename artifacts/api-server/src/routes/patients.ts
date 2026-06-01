@@ -138,9 +138,15 @@ router.get("/me/dashboard", async (req, res) => {
     const weightSeries = allMetrics
       .filter(m => m.type === "weight")
       .map(m => ({ date: m.date, value: m.value }));
-    const glucoseSeries = allMetrics
-      .filter(m => m.type === "glucose")
+    // Include legacy "glucose" type for backward compat with seed data
+    const fastingGlucoseSeries = allMetrics
+      .filter(m => m.type === "glucose_fasting" || m.type === "glucose")
       .map(m => ({ date: m.date, value: m.value }));
+    const postMealGlucoseSeries = allMetrics
+      .filter(m => m.type === "glucose_postmeal")
+      .map(m => ({ date: m.date, value: m.value }));
+    // Keep glucoseSeries as alias for backward compat
+    const glucoseSeries = fastingGlucoseSeries;
 
     // Recent 30 check-ins for trend math
     const allCheckins = await db.select().from(checkinsTable)
@@ -300,6 +306,8 @@ router.get("/me/dashboard", async (req, res) => {
       weekNumber: patient.weekNumber,
       weightSeries,
       glucoseSeries,
+      fastingGlucoseSeries,
+      postMealGlucoseSeries,
       energySeries,
       adherence7Day,
       adherencePct,

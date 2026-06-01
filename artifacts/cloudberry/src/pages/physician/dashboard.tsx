@@ -104,6 +104,14 @@ function PhysicianPatientDashboard({ patient, dashData }: { patient: any; dashDa
   const adherencePct: number | null = d.adherencePct ?? null;
   const weightSeries: any[] = d.weightSeries || [];
   const glucoseSeries: any[] = d.glucoseSeries || [];
+  const fastingGlucoseSeries: any[] = d.fastingGlucoseSeries || d.glucoseSeries || [];
+  const postMealGlucoseSeries: any[] = d.postMealGlucoseSeries || [];
+  const mergedGlucose = (() => {
+    const map: Record<string, { date: string; fasting?: number; postMeal?: number }> = {};
+    for (const p of fastingGlucoseSeries) map[p.date] = { ...map[p.date], date: p.date, fasting: p.value };
+    for (const p of postMealGlucoseSeries) map[p.date] = { ...map[p.date], date: p.date, postMeal: p.value };
+    return Object.values(map).sort((a: any, b: any) => a.date.localeCompare(b.date));
+  })();
   const energySeries: any[] = d.energySeries || [];
   const consistencyBreakdown = d.consistencyBreakdown || {};
   const insights: any[] = d.insights || [];
@@ -272,25 +280,30 @@ function PhysicianPatientDashboard({ patient, dashData }: { patient: any; dashDa
       )}
 
       {/* Glucose trend */}
-      {glucoseSeries.length > 1 && (
+      {mergedGlucose.length > 1 && (
         <Card className="border-border/40 rounded-xl">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Droplets className="w-4 h-4 text-rose-500" />Fasting Glucose Trend
+              <Droplets className="w-4 h-4 text-rose-500" />Glucose Trend
               {avgGlucose && <span className="text-xs font-normal text-muted-foreground ml-1">avg {avgGlucose} mg/dL</span>}
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             <ResponsiveContainer width="100%" height={100}>
-              <LineChart data={glucoseSeries}>
+              <LineChart data={mergedGlucose}>
                 <ReferenceArea y1={80} y2={120} fill="#d1fae5" fillOpacity={0.4} />
                 <ReferenceArea y1={120} y2={140} fill="#fef3c7" fillOpacity={0.4} />
                 <XAxis dataKey="date" tick={{ fontSize: 9 }} tickFormatter={fmt} />
-                <YAxis tick={{ fontSize: 9 }} domain={[60, 180]} width={30} />
-                <Tooltip formatter={(v: number) => [`${Number(v).toFixed(0)} mg/dL`, "Glucose"]} labelFormatter={fmt} />
-                <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+                <YAxis tick={{ fontSize: 9 }} domain={[60, 200]} width={30} />
+                <Tooltip formatter={(v: number, name: string) => [`${Number(v).toFixed(0)} mg/dL`, name === "fasting" ? "Fasting Glucose" : "Post-Meal Glucose"]} labelFormatter={fmt} />
+                <Line type="monotone" dataKey="fasting" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                <Line type="monotone" dataKey="postMeal" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
+            <div className="flex gap-4 mt-2">
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="inline-block w-4 h-0.5 bg-rose-500 rounded" />Fasting</span>
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="inline-block w-4 h-0.5 bg-blue-500 rounded" />Post-Meal</span>
+            </div>
           </CardContent>
         </Card>
       )}

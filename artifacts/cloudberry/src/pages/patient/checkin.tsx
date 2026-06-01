@@ -219,6 +219,7 @@ export default function CheckinPage() {
           energyLevel,
           mood: energy >= 70 ? "good" : "neutral",
           glucoseReading: glucose ? Number(glucose) : undefined,
+          postMealGlucose: postGlucose ? Number(postGlucose) : undefined,
           // weight is persisted server-side to metricsTable and updates patient.currentWeight
           weight: (!weightDoneThisWeek && weightNum && weightNum > 0) ? weightNum : undefined,
           // sleepHours derived from 0-100 sleep quality slider: maps to 4-9 hours

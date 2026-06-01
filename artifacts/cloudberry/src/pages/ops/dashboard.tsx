@@ -524,21 +524,34 @@ function PatientDetailPanel({
                     )}
 
                     {/* Glucose */}
-                    {d.glucoseSeries?.length > 1 && (
-                      <Card className="border-border">
-                        <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">Glucose Trend {d.avgGlucose && <span className="ml-1 text-foreground">avg {d.avgGlucose} mg/dL</span>}</CardTitle></CardHeader>
-                        <CardContent className="pb-3">
-                          <ResponsiveContainer width="100%" height={90}>
-                            <LineChart data={d.glucoseSeries} margin={{ top: 4, right: 10, bottom: 4, left: -10 }}>
-                              <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
-                              <YAxis tick={{ fontSize: 8 }} domain={[60,180]} width={28} />
-                              <Tooltip formatter={(v: number) => [`${v} mg/dL`,"Glucose"]} labelFormatter={fmt} />
-                              <Line type="monotone" dataKey="value" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </CardContent>
-                      </Card>
-                    )}
+                    {(d.fastingGlucoseSeries?.length > 1 || d.postMealGlucoseSeries?.length > 1 || d.glucoseSeries?.length > 1) && (() => {
+                      const fasting: any[] = d.fastingGlucoseSeries || d.glucoseSeries || [];
+                      const postMeal: any[] = d.postMealGlucoseSeries || [];
+                      const map: Record<string, any> = {};
+                      for (const p of fasting) map[p.date] = { ...map[p.date], date: p.date, fasting: p.value };
+                      for (const p of postMeal) map[p.date] = { ...map[p.date], date: p.date, postMeal: p.value };
+                      const merged = Object.values(map).sort((a: any, b: any) => a.date.localeCompare(b.date));
+                      return (
+                        <Card className="border-border">
+                          <CardHeader className="pb-1"><CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">Glucose Trend {d.avgGlucose && <span className="ml-1 text-foreground">avg {d.avgGlucose} mg/dL</span>}</CardTitle></CardHeader>
+                          <CardContent className="pb-3">
+                            <ResponsiveContainer width="100%" height={90}>
+                              <LineChart data={merged} margin={{ top: 4, right: 10, bottom: 4, left: -10 }}>
+                                <XAxis dataKey="date" tick={{ fontSize: 8 }} tickFormatter={fmt} />
+                                <YAxis tick={{ fontSize: 8 }} domain={[60,200]} width={28} />
+                                <Tooltip formatter={(v: number, name: string) => [`${v} mg/dL`, name === "fasting" ? "Fasting" : "Post-Meal"]} labelFormatter={fmt} />
+                                <Line type="monotone" dataKey="fasting" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                                <Line type="monotone" dataKey="postMeal" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                              </LineChart>
+                            </ResponsiveContainer>
+                            <div className="flex gap-3 mt-1">
+                              <span className="flex items-center gap-1 text-[9px] text-muted-foreground"><span className="inline-block w-3 h-0.5 bg-rose-500 rounded" />Fasting</span>
+                              <span className="flex items-center gap-1 text-[9px] text-muted-foreground"><span className="inline-block w-3 h-0.5 bg-blue-500 rounded" />Post-Meal</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })()}
 
                     {/* Ops Content Summary */}
                     {d.opsContent && (
