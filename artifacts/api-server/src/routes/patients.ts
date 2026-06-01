@@ -12,6 +12,7 @@ import {
   appointmentsTable,
 } from "@workspace/db";
 import { eq, desc, and, asc, gte, sql } from "drizzle-orm";
+import { computeConsistency, computeWeeklyHistory } from "../lib/consistency";
 
 const router = Router();
 
@@ -187,24 +188,13 @@ router.get("/me/dashboard", async (req, res) => {
     const dataCount = adherence7Day.filter(d => d.completed !== null).length;
     const adherencePct = dataCount > 0 ? Math.round((completedCount / 7) * 100) : null;
 
-    // Consistency breakdown: last 7 check-ins
+    // Consistency breakdown: last 7 check-ins only — missing days excluded from denominator
     const last7 = allCheckins.slice(0, 7);
-    // Sleep consistency: count days in last 7 with sleep_hours >= 7
     const sleepMetrics = allMetrics.filter(m => m.type === "sleep_hours");
-    let goodSleepDays = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      const sm = sleepMetrics.find(m => m.date === iso);
-      if (sm && sm.value >= 7) goodSleepDays++;
-    }
-    const consistencyBreakdown = last7.length === 0 ? null : {
-      mealLogging: Math.round((last7.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "partially").length / 7) * 100),
-      checkIns: Math.round((last7.length / 7) * 100),
-      activity: Math.round((last7.filter(c => c.activityCompleted).length / 7) * 100),
-      sleep: Math.round((goodSleepDays / 7) * 100),
-    };
+    const consistencyBreakdown = computeConsistency(
+      last7,
+      sleepMetrics.map(m => ({ date: m.date, value: m.value })),
+    );
 
     // Streak: consecutive days from today backwards with a check-in
     let streak = 0;
@@ -325,6 +315,33 @@ router.get("/me/dashboard", async (req, res) => {
       hasEnoughData,
       totalCheckins,
     });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/patients/me/consistency-history — weekly history of behavioral consistency
+router.get("/me/consistency-history", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+
+    const [allCheckins, sleepMetrics] = await Promise.all([
+      db.select().from(checkinsTable)
+        .where(eq(checkinsTable.patientId, patient.id))
+        .orderBy(desc(checkinsTable.createdAt)),
+      db.select().from(metricsTable)
+        .where(and(eq(metricsTable.patientId, patient.id), eq(metricsTable.type, "sleep_hours"))),
+    ]);
+
+    const history = computeWeeklyHistory(
+      allCheckins,
+      sleepMetrics.map(m => ({ date: m.date, value: m.value })),
+    );
+    res.json(history);
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });

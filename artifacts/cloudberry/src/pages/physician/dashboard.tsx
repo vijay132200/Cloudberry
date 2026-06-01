@@ -11,8 +11,9 @@ import {
   FileText, CheckCircle2, HeartPulse, Stethoscope, X, Clock,
   Target, User, RefreshCw, Save, CalendarDays, Scale, Flame,
   Salad, Footprints, Dumbbell, MinusCircle, XCircle, Droplets,
-  Star,
+  Star, History,
 } from "lucide-react";
+import { StaffConsistencyHistory } from "@/components/ConsistencyHistory";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea,
@@ -223,8 +224,20 @@ function PhysicianPatientDashboard({ patient, dashData }: { patient: any; dashDa
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground mt-3 pt-3 border-t border-border/40">
-            Score = average of Sleep, Nutrition & Activity · last 7 days
+            Score = average of Sleep, Nutrition & Activity · actual check-in days only
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Consistency history */}
+      <Card className="border-border/40 rounded-xl">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <History className="w-4 h-4 text-primary" />Weekly Consistency History
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <StaffConsistencyHistory patientId={patient.id} role="physician" />
         </CardContent>
       </Card>
 

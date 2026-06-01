@@ -1,0 +1,424 @@
+CLOUDBERRY HEALTH — DATABASE_URL VALIDATION, BEHAVIORAL CONSISTENCY REWORK, AND HISTORICAL CONSISTENCY TRACKING
+
+IMPORTANT
+
+This task has three objectives only:
+
+Verify and enforce Neon PostgreSQL usage through DATABASE_URL.
+
+Rework the Behavioral Consistency calculation logic.
+
+Add historical Behavioral Consistency tracking and visualization.
+
+Do not modify unrelated functionality.
+
+Do NOT modify:
+
+Authentication
+
+Login flow
+
+API routing
+
+Vercel configuration
+
+Railway deployment configuration
+
+User permissions
+
+Patient assignment logic
+
+Dashboard layouts unrelated to Behavioral Consistency
+
+KPI cards unrelated to Behavioral Consistency
+
+Existing business logic unrelated to Behavioral Consistency
+
+If unrelated issues are discovered, document them but do not change them.
+
+==================================================
+PHASE 1 — DATABASE_URL VALIDATION AND ENFORCEMENT
+The production Neon PostgreSQL connection string already exists in:
+
+DATABASE_URL
+
+Requirements:
+
+Verify that the backend is actively using DATABASE_URL as the production database source.
+
+Audit:
+
+ORM initialization
+
+Database clients
+
+Repository layer
+
+Environment variable loading
+
+Connection factories
+
+Database pools
+
+Confirm:
+
+DATABASE_URL is loaded correctly
+
+DATABASE_URL is not overridden
+
+Railway PostgreSQL is not being used accidentally
+
+No hardcoded database connections exist
+
+No conflicting database providers exist
+
+Determine the actual runtime database source.
+
+Verify all Behavioral Consistency calculations, patient metrics, check-ins, reports, and historical trend data are being read from and written to the database connected through DATABASE_URL.
+
+IMPORTANT
+
+Do not create a new database.
+
+Do not migrate data into Railway PostgreSQL.
+
+Do not replace Neon.
+
+Use the existing DATABASE_URL configuration already present in the environment.
+
+==================================================
+PHASE 2 — BEHAVIORAL CONSISTENCY CALCULATION REWORK
+Current Issue
+
+Behavioral Consistency is currently penalizing patients for days where no check-in data exists.
+
+This is incorrect.
+
+Missing days must not automatically reduce the score.
+
+==================================================
+NEW CALCULATION RULE
+Behavioral Consistency must only be calculated from days for which actual patient data exists.
+
+Days without any submitted check-in data must be excluded entirely.
+
+Do not treat missing days as:
+
+zero
+
+failed adherence
+
+non-compliance
+
+missed submissions
+
+Missing days should simply not participate in the calculation.
+
+==================================================
+EXAMPLES
+Example 1:
+
+Patient has data for:
+
+Day 1
+Day 2
+Day 3
+Day 4
+Day 5
+
+No data for:
+
+Day 6
+Day 7
+
+Behavioral Consistency must be calculated only using:
+
+Day 1–Day 5
+
+Days 6 and 7 must not reduce the score.
+
+==================================================
+
+Example 2:
+
+Patient has data for:
+
+Monday
+Tuesday
+Wednesday
+Thursday
+
+No data for:
+
+Friday
+
+Viewing score on Saturday.
+
+Behavioral Consistency should only use:
+
+Monday–Thursday
+
+Friday must not count as zero.
+
+Friday must not increase the denominator.
+
+==================================================
+ENROLLMENT DATE RULE
+Enrollment date logic must remain correct.
+
+Requirements:
+
+Days before onboarding must never affect the score.
+
+Calculations must begin from the patient's enrollment date.
+
+Pre-enrollment days must be excluded completely.
+
+The final calculation must satisfy BOTH rules:
+
+Rule 1:
+Ignore all days before enrollment.
+
+Rule 2:
+Ignore all days where no data exists.
+
+==================================================
+CALCULATION AUDIT
+Locate every place where Behavioral Consistency is:
+
+calculated
+
+aggregated
+
+cached
+
+displayed
+
+reported
+
+returned through APIs
+
+used in analytics
+
+used in reports
+
+used in dashboards
+
+used in insights
+
+Review:
+
+calculation services
+
+utility functions
+
+backend APIs
+
+database queries
+
+aggregation logic
+
+reporting logic
+
+analytics logic
+
+==================================================
+SINGLE SOURCE OF TRUTH
+If multiple Behavioral Consistency calculations exist:
+
+identify all implementations
+
+eliminate inconsistencies
+
+centralize logic
+
+ensure every portal consumes the same calculation result
+
+For the same patient and date range:
+
+Patient Dashboard Score
+Operations Portal Score
+Doctor Portal Score
+Analytics Score
+Report Score
+
+==================================================
+PHASE 3 — HISTORICAL BEHAVIORAL CONSISTENCY TRACKING
+Current Issue
+
+Patients can currently view only the current week's Behavioral Consistency.
+
+Historical performance is not available.
+
+==================================================
+REQUIRED FEATURE
+Add complete historical Behavioral Consistency visibility.
+
+Users must be able to view:
+
+Current week score
+
+Previous week scores
+
+Historical weekly scores
+
+Historical trends across all completed weeks
+
+==================================================
+HISTORICAL DATA REQUIREMENTS
+Historical scores must be calculated using:
+
+Actual patient submissions
+
+Actual stored check-in data
+
+Actual adherence records
+
+Do not use:
+
+placeholders
+
+interpolated values
+
+estimated values
+
+generated values
+
+assumed adherence
+
+synthetic trend data
+
+Historical results must reflect only real patient activity.
+
+==================================================
+VISUALIZATION REQUIREMENTS
+Add:
+
+Weekly score history list
+
+Display:
+
+Week range
+
+Week start date
+
+Week end date
+
+Weekly Behavioral Consistency score
+
+Historical trend visualization
+
+Include:
+
+Weekly progression
+
+Date boundaries
+
+Meaningful trend visualization
+
+Responsive rendering
+
+==================================================
+PORTAL REQUIREMENTS
+Historical Behavioral Consistency must be available in:
+
+Patient Portal
+
+Doctor Portal
+
+Operations Portal
+
+Each portal may present the information differently visually, but all must use the same underlying score calculations.
+
+==================================================
+DATA MODEL REQUIREMENTS
+If additional aggregation structures are required:
+
+create them
+
+optimize them
+
+index them appropriately
+
+Ensure historical calculations remain performant at scale.
+
+Support:
+
+long-term patients
+
+multi-month history
+
+multi-year history
+
+without performance degradation.
+
+==================================================
+VALIDATION REQUIREMENTS
+Test:
+
+Patient enrolled today
+
+Patient enrolled yesterday
+
+Patient enrolled mid-week
+
+Patient with missing check-ins
+
+Patient with continuous check-ins
+
+Patient with several months of history
+
+Verify:
+
+missing days are excluded
+
+enrollment date is respected
+
+scores are accurate
+
+historical scores are accurate
+
+all portals display identical scores
+
+==================================================
+FINAL REPORT
+After implementation provide:
+
+Exact files modified
+
+Exact functions modified
+
+Database provider detected
+
+Active runtime database source
+
+Proof DATABASE_URL is being used
+
+Previous Behavioral Consistency logic
+
+Updated Behavioral Consistency logic
+
+Historical tracking implementation details
+
+Database schema changes
+
+API changes
+
+Frontend changes
+
+Example calculations before and after
+
+Evidence that:
+
+Missing days no longer reduce scores
+
+Pre-enrollment days are excluded
+
+Historical weekly scores work correctly
+
+Patient, Doctor, and Operations portals display identical Behavioral Consistency values
+
+All calculations are sourced from the Neon database connected through DATABASE_URL
+
+Do not mark this task complete until all three objectives have been fully implemented, validated, and verified.
+

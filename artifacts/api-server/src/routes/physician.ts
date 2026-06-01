@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import { db } from "@workspace/db";
 import { usersTable, staffTable, patientsTable, checkinsTable, metricsTable, appointmentsTable, patientNotesTable, patientPlansTable } from "@workspace/db";
 import { eq, desc, and, or, gte, asc, sql } from "drizzle-orm";
+import { computeConsistency, computeWeeklyHistory } from "../lib/consistency";
 
 function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex");
@@ -263,21 +264,13 @@ router.get("/patients/:id/dashboard", async (req, res) => {
     const completedCount = adherence7Day.filter(d => d.completed === true).length;
     const dataCount = adherence7Day.filter(d => d.completed !== null).length;
     const adherencePct = dataCount > 0 ? Math.round((completedCount / 7) * 100) : null;
+    // Consistency breakdown: last 7 check-ins only — missing days excluded from denominator
     const last7 = allCheckins.slice(0, 7);
     const sleepMets = allMetrics.filter(m => m.type === "sleep_hours");
-    let goodSleepDays = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      const sm = sleepMets.find(m => m.date === iso);
-      if (sm && sm.value >= 7) goodSleepDays++;
-    }
-    const consistencyBreakdown = last7.length === 0 ? null : {
-      mealLogging: Math.round((last7.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly" || c.mealsFollowed === "partially").length / 7) * 100),
-      checkIns: Math.round((last7.length / 7) * 100),
-      activity: Math.round((last7.filter(c => c.activityCompleted).length / 7) * 100),
-      sleep: Math.round((goodSleepDays / 7) * 100),
-    };
+    const consistencyBreakdown = computeConsistency(
+      last7,
+      sleepMets.map(m => ({ date: m.date, value: m.value })),
+    );
 
     let streak = 0;
     for (let i = 0; i < 30; i++) {
@@ -321,6 +314,29 @@ router.get("/patients/:id/dashboard", async (req, res) => {
       streak, weightChange, avgGlucose, timeInRange,
       nextAppointment, carePlan, insights, hasEnoughData, totalCheckins,
     });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/physician/patients/:id/consistency-history
+router.get("/patients/:id/consistency-history", async (req, res) => {
+  try {
+    const auth = await requirePhysician(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const [allCheckins, sleepMetrics] = await Promise.all([
+      db.select().from(checkinsTable)
+        .where(eq(checkinsTable.patientId, patientId))
+        .orderBy(desc(checkinsTable.createdAt)),
+      db.select().from(metricsTable)
+        .where(and(eq(metricsTable.patientId, patientId), eq(metricsTable.type, "sleep_hours"))),
+    ]);
+
+    const history = computeWeeklyHistory(
+      allCheckins,
+      sleepMetrics.map(m => ({ date: m.date, value: m.value })),
+    );
+    res.json(history);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

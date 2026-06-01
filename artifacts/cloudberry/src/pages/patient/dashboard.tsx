@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { PatientConsistencyHistory } from "@/components/ConsistencyHistory";
 import {
   LineChart, Line, BarChart, Bar, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea, ReferenceLine,
@@ -191,7 +192,7 @@ function ConsistencyCard({ consistencyBreakdown }: { consistencyBreakdown: any }
         </div>
 
         <p className="text-[10px] text-muted-foreground mt-3 pt-3 border-t border-border/40">
-          Score = average of Sleep, Nutrition & Activity · last 7 days
+          Score = average of Sleep, Nutrition & Activity · actual check-in days only
         </p>
       </CardContent>
     </Card>
@@ -680,6 +681,15 @@ export default function PatientDashboard() {
                 <ConsistencyCard consistencyBreakdown={consistencyBreakdown} />
                 <EnergyCard energySeries={energySeries} />
               </div>
+            </div>
+
+            {/* Section 2b: Consistency History */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0">↗</span>
+                <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Behavioral Consistency — Weekly History</h2>
+              </div>
+              <PatientConsistencyHistory />
             </div>
 
             {/* Section 3: Glucose */}

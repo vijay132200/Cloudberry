@@ -11,8 +11,9 @@ import {
   Stethoscope, Target, Dumbbell, Salad, UserCheck, Shield, ChevronRight,
   X, ChevronDown, Weight, MapPin, CalendarCheck, User, FileText,
   MessageSquare, Plus, ExternalLink, ArrowUp, ArrowDown, CalendarPlus, ClipboardList,
-  UserPlus, Lock,
+  UserPlus, Lock, History,
 } from "lucide-react";
+import { StaffConsistencyHistory } from "@/components/ConsistencyHistory";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -479,6 +480,18 @@ function PatientDetailPanel({
                         </Card>
                       );
                     })()}
+
+                    {/* Consistency history */}
+                    <Card className="border-border">
+                      <CardHeader className="pb-1">
+                        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                          <History className="w-3.5 h-3.5 text-primary" /> Consistency History
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pb-3">
+                        <StaffConsistencyHistory patientId={selectedPatient.id} role="ops" compact />
+                      </CardContent>
+                    </Card>
 
                     {/* Weight trend */}
                     {d.weightSeries?.length > 1 && (
