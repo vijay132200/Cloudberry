@@ -1072,12 +1072,14 @@ export default function OpsDashboard() {
     refetchInterval: 60000,
   });
 
-  const { data: credentials = [] } = useQuery({
+  const { data: credentialsData = {} as any } = useQuery({
     queryKey: ["ops-credentials"],
     queryFn: () => fetchJson("/ops/credentials"),
     enabled: tab === "credentials",
     staleTime: 30000,
   });
+  const credStaff: any[] = credentialsData?.staff || [];
+  const credPatients: any[] = credentialsData?.patients || [];
 
   const addStaffMutation = useMutation({
     mutationFn: (data: any) => postJson("/ops/staff", data),
@@ -1838,7 +1840,7 @@ export default function OpsDashboard() {
                     {sLoading ? (
                       <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground text-sm">Loading staff from database…</td></tr>
                     ) : (staff as any[]).map((s: any) => {
-                      const credRow = (credentials as any[]).find((c: any) => c.id === s.id);
+                      const credRow = credStaff.find((c: any) => c.id === s.id);
                       const isPhysician = s.role === "physician";
                       const accessPortal = () => {
                         if (!isPhysician) return;

@@ -1,0 +1,133 @@
+CLOUDBERRY HEALTH — DATABASE_URL VALIDATION, ENFORCEMENT, AND PRODUCTION DATABASE AUDIT
+IMPORTANT
+This task is strictly limited to validating, enforcing, and verifying the production database connection.
+Do not modify unrelated functionality.
+Do NOT modify:
+⦁	Authentication
+⦁	Login flow
+⦁	API routing
+⦁	Vercel configuration
+⦁	Railway configuration
+⦁	Dashboard logic
+⦁	Behavioral Consistency calculations
+⦁	Patient assignment logic
+⦁	UI layouts
+⦁	KPI cards
+⦁	Graphs
+⦁	Reports
+⦁	Permissions
+⦁	Existing business logic
+If unrelated issues are discovered, document them separately but do not change them.
+==================================================
+OBJECTIVE
+The production Neon PostgreSQL connection string has already been configured through:
+DATABASE_URL
+The objective is to verify that the entire platform is actively using DATABASE_URL as the sole production database source and that all reads and writes are occurring against the correct Neon database.
+==================================================
+PHASE 1 — DATABASE DISCOVERY
+Locate and audit:
+⦁	ORM configuration
+⦁	Database clients
+⦁	Connection factories
+⦁	Repository initialization
+⦁	Environment variable loaders
+⦁	Migration configuration
+⦁	Schema configuration
+⦁	Connection pools
+⦁	Query builders
+Determine:
+⦁	Which ORM is being used
+⦁	Which database provider is being used
+⦁	Which environment variables are used for database initialization
+==================================================
+PHASE 2 — DATABASE_URL VALIDATION
+Verify that DATABASE_URL:
+⦁	Is loaded correctly
+⦁	Is available at runtime
+⦁	Is being consumed by the application
+⦁	Is not being ignored
+⦁	Is not being overridden
+Confirm DATABASE_URL is the active source used to establish database connections.
+==================================================
+PHASE 3 — CONFLICT DETECTION
+Audit the codebase for:
+⦁	Railway PostgreSQL references
+⦁	Multiple database providers
+⦁	Hardcoded connection strings
+⦁	Duplicate database clients
+⦁	Legacy database configurations
+⦁	Fallback database connections
+⦁	Local development overrides
+⦁	Conflicting environment variables
+Examples:
+⦁	PGHOST
+⦁	PGDATABASE
+⦁	DATABASE
+⦁	POSTGRES_URL
+⦁	Railway-generated variables
+⦁	Any alternate provider configurations
+Determine whether any of these can override DATABASE_URL.
+==================================================
+PHASE 4 — RUNTIME DATABASE VERIFICATION
+Determine the actual database being used at runtime.
+Do not rely solely on configuration files.
+Verify through:
+⦁	Active connection inspection
+⦁	Runtime logs
+⦁	Query execution
+⦁	Connection metadata
+Confirm whether runtime queries resolve to:
+Neon PostgreSQL
+or
+Railway PostgreSQL
+or
+another provider
+Provide evidence.
+==================================================
+PHASE 5 — APPLICATION-WIDE DATABASE AUDIT
+Verify that the following modules all use the same database connection derived from DATABASE_URL:
+⦁	Authentication
+⦁	Users
+⦁	Staff
+⦁	Patients
+⦁	Check-ins
+⦁	Metrics
+⦁	Appointments
+⦁	Assessments
+⦁	Messages
+⦁	Uploads
+⦁	Notes
+⦁	Care plans
+⦁	Operations data
+⦁	Reporting
+⦁	Analytics
+⦁	Notifications
+⦁	Any additional discovered modules
+Ensure there are no modules writing to one database while reading from another.
+==================================================
+PHASE 6 — SCHEMA VALIDATION
+Verify all schema tables are accessible through DATABASE_URL.
+Identify:
+⦁	Existing tables
+⦁	Relationships
+⦁	Foreign keys
+⦁	Missing mappings
+⦁	Broken relationships
+Verify that ORM mappings and database schema remain synchronized.
+==================================================
+PHASE 7 — READ/WRITE VALIDATION
+Perform live validation.
+Verify:
+CREATE
+READ
+operations work correctly through DATABASE_URL.
+Validate persistence after:
+⦁	Page refresh
+⦁	Session refresh
+⦁	Backend restart
+Confirm records are stored in the database connected through DATABASE_URL.
+==================================================
+PHASE 8 — SAFETY REQUIREMENTS
+Do NOT:
+⦁	Create a new database
+⦁	Replace Neon
