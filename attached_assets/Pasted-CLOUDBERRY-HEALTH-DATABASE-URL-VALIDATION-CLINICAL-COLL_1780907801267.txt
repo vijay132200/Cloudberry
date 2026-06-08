@@ -1,0 +1,456 @@
+CLOUDBERRY HEALTH — DATABASE_URL VALIDATION, CLINICAL COLLABORATION, ESCALATION GOVERNANCE, LONGITUDINAL RECORDS, REPORTING, AND DIET PLAN ENHANCEMENTS
+
+IMPORTANT
+
+This task has two primary objectives:
+
+1. Verify and enforce Neon PostgreSQL usage through DATABASE_URL.
+2. Implement the clinical collaboration, reporting, escalation, historical records, and diet-plan enhancements described below.
+
+Preserve all existing functionality.
+
+Do NOT modify:
+
+* Authentication architecture
+* Existing login flows
+* API routing structure
+* Vercel deployment configuration
+* Railway deployment configuration
+* Existing dashboard calculations unless required for historical reporting
+* Existing patient assignment logic
+
+Do not remove or break any existing portal functionality.
+
+==================================================
+PHASE 1 — DATABASE_URL VALIDATION & ENFORCEMENT
+===============================================
+
+The production Neon PostgreSQL connection string already exists in:
+
+DATABASE_URL
+
+Requirements:
+
+1. Locate and audit:
+
+* ORM configuration
+* Database clients
+* Connection factories
+* Repository layer
+* Environment variable loaders
+* Migration configuration
+* Query builders
+
+2. Verify:
+
+* DATABASE_URL is loaded correctly
+* DATABASE_URL is available at runtime
+* DATABASE_URL is the active production database source
+* DATABASE_URL is not overridden by Railway PostgreSQL variables
+* No hardcoded connection strings exist
+* No conflicting database providers exist
+
+3. Audit for:
+
+* Multiple database clients
+* Duplicate connection pools
+* Legacy database providers
+* Railway PostgreSQL references
+* Fallback database configurations
+
+4. Confirm that all modules use the same DATABASE_URL-derived connection:
+
+* Authentication
+* Users
+* Staff
+* Patients
+* Check-ins
+* Metrics
+* Notes
+* Reports
+* Diet Plans
+* Escalations
+* Historical Records
+* Documents
+* Analytics
+
+5. Perform runtime verification.
+
+Prove that:
+
+* Reads occur through DATABASE_URL
+* Writes occur through DATABASE_URL
+* New records persist after refresh
+* New records persist after backend restart
+
+IMPORTANT
+
+Do not create a new database.
+
+Do not migrate data into Railway PostgreSQL.
+
+Do not switch providers.
+
+Use the existing DATABASE_URL already configured in production.
+
+==================================================
+PHASE 2 — REPORTS & CLINICAL COLLABORATION
+==========================================
+
+Create a unified reporting and collaboration experience.
+
+Requirements:
+
+1. All patient reports must be visible to:
+
+* Operations Portal
+* Physician Portal
+
+2. Physicians should be able to create patient-specific notes.
+
+Requirements:
+
+* Timestamped
+* Author recorded
+* Editable
+* Historical versions retained
+* Stored permanently
+
+3. Physician notes must be visible in:
+
+* Physician Portal
+* Operations Portal
+* Historical timeline
+
+Display:
+
+* Author
+* Created timestamp
+* Last modified timestamp
+
+==================================================
+PHASE 3 — DIETICIAN VISIBILITY
+==============================
+
+Physicians should be able to view:
+
+* Assigned Dietician
+* Dietician details
+* Current Diet Plan
+* Historical Diet Plans
+
+Dieticians continue using the Operations Portal.
+
+Do not create a separate Dietician Portal.
+
+==================================================
+PHASE 4 — CRITICAL NOTES
+========================
+
+Create a dedicated Critical Notes section for every patient.
+
+Purpose:
+
+Store important observations that should remain visible to care teams.
+
+Creation Rights:
+
+* Operations
+* Physicians
+
+Visibility:
+
+* Operations Portal
+* Physician Portal
+
+NOT visible to Patients.
+
+Requirements:
+
+* Timestamped
+* Editable
+* Full edit history retained
+* Author visible
+
+==================================================
+PHASE 5 — ESCALATION GOVERNANCE & AUDIT LOGS
+============================================
+
+Expand the escalation system.
+
+Escalation Categories:
+
+* Medical
+* Diet
+* Other
+
+Each escalation record must store:
+
+* Category
+* Author
+* Timestamp
+* Last modified timestamp
+* Status
+* Comments
+* Resolution notes
+
+Support:
+
+* Create
+* Edit
+* Save
+* Reopen
+* Resolve
+
+Maintain complete audit history.
+
+==================================================
+ESCALATION VISIBILITY
+=====================
+
+Visible to:
+
+* Operations Portal
+* Authorized Physicians
+
+Not visible to:
+
+* Patient Portal
+
+All changes must remain permanently recorded.
+
+==================================================
+OPS ESCALATION LOG
+==================
+
+Create an Operations-only escalation log.
+
+Purpose:
+
+Record:
+
+* Escalation observations
+* Follow-up actions
+* Internal notes
+* Escalation decisions
+
+Visibility:
+
+Operations only.
+
+Not visible to Physicians.
+
+Not visible to Patients.
+
+==================================================
+PHASE 6 — LONGITUDINAL HISTORY & RECORDS CENTER
+===============================================
+
+Expand the current timeline/history functionality.
+
+Create a complete Records Center for every patient.
+
+The objective is to provide:
+
+* Weekly analysis
+* Monthly analysis
+* Lifetime analysis
+* Historical activity review
+
+==================================================
+TIME RANGE SUPPORT
+==================
+
+Support:
+
+* Weekly
+* Monthly
+* Since Enrollment
+* Specific Month Selection
+
+Examples:
+
+* January 2026
+* February 2026
+* March 2026
+
+Users should be able to select a specific month and review historical performance.
+
+==================================================
+HISTORICAL DASHBOARD
+====================
+
+The historical dashboard should mirror the current patient dashboard.
+
+All relevant cards should support:
+
+* Weekly view
+* Monthly view
+* Lifetime view
+
+Examples:
+
+* Behavioral Consistency
+* Weight
+* Sleep
+* Glucose
+* Activity
+* Adherence
+* Progress metrics
+
+The historical dashboard should look and behave like the existing dashboard.
+
+Only the selected date range should change.
+
+==================================================
+PHASE 7 — COMPLETE PATIENT ACTIVITY HISTORY
+===========================================
+
+Create a unified activity feed.
+
+Display:
+
+* Check-ins
+* Notes
+* Critical Notes
+* Physician Comments
+* Dietician Updates
+* Escalations
+* De-escalations
+* Uploaded Reports
+* Uploaded Documents
+* Care Plan Changes
+* Diet Plan Changes
+* Appointments
+* Metrics Updates
+
+Display chronologically.
+
+Support filtering by:
+
+* Date
+* Month
+* Event Type
+* Author
+
+When users click a record, display:
+
+* Full content
+* Full comments
+* Historical edits
+* Associated notes
+* Associated files
+
+==================================================
+PHASE 8 — DIET PLAN PDF MANAGEMENT
+==================================
+
+Support Diet Plan PDF uploads.
+
+Requirements:
+
+* Upload PDF
+* Store version history
+* Store upload timestamps
+* Store uploader information
+
+Visibility:
+
+* Patient Portal
+* Physician Portal
+* Operations Portal
+
+Previous versions must remain accessible.
+
+==================================================
+PHASE 9 — CARE CONTENT VERSION HISTORY
+======================================
+
+For:
+
+* Physician Notes
+* Critical Notes
+* Care Plans
+* Diet Plans
+* Escalation Comments
+
+Maintain:
+
+* Original content
+* Updated content
+* Author history
+* Timestamp history
+
+Users should be able to review previous versions.
+
+==================================================
+DATA CONSISTENCY
+================
+
+Ensure synchronization across:
+
+* Patient Portal
+* Physician Portal
+* Operations Portal
+
+The same patient should display consistent data across all portals.
+
+==================================================
+FINAL IMPLEMENTATION REPORT
+===========================
+
+Provide:
+
+1. ORM detected
+
+2. Database provider detected
+
+3. Active runtime database source
+
+4. Proof DATABASE_URL is being used
+
+5. Database files audited
+
+6. Conflicting database configurations discovered
+
+7. Database fixes applied
+
+8. Database health verification
+
+9. Exact files modified
+
+10. Database schema changes
+
+11. New tables added
+
+12. New APIs added
+
+13. Report visibility implementation
+
+14. Physician Notes implementation
+
+15. Critical Notes implementation
+
+16. Escalation Governance implementation
+
+17. Operations Escalation Log implementation
+
+18. Historical Dashboard implementation
+
+19. Records Center implementation
+
+20. Diet Plan PDF implementation
+
+21. Version History implementation
+
+22. Validation results
+
+23. Screenshots demonstrating functionality
+
+Do not mark the task complete until:
+
+* DATABASE_URL usage is verified with evidence
+* All new functionality is implemented
+* All data persists correctly
+* All portals remain synchronized
+* All features are tested against actual database records.
