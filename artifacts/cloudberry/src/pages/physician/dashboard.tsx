@@ -18,6 +18,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea,
 } from "recharts";
+import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab } from "@/components/clinical/ClinicalTabs";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = `${BASE}/api`;
@@ -62,7 +63,7 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 type NavTab = "patients" | "profile";
-type DetailTab = "dashboard" | "profile" | "checkins";
+type DetailTab = "dashboard" | "profile" | "checkins" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity";
 
 function formatGoal(g: string) {
   return g?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) ?? "—";
@@ -743,11 +744,21 @@ export default function PhysicianDashboard() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-0 border-b border-border/40 bg-white px-4 shrink-0">
-              {(["dashboard", "profile", "checkins"] as DetailTab[]).map(t => (
-                <button key={t} onClick={() => setDetailTab(t)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${detailTab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-                  {t === "checkins" ? "Check-ins" : t}
+            <div className="flex gap-0 border-b border-border/40 bg-white px-2 shrink-0 overflow-x-auto">
+              {([
+                { key: "dashboard", label: "Dashboard" },
+                { key: "profile", label: "Profile" },
+                { key: "checkins", label: "Check-ins" },
+                { key: "clinical-notes", label: "Clinical Notes" },
+                { key: "critical-notes", label: "Critical" },
+                { key: "escalations", label: "Escalations" },
+                { key: "diet-plan", label: "Diet Plan" },
+                { key: "records", label: "Records" },
+                { key: "activity", label: "Activity" },
+              ] as { key: DetailTab; label: string }[]).map(t => (
+                <button key={t.key} onClick={() => setDetailTab(t.key)}
+                  className={`px-3 py-3 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${detailTab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -826,6 +837,36 @@ export default function PhysicianDashboard() {
                     </Card>
                   ))}
                 </div>
+              )}
+
+              {/* Clinical Notes tab */}
+              {detailTab === "clinical-notes" && (
+                <ClinicalNotesTab patientId={selectedPatient.id} prefix="physician" />
+              )}
+
+              {/* Critical Notes tab */}
+              {detailTab === "critical-notes" && (
+                <CriticalNotesTab patientId={selectedPatient.id} prefix="physician" />
+              )}
+
+              {/* Escalations tab */}
+              {detailTab === "escalations" && (
+                <EscalationsTab patientId={selectedPatient.id} prefix="physician" isOps={false} />
+              )}
+
+              {/* Diet Plan tab */}
+              {detailTab === "diet-plan" && (
+                <DietPlanTab patientId={selectedPatient.id} prefix="physician" canUpload={false} />
+              )}
+
+              {/* Records tab */}
+              {detailTab === "records" && (
+                <RecordsTab patientId={selectedPatient.id} prefix="physician" enrolledAt={selectedPatient.createdAt} />
+              )}
+
+              {/* Activity Feed tab */}
+              {detailTab === "activity" && (
+                <ActivityFeedTab patientId={selectedPatient.id} prefix="physician" />
               )}
 
             </div>

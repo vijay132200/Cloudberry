@@ -14,6 +14,7 @@ import {
   UserPlus, Lock, History,
 } from "lucide-react";
 import { StaffConsistencyHistory } from "@/components/ConsistencyHistory";
+import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab } from "@/components/clinical/ClinicalTabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -114,7 +115,7 @@ function exportCSV(patients: any[]) {
 }
 
 type TabType = "pending" | "patients" | "registrations" | "staff" | "credentials";
-type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan";
+type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity";
 
 /* ── Appointment Scheduler ────────────────────────────────────────── */
 function AppointmentScheduler({ patient, detail, staff, onRefresh }: { patient: any; detail: any; staff: any[]; onRefresh: () => void }) {
@@ -368,11 +369,24 @@ function PatientDetailPanel({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b px-5 overflow-x-auto shrink-0">
-          {(["dashboard", "profile", "checkins", "team", "content", "plan"] as DetailTab[]).map(t => (
-            <button key={t} onClick={() => setDetailTab(t)}
-              className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors capitalize ${detailTab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t === "checkins" ? "Check-ins" : t === "team" ? "Care Team" : t === "plan" ? "Care Plan" : t === "content" ? "Care Content" : t}
+        <div className="flex border-b px-2 overflow-x-auto shrink-0">
+          {([
+            { key: "dashboard", label: "Dashboard" },
+            { key: "profile", label: "Profile" },
+            { key: "checkins", label: "Check-ins" },
+            { key: "team", label: "Care Team" },
+            { key: "content", label: "Content" },
+            { key: "plan", label: "Care Plan" },
+            { key: "clinical-notes", label: "Clinical Notes" },
+            { key: "critical-notes", label: "Critical" },
+            { key: "escalations", label: "Escalations" },
+            { key: "diet-plan", label: "Diet Plan" },
+            { key: "records", label: "Records" },
+            { key: "activity", label: "Activity" },
+          ] as { key: DetailTab; label: string }[]).map(t => (
+            <button key={t.key} onClick={() => setDetailTab(t.key)}
+              className={`px-3 py-2.5 text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${detailTab === t.key ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+              {t.label}
             </button>
           ))}
         </div>
@@ -806,6 +820,36 @@ function PatientDetailPanel({
             <div className="space-y-4">
               <OpsPlanEditor patient={p} detail={detail} />
             </div>
+          )}
+
+          {/* Clinical Notes tab */}
+          {!isLoading && detailTab === "clinical-notes" && (
+            <ClinicalNotesTab patientId={patient.id} prefix="ops" />
+          )}
+
+          {/* Critical Notes tab */}
+          {!isLoading && detailTab === "critical-notes" && (
+            <CriticalNotesTab patientId={patient.id} prefix="ops" />
+          )}
+
+          {/* Escalations tab */}
+          {!isLoading && detailTab === "escalations" && (
+            <EscalationsTab patientId={patient.id} prefix="ops" isOps={true} />
+          )}
+
+          {/* Diet Plan tab */}
+          {!isLoading && detailTab === "diet-plan" && (
+            <DietPlanTab patientId={patient.id} prefix="ops" canUpload={true} />
+          )}
+
+          {/* Records tab */}
+          {!isLoading && detailTab === "records" && (
+            <RecordsTab patientId={patient.id} prefix="ops" enrolledAt={p.createdAt} />
+          )}
+
+          {/* Activity Feed tab */}
+          {!isLoading && detailTab === "activity" && (
+            <ActivityFeedTab patientId={patient.id} prefix="ops" />
           )}
         </div>
       </div>

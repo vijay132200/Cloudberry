@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createHash } from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, staffTable, patientsTable, checkinsTable, metricsTable, appointmentsTable, patientNotesTable, patientPlansTable } from "@workspace/db";
+import { usersTable, staffTable, patientsTable, checkinsTable, metricsTable, appointmentsTable, patientNotesTable, patientPlansTable, dietPlansTable, patientPlanHistoryTable } from "@workspace/db";
 import { eq, desc, and, or, gte, asc, sql } from "drizzle-orm";
 import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
 import { getActiveParams } from "../lib/formula-engine";
@@ -25,6 +25,18 @@ async function requirePhysician(req: any, res: any): Promise<{ staffId: number }
   const [staff] = await db.select().from(staffTable).where(eq(staffTable.id, parsed.userId)).limit(1);
   if (!staff || staff.role !== "physician") { res.status(403).json({ error: "Forbidden" }); return null; }
   return { staffId: staff.id };
+}
+
+// Verifies the requesting physician is assigned to the given patient (prevents IDOR).
+// Returns the patient row if allowed; sends 403/404 and returns null if not.
+async function requirePhysicianPatient(patientId: number, staffId: number, res: any) {
+  const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
+  if (!patient) { res.status(404).json({ error: "Patient not found" }); return null; }
+  if (patient.assignedPhysicianId !== staffId) {
+    res.status(403).json({ error: "Forbidden: this patient is not assigned to you" });
+    return null;
+  }
+  return patient;
 }
 
 router.get("/me", async (req, res) => {
@@ -86,14 +98,29 @@ router.get("/patients/:id", async (req, res) => {
     if (!auth) return;
     const patientId = parseInt(req.params.id);
 
-    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
-    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const patient = await requirePhysicianPatient(patientId, auth.staffId, res);
+    if (!patient) return;
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, patient.userId)).limit(1);
     const [plan] = await db.select().from(patientPlansTable).where(eq(patientPlansTable.patientId, patientId)).limit(1);
     const checkins = await db.select().from(checkinsTable).where(eq(checkinsTable.patientId, patientId)).orderBy(desc(checkinsTable.createdAt)).limit(14);
     const metrics = await db.select().from(metricsTable).where(eq(metricsTable.patientId, patientId)).orderBy(desc(metricsTable.createdAt)).limit(30);
     const appointments = await db.select().from(appointmentsTable).where(eq(appointmentsTable.patientId, patientId)).orderBy(desc(appointmentsTable.scheduledAt)).limit(5);
     const notes = await db.select().from(patientNotesTable).where(eq(patientNotesTable.patientId, patientId)).orderBy(desc(patientNotesTable.createdAt)).limit(10);
+
+    // Phase 3: Dietician visibility — assigned dietician name + current diet plan
+    let assignedDietician: { id: number; fullName: string; role: string } | null = null;
+    if (patient.assignedDieticianId) {
+      const [d] = await db.select().from(staffTable).where(eq(staffTable.id, patient.assignedDieticianId)).limit(1);
+      if (d) assignedDietician = { id: d.id, fullName: d.fullName, role: d.role };
+    }
+    const dietPlans = await db.select().from(dietPlansTable)
+      .where(eq(dietPlansTable.patientId, patientId))
+      .orderBy(desc(dietPlansTable.version)).limit(10);
+    const dietPlansWithAuthor = await Promise.all(dietPlans.map(async p => {
+      const [a] = await db.select().from(staffTable).where(eq(staffTable.id, p.authorId)).limit(1);
+      return { ...p, pdfData: undefined, authorName: a?.fullName ?? "Care Team", createdAt: p.createdAt.toISOString() };
+    }));
+    const activeDietPlan = dietPlansWithAuthor.find(p => p.isActive) ?? dietPlansWithAuthor[0] ?? null;
 
     res.json({
       patient: { ...patient, fullName: user?.fullName, phone: user?.phone, email: user?.email, city: user?.city, createdAt: patient.createdAt.toISOString() },
@@ -102,6 +129,9 @@ router.get("/patients/:id", async (req, res) => {
       metrics: metrics.map(m => ({ ...m, createdAt: m.createdAt.toISOString() })),
       appointments: appointments.map(a => ({ ...a, scheduledAt: a.scheduledAt.toISOString(), createdAt: a.createdAt.toISOString() })),
       notes: notes.map(n => ({ ...n, createdAt: n.createdAt.toISOString() })),
+      assignedDietician,
+      activeDietPlan,
+      dietPlanHistory: dietPlansWithAuthor.filter(p => !p.isActive),
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -110,8 +140,10 @@ router.patch("/patients/:id/escalate", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
     if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (!await requirePhysicianPatient(patientId, auth.staffId, res)) return;
     const [patient] = await db.update(patientsTable).set({ riskLevel: "high" })
-      .where(eq(patientsTable.id, parseInt(req.params.id))).returning();
+      .where(eq(patientsTable.id, patientId)).returning();
     res.json(patient);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -120,8 +152,10 @@ router.patch("/patients/:id/deescalate", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
     if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (!await requirePhysicianPatient(patientId, auth.staffId, res)) return;
     const [patient] = await db.update(patientsTable).set({ riskLevel: "low" })
-      .where(eq(patientsTable.id, parseInt(req.params.id))).returning();
+      .where(eq(patientsTable.id, patientId)).returning();
     res.json(patient);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -130,10 +164,12 @@ router.post("/patients/:id/notes", async (req, res) => {
   try {
     const auth = await requirePhysician(req, res);
     if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (!await requirePhysicianPatient(patientId, auth.staffId, res)) return;
     const { content, category } = req.body;
     if (!content?.trim()) { res.status(400).json({ error: "Content required" }); return; }
     const [note] = await db.insert(patientNotesTable).values({
-      patientId: parseInt(req.params.id), coachId: auth.staffId,
+      patientId, coachId: auth.staffId,
       content, category: category ?? "physician",
     }).returning();
     res.status(201).json({ ...note, createdAt: note.createdAt.toISOString() });
@@ -145,11 +181,20 @@ router.patch("/patients/:id/plan", async (req, res) => {
     const auth = await requirePhysician(req, res);
     if (!auth) return;
     const patientId = parseInt(req.params.id);
+    if (!await requirePhysicianPatient(patientId, auth.staffId, res)) return;
     const { nutritionPlan, activityPlan, weeklyGoals } = req.body;
 
     const [existing] = await db.select().from(patientPlansTable).where(eq(patientPlansTable.patientId, patientId)).limit(1);
     let plan;
     if (existing) {
+      // Snapshot before update for version history
+      await db.insert(patientPlanHistoryTable).values({
+        patientId,
+        editedById: auth.staffId,
+        nutritionPlan: existing.nutritionPlan ?? null,
+        activityPlan: existing.activityPlan ?? null,
+        weeklyGoals: existing.weeklyGoals ?? null,
+      });
       const updateData: any = {};
       if (nutritionPlan !== undefined) updateData.nutritionPlan = nutritionPlan;
       if (activityPlan !== undefined) updateData.activityPlan = activityPlan;
@@ -165,6 +210,24 @@ router.patch("/patients/:id/plan", async (req, res) => {
       }).returning();
     }
     res.json(plan);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET care plan version history — previous snapshots of nutritionPlan/activityPlan/weeklyGoals
+router.get("/patients/:id/plan-history", async (req, res) => {
+  try {
+    const auth = await requirePhysician(req, res);
+    if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (!await requirePhysicianPatient(patientId, auth.staffId, res)) return;
+    const history = await db.select().from(patientPlanHistoryTable)
+      .where(eq(patientPlanHistoryTable.patientId, patientId))
+      .orderBy(desc(patientPlanHistoryTable.editedAt)).limit(20);
+    const result = await Promise.all(history.map(async h => {
+      const [editor] = await db.select().from(staffTable).where(eq(staffTable.id, h.editedById)).limit(1);
+      return { ...h, editorName: editor?.fullName ?? "Physician", editedAt: h.editedAt.toISOString() };
+    }));
+    res.json(result);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

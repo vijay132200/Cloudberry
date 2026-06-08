@@ -13,8 +13,12 @@ import physicianRouter from "./physician";
 import dieticianRouter from "./dietician";
 import caretakerRouter from "./caretaker";
 import formulasRouter from "./formulas";
+import { buildPhysicianClinicalRouter, buildOpsClinicalRouter } from "./clinical";
 
 const router = Router();
+
+const physicianClinicalRouter = buildPhysicianClinicalRouter();
+const opsClinicalRouter = buildOpsClinicalRouter();
 
 router.use(healthRouter);
 router.use("/auth", authRouter);
@@ -26,8 +30,10 @@ router.use("/tips", tipsRouter);
 router.use("/appointments", appointmentsRouter);
 router.use("/coach", coachRouter);
 router.use("/ops", opsRouter);
+router.use("/ops", opsClinicalRouter);
 router.use("/ops/formulas", formulasRouter);
 router.use("/physician", physicianRouter);
+router.use("/physician", physicianClinicalRouter);
 router.use("/dietician", dieticianRouter);
 router.use("/caretaker", caretakerRouter);
 

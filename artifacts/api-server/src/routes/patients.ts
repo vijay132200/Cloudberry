@@ -10,6 +10,7 @@ import {
   checkinsTable,
   metricsTable,
   appointmentsTable,
+  dietPlansTable,
 } from "@workspace/db";
 import { eq, desc, and, asc, gte, sql } from "drizzle-orm";
 import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
@@ -347,6 +348,29 @@ router.get("/me/consistency-history", async (req, res) => {
       toConsistencyParams(rawHParams),
     );
     res.json(history);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/patients/me/diet-plan — get current active diet plan for patient
+router.get("/me/diet-plan", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+
+    const plans = await db.select().from(dietPlansTable)
+      .where(eq(dietPlansTable.patientId, patient.id))
+      .orderBy(desc(dietPlansTable.version)).limit(10);
+
+    const result = await Promise.all(plans.map(async p => {
+      const [author] = await db.select().from(staffTable).where(eq(staffTable.id, p.authorId)).limit(1);
+      return { ...p, pdfData: undefined, authorName: author?.fullName ?? "Care Team", createdAt: p.createdAt.toISOString() };
+    }));
+    res.json(result);
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });

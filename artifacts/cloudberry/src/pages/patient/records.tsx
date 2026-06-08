@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Eye, Trash2, Download, FolderOpen, Plus, X } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Upload, FileText, Eye, Trash2, Download, FolderOpen, Plus, X, Salad, Clock, User, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -12,6 +14,86 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+
+const API = import.meta.env.BASE_URL?.replace(/\/$/, "") + "/api";
+async function fetchJson(path: string) {
+  const token = localStorage.getItem("cloudberry_token") || "";
+  const r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function DietPlanCard() {
+  const [expanded, setExpanded] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const { data: plans = [] } = useQuery<any[]>({
+    queryKey: ["patient-diet-plans"],
+    queryFn: () => fetchJson("/patients/me/diet-plan"),
+  });
+  const activePlan = (plans as any[]).find((p: any) => p.isActive);
+  const historyPlans = (plans as any[]).filter((p: any) => !p.isActive);
+  if (!activePlan && historyPlans.length === 0) return null;
+  const displayPlan = activePlan ?? plans[0];
+  if (!displayPlan) return null;
+  return (
+    <Card className="border-emerald-200 rounded-2xl bg-gradient-to-br from-emerald-50/60 to-teal-50/40 mb-6">
+      <CardHeader className="pb-2 pt-4 px-5">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold flex items-center gap-2 text-emerald-800">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+              <Salad className="w-4 h-4 text-emerald-700" />
+            </div>
+            My Diet Plan
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-[10px] border bg-emerald-50 text-emerald-700 border-emerald-200">
+              {activePlan ? "Active" : "Archived"} · v{displayPlan.version}
+            </Badge>
+            <button className="text-muted-foreground hover:text-foreground" onClick={() => setExpanded(v => !v)}>
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="px-5 pb-5">
+          <p className="font-semibold text-sm text-foreground mb-1">{displayPlan.title}</p>
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-3">
+            <span className="flex items-center gap-1"><User className="w-3 h-3" />{displayPlan.authorName ?? "Care Team"}</span>
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(displayPlan.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+          </div>
+          <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{displayPlan.content}</p>
+
+          {historyPlans.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-emerald-200">
+              <button className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium hover:text-emerald-900" onClick={() => setShowHistory(v => !v)}>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showHistory ? "rotate-180" : ""}`} />
+                Previous versions ({historyPlans.length})
+              </button>
+              {showHistory && (
+                <div className="mt-3 space-y-2">
+                  {historyPlans.map((plan: any) => (
+                    <div key={plan.id} className="bg-white/70 rounded-xl p-3 border border-emerald-100">
+                      <div className="flex items-start justify-between mb-1">
+                        <p className="text-xs font-semibold text-foreground">{plan.title}</p>
+                        <Badge variant="outline" className="text-[10px] border bg-slate-50 text-slate-500 border-slate-200 shrink-0 ml-2">v{plan.version}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-2">
+                        <span className="flex items-center gap-0.5"><User className="w-2.5 h-2.5" />{plan.authorName ?? "Care Team"}</span>
+                        <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{new Date(plan.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                      </div>
+                      <p className="text-xs text-foreground/70 whitespace-pre-wrap line-clamp-3 leading-relaxed">{plan.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
 
 type DocCategory = "prescription" | "report" | "lab_test" | "discharge" | "other";
 
@@ -160,6 +242,9 @@ export default function PatientRecords() {
   return (
     <PatientLayout>
       <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+
+        {/* Diet Plan Card */}
+        <DietPlanCard />
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
