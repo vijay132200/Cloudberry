@@ -11,8 +11,9 @@ import {
   metricsTable,
   appointmentsTable,
   dietPlansTable,
+  patientPlanHistoryTable,
 } from "@workspace/db";
-import { eq, desc, and, asc, gte, sql } from "drizzle-orm";
+import { eq, desc, and, asc, gte, lte, sql } from "drizzle-orm";
 import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
 import { getActiveParams } from "../lib/formula-engine";
 
@@ -371,6 +372,142 @@ router.get("/me/diet-plan", async (req, res) => {
       return { ...p, pdfData: undefined, authorName: author?.fullName ?? "Care Team", createdAt: p.createdAt.toISOString() };
     }));
     res.json(result);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/patients/me/records — historical records dashboard with optional time range
+router.get("/me/records", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+
+    const { from, to } = req.query as { from?: string; to?: string };
+
+    const ciConditions: any[] = [eq(checkinsTable.patientId, patient.id)];
+    if (from) ciConditions.push(gte(checkinsTable.createdAt, new Date(from)));
+    if (to) ciConditions.push(lte(checkinsTable.createdAt, new Date(to)));
+    const checkins = await db.select().from(checkinsTable)
+      .where(and(...ciConditions)).orderBy(desc(checkinsTable.createdAt)).limit(200);
+
+    const mConditions: any[] = [eq(metricsTable.patientId, patient.id)];
+    if (from) mConditions.push(gte(metricsTable.createdAt, new Date(from)));
+    if (to) mConditions.push(lte(metricsTable.createdAt, new Date(to)));
+    const metrics = await db.select().from(metricsTable)
+      .where(and(...mConditions)).orderBy(asc(metricsTable.createdAt)).limit(500);
+
+    const weightSeries = metrics.filter(m => m.type === "weight").map(m => ({ date: m.date, value: m.value }));
+    const glucoseSeries = metrics.filter(m => m.type === "glucose" || m.type === "glucose_fasting").map(m => ({ date: m.date, value: m.value }));
+    const sleepSeries = metrics.filter(m => m.type === "sleep_hours").map(m => ({ date: m.date, value: m.value }));
+
+    const totalCheckins = checkins.length;
+    const adherentCount = checkins.filter(c => c.mealsFollowed === "yes" || c.mealsFollowed === "mostly").length;
+    const adherencePct = totalCheckins > 0 ? Math.round((adherentCount / totalCheckins) * 100) : null;
+    const activityCount = checkins.filter(c => c.activityCompleted).length;
+    const activityPct = totalCheckins > 0 ? Math.round((activityCount / totalCheckins) * 100) : null;
+    const avgWeight = weightSeries.length > 0 ? +(weightSeries.reduce((a, b) => a + b.value, 0) / weightSeries.length).toFixed(1) : null;
+    const avgGlucose = glucoseSeries.length > 0 ? Math.round(glucoseSeries.reduce((a, b) => a + b.value, 0) / glucoseSeries.length) : null;
+    const avgSleep = sleepSeries.length > 0 ? +(sleepSeries.reduce((a, b) => a + b.value, 0) / sleepSeries.length).toFixed(1) : null;
+    const sleepAvg = sleepSeries.length > 0 ? Math.round(sleepSeries.reduce((a, b) => a + b.value, 0) / sleepSeries.length * 100 / 8) : null;
+    const consistencyBreakdown = totalCheckins > 0 ? {
+      mealLogging: adherencePct ?? 0,
+      activity: activityPct ?? 0,
+      sleep: sleepAvg !== null ? Math.min(100, sleepAvg) : 0,
+    } : null;
+
+    res.json({
+      from: from ?? null, to: to ?? null, totalCheckins,
+      adherencePct, activityPct, avgWeight, avgGlucose, avgSleep,
+      consistencyBreakdown, weightSeries, glucoseSeries, sleepSeries,
+      checkins: checkins.map(c => ({ ...c, createdAt: c.createdAt.toISOString() })),
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/patients/me/activity — patient-safe activity timeline
+// Includes: check-ins, appointments, diet plans, care plan updates, metrics
+// Excludes: clinical notes, critical notes, escalations (internal staff records)
+router.get("/me/activity", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+
+    const { from, to, type } = req.query as { from?: string; to?: string; type?: string };
+    const events: any[] = [];
+
+    // Check-ins
+    if (!type || type === "checkin" || type === "all") {
+      const ciConds: any[] = [eq(checkinsTable.patientId, patient.id)];
+      if (from) ciConds.push(gte(checkinsTable.createdAt, new Date(from)));
+      if (to) ciConds.push(lte(checkinsTable.createdAt, new Date(to)));
+      const checkins = await db.select().from(checkinsTable).where(and(...ciConds)).orderBy(desc(checkinsTable.createdAt)).limit(30);
+      for (const c of checkins) {
+        const moodStr = c.mood ? ` · Mood: ${c.mood}` : "";
+        events.push({ id: `ci-${c.id}`, type: "checkin", title: "Daily Check-in", summary: `Meals: ${c.mealsFollowed} · Energy: ${c.energyLevel}${moodStr}`, content: { ...c, createdAt: c.createdAt.toISOString() }, createdAt: c.createdAt.toISOString(), author: "You" });
+      }
+    }
+
+    // Appointments
+    if (!type || type === "appointment" || type === "all") {
+      const appts = await db.select().from(appointmentsTable).where(eq(appointmentsTable.patientId, patient.id)).orderBy(desc(appointmentsTable.scheduledAt)).limit(10);
+      for (const a of appts) {
+        if (from && a.scheduledAt < new Date(from)) continue;
+        if (to && a.scheduledAt > new Date(to)) continue;
+        events.push({ id: `appt-${a.id}`, type: "appointment", title: "Appointment", summary: `with ${a.careTeamMember || "Care Team"} · ${a.status}`, content: { ...a, scheduledAt: a.scheduledAt.toISOString(), createdAt: a.createdAt.toISOString() }, createdAt: a.scheduledAt.toISOString(), author: a.careTeamMember || "Care Team" });
+      }
+    }
+
+    // Diet plans
+    if (!type || type === "diet_plan" || type === "all") {
+      const dplans = await db.select().from(dietPlansTable).where(eq(dietPlansTable.patientId, patient.id)).orderBy(desc(dietPlansTable.createdAt)).limit(10);
+      for (const p of dplans) {
+        if (from && p.createdAt < new Date(from)) continue;
+        if (to && p.createdAt > new Date(to)) continue;
+        const [author] = await db.select().from(staffTable).where(eq(staffTable.id, p.authorId)).limit(1);
+        const authorName = author?.fullName ?? "Care Team";
+        events.push({ id: `dp-${p.id}`, type: "diet_plan", title: `Diet Plan v${p.version}: ${p.title}`, summary: p.content.slice(0, 100), content: { id: p.id, title: p.title, version: p.version, isActive: p.isActive, authorName, createdAt: p.createdAt.toISOString() }, createdAt: p.createdAt.toISOString(), author: authorName });
+      }
+    }
+
+    // Care plan updates
+    if (!type || type === "care_plan" || type === "all") {
+      const planHistory = await db.select().from(patientPlanHistoryTable).where(eq(patientPlanHistoryTable.patientId, patient.id)).orderBy(desc(patientPlanHistoryTable.editedAt)).limit(20);
+      for (const h of planHistory) {
+        if (from && h.editedAt < new Date(from)) continue;
+        if (to && h.editedAt > new Date(to)) continue;
+        const [author] = await db.select().from(staffTable).where(eq(staffTable.id, h.editedById)).limit(1);
+        const authorName = author?.fullName ?? "Physician";
+        const parts: string[] = [];
+        if (h.nutritionPlan) parts.push("Nutrition");
+        if (h.activityPlan) parts.push("Activity");
+        if (h.weeklyGoals) parts.push("Goals");
+        events.push({ id: `cp-${h.id}`, type: "care_plan", title: "Care Plan Updated", summary: `Sections: ${parts.join(", ") || "General"}`, content: { ...h, editedAt: h.editedAt.toISOString() }, createdAt: h.editedAt.toISOString(), author: authorName });
+      }
+    }
+
+    // Metrics
+    if (!type || type === "metric" || type === "all") {
+      const mConds: any[] = [eq(metricsTable.patientId, patient.id)];
+      if (from) mConds.push(gte(metricsTable.createdAt, new Date(from)));
+      if (to) mConds.push(lte(metricsTable.createdAt, new Date(to)));
+      const metrics = await db.select().from(metricsTable).where(and(...mConds)).orderBy(desc(metricsTable.createdAt)).limit(50);
+      for (const m of metrics) {
+        const label = m.type === "weight" ? `${m.value} kg` : m.type === "glucose" || m.type === "glucose_fasting" ? `${m.value} mg/dL` : m.type === "sleep_hours" ? `${m.value} hrs` : `${m.value}`;
+        events.push({ id: `metric-${m.id}`, type: "metric", title: `${m.type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())} Reading`, summary: label, content: { ...m, createdAt: m.createdAt.toISOString() }, createdAt: m.createdAt.toISOString(), author: "You" });
+      }
+    }
+
+    events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    res.json(events.slice(0, 100));
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
