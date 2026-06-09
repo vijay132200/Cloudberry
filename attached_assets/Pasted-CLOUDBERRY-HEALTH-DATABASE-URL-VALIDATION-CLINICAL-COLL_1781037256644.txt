@@ -1,0 +1,447 @@
+CLOUDBERRY HEALTH — DATABASE_URL VALIDATION, CLINICAL COLLABORATION, ESCALATION GOVERNANCE, LONGITUDINAL RECORDS, REPORTING, AND DIET PLAN ENHANCEMENTS
+IMPORTANT
+This task has two primary objectives:
+Verify and enforce Neon PostgreSQL usage through DATABASE_URL.
+Implement the clinical collaboration, reporting, escalation, historical records, and diet-plan enhancements described below.
+Preserve all existing functionality.
+Do NOT modify:
+Authentication architecture
+Existing login flows
+API routing structure
+Vercel deployment configuration
+Railway deployment configuration
+Existing dashboard calculations unless required for historical reporting
+Existing patient assignment logic
+Do not remove or break any existing portal functionality.
+==================================================
+PHASE 1 — DATABASE_URL VALIDATION & ENFORCEMENT
+The production Neon PostgreSQL connection string already exists in:
+DATABASE_URL
+Requirements:
+Locate and audit:
+ORM configuration
+Database clients
+Connection factories
+Repository layer
+Environment variable loaders
+Migration configuration
+Query builders
+Verify:
+DATABASE_URL is loaded correctly
+DATABASE_URL is available at runtime
+DATABASE_URL is the active production database source
+DATABASE_URL is not overridden by Railway PostgreSQL variables
+No hardcoded connection strings exist
+No conflicting database providers exist
+Audit for:
+Multiple database clients
+Duplicate connection pools
+Legacy database providers
+Railway PostgreSQL references
+Fallback database configurations
+Confirm that all modules use the same DATABASE_URL-derived connection:
+Authentication
+Users
+Staff
+Patients
+Check-ins
+Metrics
+Notes
+Reports
+Diet Plans
+Escalations
+Historical Records
+Documents
+Analytics
+Perform runtime verification.
+Prove that:
+Reads occur through DATABASE_URL
+Writes occur through DATABASE_URL
+New records persist after refresh
+New records persist after backend restart
+IMPORTANT
+Do not create a new database.
+Do not migrate data into Railway PostgreSQL.
+Do not switch providers.
+Use the existing DATABASE_URL already configured in production.
+==================================================
+PHASE 2 — REPORTS & CLINICAL COLLABORATION
+Create a unified reporting and collaboration experience.
+Requirements:
+All patient reports must be visible to:
+Operations Portal
+Physician Portal
+Physicians should be able to create patient-specific notes.
+Requirements:
+Timestamped
+Author recorded
+Editable
+Historical versions retained
+Stored permanently
+Physician notes must be visible in:
+Physician Portal
+Operations Portal
+Historical timeline
+Display:
+Author
+Created timestamp
+Last modified timestamp
+==================================================
+PHASE 3 — DIETICIAN VISIBILITY
+Physicians should be able to view:
+Assigned Dietician
+Dietician details
+Current Diet Plan
+Historical Diet Plans
+Dieticians continue using the Operations Portal.
+Do not create a separate Dietician Portal.
+==================================================
+PHASE 4 — CRITICAL NOTES
+Create a dedicated Critical Notes section for every patient.
+Purpose:
+Store important observations that should remain visible to care teams.
+Creation Rights:
+Operations
+Physicians
+Visibility:
+Operations Portal
+Physician Portal
+NOT visible to Patients.
+Requirements:
+Timestamped
+Editable
+Full edit history retained
+Author visible
+==================================================
+PHASE 5 — ESCALATION GOVERNANCE & AUDIT LOGS
+Expand the escalation system.
+Escalation Categories:
+Medical
+Diet
+Other
+Each escalation record must store:
+Category
+Author
+Timestamp
+Last modified timestamp
+Status
+Comments
+Resolution notes
+Support:
+Create
+Edit
+Save
+Reopen
+Resolve
+Maintain complete audit history.
+==================================================
+ESCALATION VISIBILITY
+Visible to:
+Operations Portal
+Authorized Physicians
+Not visible to:
+Patient Portal
+All changes must remain permanently recorded.
+==================================================
+OPS ESCALATION LOG
+Create an Operations-only escalation log.
+Purpose:
+Record:
+Escalation observations
+Follow-up actions
+Internal notes
+Escalation decisions
+Visibility:
+Operations only.
+Not visible to Physicians.
+Not visible to Patients.
+==================================================
+PHASE 6 — LONGITUDINAL HISTORY & RECORDS CENTER
+Expand the current timeline/history functionality.
+Create a complete Records Center for every patient.
+The objective is to provide:
+Weekly analysis
+Monthly analysis
+Lifetime analysis
+Historical activity review
+==================================================
+TIME RANGE SUPPORT
+Support:
+Weekly
+Monthly
+Since Enrollment
+Specific Month Selection
+Examples:
+January 2026
+February 2026
+March 2026
+Users should be able to select a specific month and review historical performance.
+==================================================
+HISTORICAL DASHBOARD
+The historical dashboard should mirror the current patient dashboard.
+All relevant cards should support:
+Weekly view
+Monthly view
+Lifetime view
+Examples:
+Behavioral Consistency
+Weight
+Sleep
+Glucose
+Activity
+Adherence
+Progress metrics
+The historical dashboard should look and behave like the existing dashboard.
+Only the selected date range should change.
+==================================================
+PHASE 7 — COMPLETE PATIENT ACTIVITY HISTORY
+Create a unified activity feed.
+Display:
+Check-ins
+Notes
+Critical Notes
+Physician Comments
+Dietician Updates
+Escalations
+De-escalations
+Uploaded Reports
+Uploaded Documents
+Care Plan Changes
+Diet Plan Changes
+Appointments
+Metrics Updates
+Display chronologically.
+Support filtering by:
+Date
+Month
+Event Type
+Author
+When users click a record, display:
+Full content
+Full comments
+Historical edits
+Associated notes
+Associated files
+==================================================
+PHASE 8 — DIET PLAN PDF MANAGEMENT
+Support Diet Plan PDF uploads.
+Requirements:
+Upload PDF
+Store version history
+Store upload timestamps
+Store uploader information
+Visibility:
+Patient Portal
+Physician Portal
+Operations Portal
+Previous versions must remain accessible.
+==================================================
+PHASE 9 — CARE CONTENT VERSION HISTORY
+For:
+Physician Notes
+Critical Notes
+Care Plans
+Diet Plans
+Escalation Comments
+Maintain:
+Original content
+Updated content
+Author history
+Timestamp history
+Users should be able to review previous versions.
+==================================================
+DATA CONSISTENCY
+Ensure synchronization across:
+Patient Portal
+Physician Portal
+Operations Portal
+The same patient should display consistent data across all portals.
+==================================================
+FINAL IMPLEMENTATION REPORT
+Provide:
+ORM detected
+Database provider detected
+Active runtime database source
+Proof DATABASE_URL is being used
+Database files audited
+Conflicting database configurations discovered
+Database fixes applied
+Database health verification
+Exact files modified
+Database schema changes
+New tables added
+New APIs added
+Report visibility implementation
+Physician Notes implementation
+Critical Notes implementation
+Escalation Governance implementation
+Operations Escalation Log implementation
+Historical Dashboard implementation
+Records Center implementation
+Diet Plan PDF implementation
+Version History implementation
+Validation results
+Screenshots demonstrating functionality
+Do not mark the task complete until:
+DATABASE_URL usage is verified with evidence
+All new functionality is implemented
+All data persists correctly
+All portals remain synchronized
+All features are tested against actual database records.
+IMPORTANT — INTEGRATION REQUIREMENT
+This implementation must be treated as an extension of the previously implemented:
+Records Center
+Timeline System
+Historical Dashboard
+Activity Feed
+Physician Notes
+Critical Notes
+Escalation System
+Diet Plan Management
+Document Management
+DATABASE_URL-integrated persistence layer
+Do NOT create duplicate systems.
+Do NOT create separate implementations for:
+Records
+Activity
+Notes
+Documents
+Diet Plans
+Historical Metrics
+Historical Dashboards
+Timelines
+Instead, extend the existing implementations and ensure they operate from the same underlying database tables, APIs, and services.
+==================================================
+UNIFIED RECORDS CENTER
+The Records Center should become the single source of truth for:
+Historical metrics
+Historical reports
+Uploaded documents
+Notes
+Critical notes
+Diet plans
+Escalations
+Activity history
+Timeline events
+Care plan history
+All portals should consume the same data source.
+==================================================
+UNIFIED DASHBOARD EXPERIENCE
+The Patient Dashboard should now receive the same level of historical visibility available in the Physician and Operations portals.
+Requirements:
+Patient Portal
+Physician Portal
+Operations Portal
+must all support:
+Weekly view
+Monthly view
+Lifetime view
+Month selection
+The filtering experience must be identical across all portals.
+The same underlying calculation service must be used for all dashboard cards.
+==================================================
+PATIENT RECORDS CENTER
+The Patient Portal should now include:
+Records Center
+Activity Center
+Historical Dashboard
+Timeline View
+These should be built using the same APIs already created for historical records and timelines.
+Do not create duplicate APIs if equivalent functionality already exists.
+==================================================
+PATIENT ACTIVITY CENTER
+The Patient Activity Center should be an extension of the existing timeline/activity feed.
+Display:
+Check-ins
+Progress updates
+Report uploads
+Diet Plan updates
+Care Plan updates
+Physician comments approved for patient visibility
+Operations comments approved for patient visibility
+Appointment activity
+Maintain chronological ordering.
+==================================================
+DIET PLAN INTEGRATION
+Diet Plans should now appear inside:
+Records Center
+Activity Center
+Historical Dashboard
+Patients should be able to view:
+Current diet plan
+Previous diet plans
+Diet Plan PDFs
+Version history
+Also display:
+Physician comments
+Operations comments
+with:
+Author
+Timestamp
+Edit history
+==================================================
+DOCUMENT MANAGEMENT INTEGRATION
+Extend the existing document management implementation.
+Physicians should be able to:
+View documents
+Download documents
+Comment on documents
+Document source should be tracked:
+Uploaded by Patient
+Uploaded by Operations
+When commenting, support visibility controls:
+Ops only
+Patient only
+Both
+These visibility controls must be respected throughout:
+Records Center
+Activity Center
+Timeline
+Historical Views
+==================================================
+CTA & BUG FIX AUDIT
+As part of this implementation:
+Audit every page and portal for:
+Broken buttons
+Broken forms
+Broken navigation
+Broken uploads
+Broken downloads
+Broken save actions
+Broken edit actions
+Broken tabs
+Broken filters
+Console errors
+API errors
+Repair all issues discovered.
+==================================================
+DATABASE_URL CONSISTENCY
+All new functionality must continue using the same DATABASE_URL-backed Neon PostgreSQL database already verified in the earlier implementation.
+Verify:
+Records Center persistence
+Notes persistence
+Critical Notes persistence
+Escalation persistence
+Document persistence
+Diet Plan persistence
+Activity persistence
+All reads and writes must persist through DATABASE_URL.
+==================================================
+FINAL VALIDATION
+Validate using:
+Patient account
+Physician account
+Operations account
+Dietician account
+Verify:
+Dashboard consistency
+Records Center consistency
+Activity Center consistency
+Timeline consistency
+Diet Plan visibility
+Document visibility
+Comment visibility
+Historical filtering
+CTA functionality
+Provide screenshots and evidence showing that all portals are synchronized and backed by the same underlying database records.
+
