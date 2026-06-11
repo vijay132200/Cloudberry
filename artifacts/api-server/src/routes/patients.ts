@@ -12,6 +12,7 @@ import {
   appointmentsTable,
   dietPlansTable,
   patientPlanHistoryTable,
+  patientDocumentsTable,
 } from "@workspace/db";
 import { eq, desc, and, asc, gte, lte, sql } from "drizzle-orm";
 import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
@@ -512,6 +513,77 @@ router.get("/me/activity", async (req, res) => {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// ── Document management for patients ──────────────────────────────────────────
+
+router.get("/me/documents", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed || parsed.role !== "patient") { res.status(403).json({ error: "Forbidden" }); return; }
+    const [patient] = await db.select({ id: patientsTable.id }).from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const docs = await db.select({
+      id: patientDocumentsTable.id,
+      patientId: patientDocumentsTable.patientId,
+      filename: patientDocumentsTable.filename,
+      fileType: patientDocumentsTable.fileType,
+      category: patientDocumentsTable.category,
+      label: patientDocumentsTable.label,
+      uploadedByPatient: patientDocumentsTable.uploadedByPatient,
+      createdAt: patientDocumentsTable.createdAt,
+    }).from(patientDocumentsTable).where(eq(patientDocumentsTable.patientId, patient.id)).orderBy(desc(patientDocumentsTable.createdAt));
+    res.json(docs.map(d => ({ ...d, createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.get("/me/documents/:id", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed || parsed.role !== "patient") { res.status(403).json({ error: "Forbidden" }); return; }
+    const [patient] = await db.select({ id: patientsTable.id }).from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const docId = parseInt(req.params.id);
+    const [doc] = await db.select().from(patientDocumentsTable).where(and(eq(patientDocumentsTable.id, docId), eq(patientDocumentsTable.patientId, patient.id))).limit(1);
+    if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
+    res.json({ ...doc, createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : doc.createdAt });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/me/documents", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed || parsed.role !== "patient") { res.status(403).json({ error: "Forbidden" }); return; }
+    const [patient] = await db.select({ id: patientsTable.id }).from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const { filename, fileData, fileType, category, label } = req.body;
+    if (!filename || !fileData) { res.status(400).json({ error: "filename and fileData required" }); return; }
+    const [doc] = await db.insert(patientDocumentsTable).values({
+      patientId: patient.id, uploadedByPatient: true, filename,
+      fileData, fileType: fileType ?? "application/octet-stream",
+      category: category ?? "general", label: label ?? null,
+    }).returning({
+      id: patientDocumentsTable.id, patientId: patientDocumentsTable.patientId,
+      filename: patientDocumentsTable.filename, fileType: patientDocumentsTable.fileType,
+      category: patientDocumentsTable.category, label: patientDocumentsTable.label,
+      uploadedByPatient: patientDocumentsTable.uploadedByPatient, createdAt: patientDocumentsTable.createdAt,
+    });
+    res.status(201).json({ ...doc, createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : doc.createdAt });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/me/documents/:id", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed || parsed.role !== "patient") { res.status(403).json({ error: "Forbidden" }); return; }
+    const [patient] = await db.select({ id: patientsTable.id }).from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const docId = parseInt(req.params.id);
+    const [doc] = await db.select({ id: patientDocumentsTable.id }).from(patientDocumentsTable).where(and(eq(patientDocumentsTable.id, docId), eq(patientDocumentsTable.patientId, patient.id))).limit(1);
+    if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
+    await db.delete(patientDocumentsTable).where(eq(patientDocumentsTable.id, docId));
+    res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 export default router;

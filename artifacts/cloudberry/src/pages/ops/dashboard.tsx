@@ -1077,6 +1077,9 @@ export default function OpsDashboard() {
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [tab, setTab] = useState<TabType>("pending");
+  const [credentialsUnlocked, setCredentialsUnlocked] = useState(false);
+  const [credGatePass, setCredGatePass] = useState("");
+  const [credGateError, setCredGateError] = useState(false);
   const [staffSearch, setStaffSearch] = useState("");
   const [regSearch, setRegSearch] = useState("");
   const [addingStaff, setAddingStaff] = useState(false);
@@ -1812,8 +1815,47 @@ export default function OpsDashboard() {
         )}
 
         {/* ── CREDENTIALS TAB ──────────────────────────────────────── */}
-        {tab === "credentials" && (
+        {tab === "credentials" && !credentialsUnlocked && (
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="w-full max-w-sm bg-white border border-border rounded-2xl shadow-sm p-8 space-y-5 text-center">
+              <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto">
+                <ShieldAlert className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-base text-foreground">Restricted Access</p>
+                <p className="text-sm text-muted-foreground mt-1">This tab contains sensitive credentials. Enter the platform password to continue.</p>
+              </div>
+              <div className="space-y-2 text-left">
+                <label className="text-xs font-medium text-muted-foreground">Platform Password</label>
+                <input
+                  type="password"
+                  value={credGatePass}
+                  onChange={e => { setCredGatePass(e.target.value); setCredGateError(false); }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      if (credGatePass === "Cloudberry_ViewIt@$123") { setCredentialsUnlocked(true); setCredGatePass(""); }
+                      else setCredGateError(true);
+                    }
+                  }}
+                  placeholder="Enter password…"
+                  className={`w-full h-9 rounded-xl border px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition ${credGateError ? "border-rose-400 bg-rose-50" : "border-border bg-background"}`}
+                />
+                {credGateError && <p className="text-xs text-rose-600">Incorrect password. Please try again.</p>}
+              </div>
+              <Button className="w-full rounded-xl" onClick={() => {
+                if (credGatePass === "Cloudberry_ViewIt@$123") { setCredentialsUnlocked(true); setCredGatePass(""); }
+                else setCredGateError(true);
+              }}>Unlock</Button>
+            </div>
+          </div>
+        )}
+
+        {tab === "credentials" && credentialsUnlocked && (
           <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-amber-500" /> Credentials unlocked for this session</p>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setCredentialsUnlocked(false)}>Lock</Button>
+            </div>
             {/* Patient credentials (live from DB) */}
             <Card className="border-border shadow-sm overflow-hidden">
               <CardHeader className="border-b bg-muted/20 py-4">

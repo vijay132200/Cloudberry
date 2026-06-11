@@ -4,7 +4,7 @@ import {
   clinicalNotesTable, clinicalNoteVersionsTable,
   criticalNotesTable, criticalNoteVersionsTable,
   escalationsTable, escalationAuditLogTable, opsEscalationLogTable,
-  dietPlansTable, checkinsTable, metricsTable, appointmentsTable,
+  dietPlansTable, dietPlanCommentsTable, checkinsTable, metricsTable, appointmentsTable,
   patientNotesTable, staffTable, patientPlansTable, patientPlanHistoryTable,
   patientsTable,
 } from "@workspace/db";
@@ -383,6 +383,53 @@ export function buildPhysicianClinicalRouter() {
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
 
+  // Diet plan PDF download — physician
+  router.get("/patients/:id/diet-plans/:planId/pdf", async (req, res) => {
+    try {
+      const auth = await requirePhysicianAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      const planId = parseInt(req.params.planId);
+      if (!await verifyPhysicianPatientAccess(patientId, auth.staffId, res)) return;
+      const [plan] = await db.select().from(dietPlansTable).where(and(eq(dietPlansTable.id, planId), eq(dietPlansTable.patientId, patientId))).limit(1);
+      if (!plan) { res.status(404).json({ error: "Diet plan not found" }); return; }
+      if (!plan.pdfData) { res.status(404).json({ error: "No PDF attached to this plan" }); return; }
+      res.json({ pdfData: plan.pdfData, pdfFilename: plan.pdfFilename ?? `diet-plan-v${plan.version}.pdf` });
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  // Diet plan comments — physician can read + write
+  router.get("/patients/:id/diet-plan-comments", async (req, res) => {
+    try {
+      const auth = await requirePhysicianAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      if (!await verifyPhysicianPatientAccess(patientId, auth.staffId, res)) return;
+      const planId = req.query.planId ? parseInt(req.query.planId as string) : null;
+      const conditions: any[] = [eq(dietPlanCommentsTable.patientId, patientId)];
+      if (planId) conditions.push(eq(dietPlanCommentsTable.dietPlanId, planId));
+      const comments = await db.select().from(dietPlanCommentsTable).where(and(...conditions)).orderBy(asc(dietPlanCommentsTable.createdAt)).limit(100);
+      const result = await Promise.all(comments.map(async c => {
+        const author = await getStaffInfo(c.authorId);
+        return { ...c, authorName: author?.fullName ?? "Unknown", createdAt: c.createdAt.toISOString() };
+      }));
+      res.json(result);
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  router.post("/patients/:id/diet-plan-comments", async (req, res) => {
+    try {
+      const auth = await requirePhysicianAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      if (!await verifyPhysicianPatientAccess(patientId, auth.staffId, res)) return;
+      const { dietPlanId, content } = req.body;
+      if (!dietPlanId || !content?.trim()) { res.status(400).json({ error: "dietPlanId and content required" }); return; }
+      const [comment] = await db.insert(dietPlanCommentsTable).values({
+        dietPlanId, patientId, authorId: auth.staffId, authorRole: auth.role, content: content.trim(),
+      }).returning();
+      const author = await getStaffInfo(auth.staffId);
+      res.status(201).json({ ...comment, authorName: author?.fullName, createdAt: comment.createdAt.toISOString() });
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
   // Historical records
   router.get("/patients/:id/records", async (req, res) => {
     try {
@@ -553,6 +600,50 @@ export function buildOpsClinicalRouter() {
     try {
       const auth = await requireOpsAuth(req, res); if (!auth) return;
       res.json(await getDietPlans(parseInt(req.params.id)));
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  // Diet plan PDF download — ops
+  router.get("/patients/:id/diet-plans/:planId/pdf", async (req, res) => {
+    try {
+      const auth = await requireOpsAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      const planId = parseInt(req.params.planId);
+      const [plan] = await db.select().from(dietPlansTable).where(and(eq(dietPlansTable.id, planId), eq(dietPlansTable.patientId, patientId))).limit(1);
+      if (!plan) { res.status(404).json({ error: "Diet plan not found" }); return; }
+      if (!plan.pdfData) { res.status(404).json({ error: "No PDF attached to this plan" }); return; }
+      res.json({ pdfData: plan.pdfData, pdfFilename: plan.pdfFilename ?? `diet-plan-v${plan.version}.pdf` });
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  // Diet plan comments — ops can read + write
+  router.get("/patients/:id/diet-plan-comments", async (req, res) => {
+    try {
+      const auth = await requireOpsAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      const planId = req.query.planId ? parseInt(req.query.planId as string) : null;
+      const conditions: any[] = [eq(dietPlanCommentsTable.patientId, patientId)];
+      if (planId) conditions.push(eq(dietPlanCommentsTable.dietPlanId, planId));
+      const comments = await db.select().from(dietPlanCommentsTable).where(and(...conditions)).orderBy(asc(dietPlanCommentsTable.createdAt)).limit(100);
+      const result = await Promise.all(comments.map(async c => {
+        const author = await getStaffInfo(c.authorId);
+        return { ...c, authorName: author?.fullName ?? "Unknown", createdAt: c.createdAt.toISOString() };
+      }));
+      res.json(result);
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  router.post("/patients/:id/diet-plan-comments", async (req, res) => {
+    try {
+      const auth = await requireOpsAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      const { dietPlanId, content } = req.body;
+      if (!dietPlanId || !content?.trim()) { res.status(400).json({ error: "dietPlanId and content required" }); return; }
+      const [comment] = await db.insert(dietPlanCommentsTable).values({
+        dietPlanId, patientId, authorId: auth.staffId, authorRole: "ops", content: content.trim(),
+      }).returning();
+      const author = await getStaffInfo(auth.staffId);
+      res.status(201).json({ ...comment, authorName: author?.fullName, createdAt: comment.createdAt.toISOString() });
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
 

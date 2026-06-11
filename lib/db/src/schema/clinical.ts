@@ -105,6 +105,34 @@ export const dietPlansTable = pgTable("diet_plans", {
   patientActiveIdx: index("diet_plans_patient_active_idx").on(t.patientId, t.isActive),
 }));
 
+export const dietPlanCommentsTable = pgTable("diet_plan_comments", {
+  id: serial("id").primaryKey(),
+  dietPlanId: integer("diet_plan_id").notNull().references(() => dietPlansTable.id, { onDelete: "cascade" }),
+  patientId: integer("patient_id").notNull().references(() => patientsTable.id, { onDelete: "cascade" }),
+  authorId: integer("author_id").notNull().references(() => staffTable.id, { onDelete: "cascade" }),
+  authorRole: text("author_role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  dietPlanIdIdx: index("diet_plan_comments_diet_plan_id_idx").on(t.dietPlanId),
+  patientIdIdx: index("diet_plan_comments_patient_id_idx").on(t.patientId),
+}));
+
+export const patientDocumentsTable = pgTable("patient_documents", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull().references(() => patientsTable.id, { onDelete: "cascade" }),
+  uploadedByPatient: boolean("uploaded_by_patient").notNull().default(false),
+  uploadedByStaffId: integer("uploaded_by_staff_id").references(() => staffTable.id, { onDelete: "set null" }),
+  filename: text("filename").notNull(),
+  fileData: text("file_data").notNull(),
+  fileType: text("file_type").notNull().default("application/pdf"),
+  category: text("category").notNull().default("general"),
+  label: text("label"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  patientIdIdx: index("patient_documents_patient_id_idx").on(t.patientId),
+}));
+
 // Care plan version history — snapshots of patientPlansTable before each edit
 export const patientPlanHistoryTable = pgTable("patient_plan_history", {
   id: serial("id").primaryKey(),

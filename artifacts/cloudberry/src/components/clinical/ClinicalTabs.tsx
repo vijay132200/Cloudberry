@@ -456,7 +456,7 @@ export function EscalationsTab({ patientId, prefix, isOps }: { patientId: number
 }
 
 // ── DIET PLAN TAB ────────────────────────────────────────────────────────────
-export function DietPlanTab({ patientId, prefix, canUpload }: { patientId: number; prefix: string; canUpload?: boolean }) {
+export function DietPlanTab({ patientId, prefix, canUpload, canComment }: { patientId: number; prefix: string; canUpload?: boolean; canComment?: boolean }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [showCreate, setShowCreate] = useState(false);
@@ -464,6 +464,7 @@ export function DietPlanTab({ patientId, prefix, canUpload }: { patientId: numbe
   const [content, setContent] = useState("");
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState("");
 
   function handlePdfChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -481,6 +482,39 @@ export function DietPlanTab({ patientId, prefix, canUpload }: { patientId: numbe
     queryKey: [`${prefix}-diet-plans`, patientId],
     queryFn: () => fetchJson(`/${prefix}/patients/${patientId}/diet-plans`),
   });
+
+  const activePlanId = (plans as any[]).find((p: any) => p.isActive)?.id ?? null;
+
+  const { data: comments = [] } = useQuery<any[]>({
+    queryKey: [`${prefix}-diet-plan-comments`, patientId, activePlanId],
+    queryFn: () => fetchJson(`/${prefix}/patients/${patientId}/diet-plan-comments${activePlanId ? `?planId=${activePlanId}` : ""}`),
+    enabled: canComment === true && activePlanId !== null,
+  });
+
+  const commentMut = useMutation({
+    mutationFn: (body: any) => postJson(`/${prefix}/patients/${patientId}/diet-plan-comments`, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [`${prefix}-diet-plan-comments`, patientId, activePlanId] });
+      setNewComment("");
+      toast({ title: "Comment added" });
+    },
+    onError: (e: any) => toast({ title: "Failed to add comment", description: e.message, variant: "destructive" }),
+  });
+
+  const handlePdfDownload = async (planId: number, filename: string) => {
+    try {
+      const res = await fetchJson(`/${prefix}/patients/${patientId}/diet-plans/${planId}/pdf`);
+      const byteChars = atob(res.pdfData);
+      const arr = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([arr], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = res.pdfFilename ?? filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch {
+      toast({ title: "No PDF attached to this plan", variant: "destructive" });
+    }
+  };
 
   const createMut = useMutation({
     mutationFn: (body: any) => postJson(`/${prefix}/patients/${patientId}/diet-plans`, body),
@@ -539,7 +573,15 @@ export function DietPlanTab({ patientId, prefix, canUpload }: { patientId: numbe
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-start justify-between">
               <CardTitle className="text-sm flex items-center gap-2 text-emerald-700"><Salad className="w-4 h-4" />Current Diet Plan</CardTitle>
-              <Badge variant="outline" className="text-[10px] border bg-emerald-50 text-emerald-700 border-emerald-200">v{activePlan.version} · Active</Badge>
+              <div className="flex items-center gap-2">
+                {activePlan.pdfFilename && (
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 px-2.5"
+                    onClick={() => handlePdfDownload(activePlan.id, activePlan.pdfFilename)}>
+                    <FileText className="w-3 h-3" />PDF
+                  </Button>
+                )}
+                <Badge variant="outline" className="text-[10px] border bg-emerald-50 text-emerald-700 border-emerald-200">v{activePlan.version} · Active</Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -550,6 +592,35 @@ export function DietPlanTab({ patientId, prefix, canUpload }: { patientId: numbe
             <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{activePlan.content}</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Diet plan comments — shown only when canComment is true and there is an active plan */}
+      {canComment && activePlan && (
+        <div className="space-y-3">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Physician Comments</p>
+          {(comments as any[]).length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">No comments yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {(comments as any[]).map((c: any) => (
+                <div key={c.id} className="bg-sky-50/60 border border-sky-200 rounded-xl px-3.5 py-2.5">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
+                    <User className="w-3 h-3" /><span className="font-semibold text-foreground/80">{c.authorName}</span>
+                    <span className="capitalize">{c.authorRole}</span><span>·</span><Clock className="w-3 h-3" />{fmtDate(c.createdAt)}
+                  </div>
+                  <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Add a physician comment on this diet plan…" className="text-sm min-h-[70px] resize-none rounded-xl" />
+            <Button size="sm" className="h-8 text-xs rounded-full gap-1 w-full" disabled={!newComment.trim() || commentMut.isPending}
+              onClick={() => commentMut.mutate({ dietPlanId: activePlan.id, content: newComment })}>
+              <Save className="w-3 h-3" />{commentMut.isPending ? "Saving…" : "Add Comment"}
+            </Button>
+          </div>
+        </div>
       )}
 
       {history.length > 0 && (
@@ -566,7 +637,15 @@ export function DietPlanTab({ patientId, prefix, canUpload }: { patientId: numbe
                         <span>v{plan.version}</span><span>·</span><span>{plan.authorName}</span><span>·</span><span>{fmtDate(plan.createdAt)}</span>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-[10px] border bg-slate-50 text-slate-500 border-slate-200">Archived</Badge>
+                    <div className="flex items-center gap-1.5">
+                      {plan.pdfFilename && (
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-0.5 px-2 text-muted-foreground hover:text-emerald-700"
+                          onClick={() => handlePdfDownload(plan.id, plan.pdfFilename)}>
+                          <FileText className="w-3 h-3" />PDF
+                        </Button>
+                      )}
+                      <Badge variant="outline" className="text-[10px] border bg-slate-50 text-slate-500 border-slate-200">Archived</Badge>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{plan.content}</p>
                 </CardContent>

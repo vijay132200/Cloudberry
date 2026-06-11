@@ -11,7 +11,7 @@ import {
   ListChecks, BarChart3, Dumbbell, Utensils, Scale,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -492,30 +492,78 @@ function fmtSize(bytes: number) {
 // ── Documents Tab ─────────────────────────────────────────────────────────────
 function DocumentsTab() {
   const { toast } = useToast();
-  const [docs, setDocs] = useState<DocEntry[]>(loadDocs);
+  const qc = useQueryClient();
   const [filter, setFilter] = useState<DocCategory | "all">("all");
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [viewDoc, setViewDoc] = useState<DocEntry | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [viewDoc, setViewDoc] = useState<any | null>(null);
+  const [viewUrl, setViewUrl] = useState<string>("");
   const [form, setForm] = useState({ name: "", category: "prescription" as DocCategory });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [viewUrl, setViewUrl] = useState<string>("");
+
+  const API = import.meta.env.BASE_URL?.replace(/\/$/, "") + "/api";
+  const token = () => localStorage.getItem("cloudberry_token") || "";
+
+  const { data: docs = [], isLoading } = useQuery<any[]>({
+    queryKey: ["patient-documents"],
+    queryFn: async () => {
+      const r = await fetch(`${API}/patients/me/documents`, { headers: { Authorization: `Bearer ${token()}` } });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    },
+    staleTime: 30000,
+  });
+
+  const uploadMut = useMutation({
+    mutationFn: async ({ filename, fileData, fileType, category, label }: any) => {
+      const r = await fetch(`${API}/patients/me/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token()}` },
+        body: JSON.stringify({ filename, fileData, fileType, category, label }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["patient-documents"] });
+      closeUpload();
+      toast({ title: "Document saved", description: "Your document has been securely stored." });
+    },
+    onError: () => toast({ title: "Upload failed", description: "Could not save the file. Please try again.", variant: "destructive" }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await fetch(`${API}/patients/me/documents/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token()}` } });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["patient-documents"] });
+      toast({ title: "Document removed" });
+    },
+    onError: () => toast({ title: "Failed to delete document", variant: "destructive" }),
+  });
 
   useEffect(() => {
     if (!viewDoc) { setViewUrl(""); return; }
     let cleanup: (() => void) | undefined;
-    try {
-      const [, base64] = viewDoc.data.split(",");
-      const byteChars = atob(base64);
-      const arr = new Uint8Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([arr], { type: viewDoc.mimeType });
-      const url = URL.createObjectURL(blob);
-      setViewUrl(url);
-      cleanup = () => URL.revokeObjectURL(url);
-    } catch { setViewUrl(viewDoc.data); }
-    return cleanup;
+    const fetchAndView = async () => {
+      try {
+        const r = await fetch(`${API}/patients/me/documents/${viewDoc.id}`, { headers: { Authorization: `Bearer ${token()}` } });
+        if (!r.ok) return;
+        const full = await r.json();
+        const byteChars = atob(full.fileData);
+        const arr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([arr], { type: full.fileType });
+        const url = URL.createObjectURL(blob);
+        setViewUrl(url);
+        cleanup = () => URL.revokeObjectURL(url);
+      } catch { setViewUrl(""); }
+    };
+    fetchAndView();
+    return () => cleanup?.();
   }, [viewDoc?.id]);
 
   const handleFileSelect = (file: File) => {
@@ -533,47 +581,52 @@ function DocumentsTab() {
 
   const handleUpload = () => {
     if (!selectedFile || !form.name.trim()) return;
-    setUploading(true);
     const reader = new FileReader();
     reader.onload = (e) => {
-      const doc: DocEntry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        name: form.name.trim(), category: form.category,
-        date: new Date().toISOString(), size: fmtSize(selectedFile.size),
-        mimeType: selectedFile.type || "application/octet-stream", data: e.target?.result as string,
-      };
-      const updated = [doc, ...docs];
-      setDocs(updated); saveDocs(updated); closeUpload(); setUploading(false);
-      toast({ title: "Document saved", description: `${doc.name} has been added to your records.` });
+      const dataUrl = e.target?.result as string;
+      const fileData = dataUrl.split(",")[1];
+      uploadMut.mutate({
+        filename: `${form.name.trim()}.${selectedFile.name.split(".").pop() ?? "bin"}`,
+        fileData,
+        fileType: selectedFile.type || "application/octet-stream",
+        category: form.category,
+        label: form.name.trim(),
+      });
     };
-    reader.onerror = () => {
-      setUploading(false);
-      toast({ title: "Upload failed", description: "Could not read the file. Please try again.", variant: "destructive" });
-    };
+    reader.onerror = () => toast({ title: "Upload failed", description: "Could not read the file.", variant: "destructive" });
     reader.readAsDataURL(selectedFile);
   };
 
-  const handleDelete = (id: string) => {
-    const updated = docs.filter(d => d.id !== id);
-    setDocs(updated); saveDocs(updated);
-    toast({ title: "Document removed" });
-  };
-
-  const filtered = filter === "all" ? docs : docs.filter(d => d.category === filter);
+  const filtered = filter === "all" ? docs : docs.filter((d: any) => d.category === filter);
   const counts: Record<string, number> = { all: docs.length };
-  (Object.keys(CATEGORY_LABELS) as DocCategory[]).forEach(c => { counts[c] = docs.filter(d => d.category === c).length; });
+  (Object.keys(CATEGORY_LABELS) as DocCategory[]).forEach(c => { counts[c] = docs.filter((d: any) => d.category === c).length; });
 
   const filterTabs: [string, string][] = [
     ["all", "All"], ["prescription", "Prescriptions"], ["report", "Reports"],
     ["lab_test", "Lab Tests"], ["discharge", "Discharge"], ["other", "Other"],
   ];
 
+  const handleDownload = async (doc: any) => {
+    try {
+      const r = await fetch(`${API}/patients/me/documents/${doc.id}`, { headers: { Authorization: `Bearer ${token()}` } });
+      if (!r.ok) throw new Error();
+      const full = await r.json();
+      const byteChars = atob(full.fileData);
+      const arr = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([arr], { type: full.fileType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = full.filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch { toast({ title: "Download failed", variant: "destructive" }); }
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with upload */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">Your prescriptions, reports, and medical documents — stored privately on this device.</p>
+          <p className="text-sm text-muted-foreground">Your prescriptions, reports, and medical documents — stored securely in the cloud.</p>
         </div>
         <Button className="rounded-full shadow-sm gap-2 shrink-0" onClick={() => setUploadOpen(true)}>
           <Plus className="w-4 h-4" /> Upload Document
@@ -587,7 +640,7 @@ function DocumentsTab() {
       >
         <Upload className="w-7 h-7 text-muted-foreground/50" />
         <p className="text-sm font-medium text-foreground">Drag & drop a file here, or click to browse</p>
-        <p className="text-xs text-muted-foreground">PDF, JPG, PNG supported · Files stored locally on your device</p>
+        <p className="text-xs text-muted-foreground">PDF, JPG, PNG supported · Files synced across devices</p>
       </div>
 
       {/* Filter chips */}
@@ -601,7 +654,9 @@ function DocumentsTab() {
       </div>
 
       {/* Document list */}
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-2.5">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />)}</div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <FolderOpen className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="text-sm font-medium text-foreground">
@@ -616,28 +671,28 @@ function DocumentsTab() {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {filtered.map(doc => (
+          {filtered.map((doc: any) => (
             <div key={doc.id} className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-white hover:shadow-sm transition-all">
               <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center shrink-0 border border-primary/15">
                 <FileText className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{doc.name}</p>
+                <p className="text-sm font-semibold text-foreground truncate">{doc.label ?? doc.filename}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {new Date(doc.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {doc.size}
+                  {new Date(doc.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} · {doc.fileType?.split("/")[1]?.toUpperCase() ?? "FILE"}
                 </p>
               </div>
-              <Badge variant="outline" className={`text-[10px] shrink-0 hidden sm:inline-flex ${CATEGORY_COLORS[doc.category]}`}>
-                {CATEGORY_LABELS[doc.category]}
+              <Badge variant="outline" className={`text-[10px] shrink-0 hidden sm:inline-flex ${CATEGORY_COLORS[doc.category as DocCategory] ?? ""}`}>
+                {CATEGORY_LABELS[doc.category as DocCategory] ?? doc.category}
               </Badge>
               <div className="flex items-center gap-0.5 shrink-0">
                 <button onClick={() => setViewDoc(doc)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="View">
                   <Eye className="w-4 h-4" />
                 </button>
-                <a href={doc.data} download={doc.name} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Download">
+                <button onClick={() => handleDownload(doc)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Download">
                   <Download className="w-4 h-4" />
-                </a>
-                <button onClick={() => handleDelete(doc.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors" title="Delete">
+                </button>
+                <button onClick={() => deleteMut.mutate(doc.id)} disabled={deleteMut.isPending} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors" title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -696,8 +751,8 @@ function DocumentsTab() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={closeUpload}>Cancel</Button>
-            <Button onClick={handleUpload} disabled={!selectedFile || !form.name.trim() || uploading}>
-              {uploading ? "Saving…" : "Save Document"}
+            <Button onClick={handleUpload} disabled={!selectedFile || !form.name.trim() || uploadMut.isPending}>
+              {uploadMut.isPending ? "Saving…" : "Save Document"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -709,29 +764,29 @@ function DocumentsTab() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <FileText className="w-4 h-4 text-primary shrink-0" />
-              <span className="truncate">{viewDoc?.name}</span>
-              {viewDoc && <Badge variant="outline" className={`ml-1 text-[10px] shrink-0 ${CATEGORY_COLORS[viewDoc.category]}`}>{CATEGORY_LABELS[viewDoc.category]}</Badge>}
+              <span className="truncate">{viewDoc?.label ?? viewDoc?.filename}</span>
+              {viewDoc && <Badge variant="outline" className={`ml-1 text-[10px] shrink-0 ${CATEGORY_COLORS[viewDoc.category as DocCategory] ?? ""}`}>{CATEGORY_LABELS[viewDoc.category as DocCategory] ?? viewDoc.category}</Badge>}
             </DialogTitle>
           </DialogHeader>
           {viewDoc && (
             <div className="rounded-xl overflow-hidden border border-border/60 max-h-[60vh] overflow-y-auto">
-              {viewDoc.mimeType.startsWith("image/") ? (
-                <img src={viewDoc.data} alt={viewDoc.name} className="w-full object-contain max-h-[55vh]" />
-              ) : viewDoc.mimeType === "application/pdf" ? (
+              {viewDoc.fileType?.startsWith("image/") && viewUrl ? (
+                <img src={viewUrl} alt={viewDoc.label ?? viewDoc.filename} className="w-full object-contain max-h-[55vh]" />
+              ) : viewDoc.fileType === "application/pdf" || !viewDoc.fileType?.startsWith("image/") ? (
                 viewUrl ? <embed src={viewUrl} type="application/pdf" className="w-full" style={{ height: "55vh" }} /> : <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">Loading…</div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 gap-4">
                   <FileText className="w-10 h-10 text-muted-foreground/40" />
                   <p className="text-sm text-muted-foreground">Preview not available for this file type</p>
-                  <a href={viewDoc.data} download={viewDoc.name}><Button variant="outline" size="sm" className="gap-2 rounded-full"><Download className="w-4 h-4" /> Download to view</Button></a>
+                  <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => handleDownload(viewDoc)}><Download className="w-4 h-4" /> Download to view</Button>
                 </div>
               )}
             </div>
           )}
           {viewDoc && (
             <div className="flex items-center justify-between pt-1">
-              <p className="text-xs text-muted-foreground">Added {new Date(viewDoc.date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} · {viewDoc.size}</p>
-              <a href={viewDoc.data} download={viewDoc.name}><Button variant="outline" size="sm" className="gap-1.5 rounded-full h-8 text-xs"><Download className="w-3.5 h-3.5" /> Download</Button></a>
+              <p className="text-xs text-muted-foreground">Added {new Date(viewDoc.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
+              <Button variant="outline" size="sm" className="gap-1.5 rounded-full h-8 text-xs" onClick={() => handleDownload(viewDoc)}><Download className="w-3.5 h-3.5" /> Download</Button>
             </div>
           )}
         </DialogContent>

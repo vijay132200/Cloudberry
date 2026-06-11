@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createHash } from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, patientsTable, checkinsTable, leadsTable, staffTable, appointmentsTable, patientNotesTable, patientPlansTable, metricsTable } from "@workspace/db";
+import { usersTable, patientsTable, checkinsTable, leadsTable, staffTable, appointmentsTable, patientNotesTable, patientPlansTable, metricsTable, patientDocumentsTable } from "@workspace/db";
 import { eq, desc, sql, or, and, asc, gte } from "drizzle-orm";
 import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
 import { getActiveParams } from "../lib/formula-engine";
@@ -688,6 +688,100 @@ router.post("/patients/:id/appointments", async (req, res) => {
       scheduledAt: appt.scheduledAt.toISOString(),
       createdAt: appt.createdAt.toISOString(),
     });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/ops/patients/:id/detail — comprehensive patient detail for the ops detail panel
+router.get("/patients/:id/detail", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, patient.userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    const [physician, dietician, caretaker] = await Promise.all([
+      getStaffName(patient.assignedPhysicianId),
+      getStaffName(patient.assignedDieticianId),
+      getStaffName(patient.assignedCaretakerId),
+    ]);
+    res.json({
+      id: patient.id,
+      userId: patient.userId,
+      fullName: user.fullName,
+      phone: user.phone,
+      email: user.email ?? null,
+      city: user.city ?? "",
+      plan: patient.plan,
+      status: patient.status,
+      riskLevel: patient.riskLevel,
+      weekNumber: patient.weekNumber,
+      primaryGoal: patient.primaryGoal,
+      startingWeight: patient.startingWeight ?? null,
+      currentWeight: patient.currentWeight ?? null,
+      targetWeight: patient.targetWeight ?? null,
+      assignedPhysicianId: patient.assignedPhysicianId ?? null,
+      assignedDieticianId: patient.assignedDieticianId ?? null,
+      assignedCaretakerId: patient.assignedCaretakerId ?? null,
+      assignedCoachId: patient.assignedCoachId ?? null,
+      assignedPhysician: physician,
+      assignedDietician: dietician,
+      assignedCaretaker: caretaker,
+      preferredCallbackTime: patient.preferredCallbackTime ?? null,
+      createdAt: patient.createdAt instanceof Date ? patient.createdAt.toISOString() : patient.createdAt,
+    });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/ops/patients/:id/documents
+router.get("/patients/:id/documents", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const docs = await db.select({
+      id: patientDocumentsTable.id,
+      patientId: patientDocumentsTable.patientId,
+      filename: patientDocumentsTable.filename,
+      fileType: patientDocumentsTable.fileType,
+      category: patientDocumentsTable.category,
+      label: patientDocumentsTable.label,
+      uploadedByPatient: patientDocumentsTable.uploadedByPatient,
+      createdAt: patientDocumentsTable.createdAt,
+    }).from(patientDocumentsTable).where(eq(patientDocumentsTable.patientId, patientId)).orderBy(desc(patientDocumentsTable.createdAt));
+    res.json(docs.map(d => ({ ...d, createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/patients/:id/documents
+router.post("/patients/:id/documents", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const { filename, fileData, fileType, category, label } = req.body;
+    if (!filename || !fileData) { res.status(400).json({ error: "filename and fileData required" }); return; }
+    const [doc] = await db.insert(patientDocumentsTable).values({
+      patientId, uploadedByPatient: false, uploadedByStaffId: auth.staffId,
+      filename, fileData, fileType: fileType ?? "application/octet-stream",
+      category: category ?? "general", label: label ?? null,
+    }).returning({ id: patientDocumentsTable.id, patientId: patientDocumentsTable.patientId, filename: patientDocumentsTable.filename, fileType: patientDocumentsTable.fileType, category: patientDocumentsTable.category, label: patientDocumentsTable.label, uploadedByPatient: patientDocumentsTable.uploadedByPatient, createdAt: patientDocumentsTable.createdAt });
+    res.status(201).json({ ...doc, createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : doc.createdAt });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// DELETE /api/ops/patients/:id/documents/:docId
+router.delete("/patients/:id/documents/:docId", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const docId = parseInt(req.params.docId);
+    if (Number.isNaN(patientId) || Number.isNaN(docId)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const [doc] = await db.select({ id: patientDocumentsTable.id }).from(patientDocumentsTable).where(and(eq(patientDocumentsTable.id, docId), eq(patientDocumentsTable.patientId, patientId))).limit(1);
+    if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
+    await db.delete(patientDocumentsTable).where(eq(patientDocumentsTable.id, docId));
+    res.json({ ok: true });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

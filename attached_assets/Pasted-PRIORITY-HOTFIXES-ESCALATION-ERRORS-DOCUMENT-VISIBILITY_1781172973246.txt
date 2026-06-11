@@ -1,0 +1,290 @@
+PRIORITY HOTFIXES — ESCALATION ERRORS, DOCUMENT VISIBILITY, DIET PLAN PDF MANAGEMENT, PLATFORM STABILITY, AND ADMIN CREDENTIAL CONTROLS
+
+IMPORTANT
+
+Before implementing any new functionality, perform a complete audit of the currently deployed platform and resolve all runtime issues, API failures, and portal-breaking errors.
+
+==================================================
+PHASE 0 — PRODUCTION BUG & ERROR AUDIT
+======================================
+
+Immediately investigate and resolve:
+
+1. Escalation creation causing:
+
+* Internal Server Error
+* Failed save operations
+* Failed escalation creation
+* Failed escalation history creation
+
+Trace:
+
+* Frontend request
+* API route
+* Validation layer
+* Database write
+* Escalation history creation
+* Timeline generation
+
+Identify root cause and permanently fix it.
+
+==================================================
+PLATFORM ERROR AUDIT
+====================
+
+Audit the entire platform for:
+
+* Internal Server Errors
+* Failed API requests
+* Unhandled exceptions
+* Broken save actions
+* Broken edit actions
+* Broken delete actions
+* Broken uploads
+* Broken downloads
+* Broken links
+* Broken CTAs
+* Console errors
+* Rendering failures
+* Permission failures
+
+Repair all issues discovered.
+
+Provide a complete error-resolution report.
+
+==================================================
+PHASE 1 — UNIFIED DOCUMENT MANAGEMENT
+=====================================
+
+All uploaded files must use a single centralized document management system.
+
+This includes:
+
+* Patient uploads
+* Physician uploads
+* Operations uploads
+* Diet Plan PDFs
+* Reports
+* Prescriptions
+* Lab reports
+* Medical records
+* Attachments
+
+Do not create separate storage systems.
+
+==================================================
+DOCUMENT ACCESSIBILITY
+======================
+
+Documents uploaded from any portal must be:
+
+* Viewable
+* Downloadable
+* Searchable
+
+from all relevant portals.
+
+Visibility:
+
+Patient Uploaded Documents:
+
+* Patient
+* Physician
+* Operations
+* Dietician
+
+Diet Plan PDFs:
+
+* Patient
+* Physician
+* Operations
+* Dietician
+
+Medical Reports:
+
+* Patient
+* Physician
+* Operations
+* Dietician
+
+All portals should consume the same document source.
+
+==================================================
+FILE SIZE LIMIT
+===============
+
+Increase maximum upload limit to:
+
+1 GB
+
+Requirements:
+
+* Large PDF support
+* Large report support
+* Large medical document support
+
+Implement:
+
+* Validation
+* Upload progress
+* Error handling
+* Retry handling
+
+==================================================
+PHASE 2 — DIET PLAN PDF MANAGEMENT
+==================================
+
+Current Issue:
+
+Diet Plan PDFs are not functioning consistently.
+
+Examples:
+
+* PDF uploaded but "No PDF attached to this plan" appears.
+* PDFs are not visible everywhere.
+* PDFs do not behave like uploaded documents.
+
+Fix the entire Diet Plan PDF lifecycle.
+
+Verify:
+
+* Upload
+* Save
+* Retrieval
+* Preview
+* Download
+* Version History
+
+==================================================
+DIET PLAN COMMENTS
+==================
+
+Add physician commenting directly on Diet Plan PDFs.
+
+Requirements:
+
+Physician can:
+
+* Comment
+* Edit comment
+* View previous comments
+
+Store:
+
+* Author
+* Timestamp
+* Last modified timestamp
+
+Display comments within:
+
+* Patient Portal
+* Physician Portal
+* Operations Portal
+
+according to visibility rules.
+
+==================================================
+PHASE 3 — CREDENTIAL MANAGEMENT
+===============================
+
+Audit the existing Credentials section.
+
+Determine:
+
+* Whether passwords are currently exposed.
+* Whether passwords are stored securely.
+* Whether demo account passwords are handled securely.
+
+IMPORTANT
+
+Do NOT expose stored user passwords.
+
+Do NOT store plaintext passwords.
+
+Do NOT provide a mechanism to reveal hashed passwords.
+
+Instead implement:
+
+Secure Admin Credential Management.
+
+==================================================
+ADMIN CREDENTIAL CONTROLS
+=========================
+
+Create a protected admin-only action requiring:
+
+Cloudberry_ViewIt@$123
+
+before access is granted.
+
+After successful verification, allow:
+
+* View account metadata
+* View account role
+* View account status
+* View account creation details
+* Generate temporary login links
+* Generate temporary passwords
+* Force password reset
+* Reset demo account passwords
+
+Do NOT reveal existing user passwords.
+
+Maintain audit logs for all administrative actions.
+
+Store:
+
+* Admin
+* Action performed
+* Timestamp
+* Target account
+
+==================================================
+PHASE 4 — PLATFORM STABILITY
+============================
+
+Validate every workflow:
+
+Patient
+Physician
+Operations
+Dietician
+
+Verify:
+
+* Uploads
+* Downloads
+* Comments
+* Diet Plans
+* Escalations
+* Notes
+* Critical Notes
+* Documents
+* Reports
+* Timeline
+* Activity Feed
+* Records Center
+
+All actions must persist through DATABASE_URL.
+
+==================================================
+FINAL REPORT
+============
+
+Provide:
+
+1. Escalation error root cause
+2. Escalation fix implemented
+3. Internal server errors fixed
+4. APIs repaired
+5. Document system architecture
+6. Diet Plan PDF fixes
+7. Cross-portal visibility validation
+8. Upload limit implementation
+9. Credential management implementation
+10. Security validation results
+11. Exact files modified
+12. Database schema changes
+13. Validation screenshots
+
+Do not mark the task complete until all document workflows, escalation workflows, Diet Plan PDFs, and administrative credential controls are functioning correctly and verified against the production DATABASE_URL-backed database.
