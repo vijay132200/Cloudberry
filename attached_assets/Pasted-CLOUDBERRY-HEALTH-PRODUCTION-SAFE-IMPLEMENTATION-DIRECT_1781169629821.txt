@@ -1,0 +1,161 @@
+CLOUDBERRY HEALTH — PRODUCTION-SAFE IMPLEMENTATION DIRECTIVE
+
+READ THIS SECTION BEFORE ANY CODE MODIFICATIONS.
+
+This is a production system already connected to a live Neon PostgreSQL database through DATABASE_URL.
+
+Before creating, modifying, deleting, migrating, or replacing anything:
+
+1. AUDIT FIRST
+
+Perform a complete codebase audit before making changes.
+
+Identify:
+
+* Existing database tables
+* Existing APIs
+* Existing routes
+* Existing document systems
+* Existing escalation systems
+* Existing timeline systems
+* Existing records systems
+* Existing activity systems
+* Existing diet plan systems
+* Existing permissions systems
+
+2. REUSE BEFORE CREATING
+
+Do NOT create:
+
+* New databases
+* New database providers
+* Duplicate tables
+* Duplicate APIs
+* Duplicate document systems
+* Duplicate upload systems
+* Duplicate timeline systems
+* Duplicate records systems
+* Duplicate activity systems
+
+If equivalent functionality already exists:
+
+* Extend it
+* Repair it
+* Refactor it minimally
+* Reuse existing architecture
+
+3. DATABASE_URL IS THE SINGLE SOURCE OF TRUTH
+
+The platform is already configured with:
+
+DATABASE_URL
+
+Requirements:
+
+* Verify DATABASE_URL is being used
+* Verify all reads use DATABASE_URL
+* Verify all writes use DATABASE_URL
+* Verify all modules share the same connection
+
+Do NOT:
+
+* Create a new Neon database
+* Create a Railway database
+* Create a local database
+* Introduce secondary providers
+* Introduce fallback providers
+
+4. NO DESTRUCTIVE CHANGES
+
+Do NOT:
+
+* Drop tables
+* Truncate production tables
+* Delete historical data
+* Remove relationships
+* Break foreign keys
+* Remove existing APIs
+* Remove existing permissions
+
+If schema updates are required:
+
+* Use additive changes only
+* Preserve backward compatibility
+* Preserve all existing records
+
+5. DOCUMENT SYSTEM CONSOLIDATION
+
+Before creating any new document-related implementation:
+
+Audit the current document architecture.
+
+If a document system already exists:
+
+* Extend it
+* Reuse it
+* Standardize it
+
+Diet Plan PDFs, Patient Documents, Reports, Attachments, and Medical Records must all operate through the same document architecture.
+
+6. DIET PLAN AUDIT FIRST
+
+Before modifying diet plans:
+
+Determine why:
+
+"No PDF attached to this plan"
+
+appears despite uploads.
+
+Trace:
+
+Frontend
+→ API
+→ Database
+→ Retrieval
+→ Rendering
+
+Fix the root cause.
+
+Do not rebuild the entire system unless absolutely necessary.
+
+7. ESCALATION AUDIT FIRST
+
+Before modifying escalation logic:
+
+Identify the exact source of:
+
+Internal Server Error
+
+Trace:
+
+Frontend
+→ Request Payload
+→ Validation
+→ API Route
+→ Service Layer
+→ Database Write
+→ Timeline Creation
+
+Repair the root cause.
+
+Do not rewrite the escalation architecture unnecessarily.
+
+8. IMPLEMENTATION REPORT REQUIRED BEFORE COMPLETION
+
+Before marking work complete provide:
+
+* Existing architecture discovered
+* Existing tables discovered
+* Existing APIs discovered
+* Existing document architecture discovered
+* Existing escalation architecture discovered
+* Database provider detected
+* ORM detected
+* Confirmation DATABASE_URL is active
+* List of schema changes
+* List of APIs modified
+* List of files modified
+* Validation results
+
+Do not claim completion until all fixes have been verified against actual DATABASE_URL-backed data.
