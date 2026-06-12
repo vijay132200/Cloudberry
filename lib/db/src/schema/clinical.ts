@@ -113,6 +113,7 @@ export const dietPlanCommentsTable = pgTable("diet_plan_comments", {
   authorRole: text("author_role").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   dietPlanIdIdx: index("diet_plan_comments_diet_plan_id_idx").on(t.dietPlanId),
   patientIdIdx: index("diet_plan_comments_patient_id_idx").on(t.patientId),

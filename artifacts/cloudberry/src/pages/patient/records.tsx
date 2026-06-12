@@ -380,6 +380,7 @@ function ActivityTab() {
 // ── Diet Plan Tab ─────────────────────────────────────────────────────────────
 function DietPlanTab() {
   const [showHistory, setShowHistory] = useState(false);
+  const { toast } = useToast();
   const { data: plans = [], isLoading } = useQuery<any[]>({
     queryKey: ["patient-diet-plans"],
     queryFn: () => fetchJson("/patients/me/diet-plan"),
@@ -387,6 +388,21 @@ function DietPlanTab() {
   const activePlan = (plans as any[]).find((p: any) => p.isActive);
   const historyPlans = (plans as any[]).filter((p: any) => !p.isActive);
   const displayPlan = activePlan ?? plans[0];
+
+  const handlePdfDownload = async (plan: any) => {
+    try {
+      const data = await fetchJson(`/patients/me/diet-plans/${plan.id}/pdf`);
+      const byteChars = atob(data.pdfData);
+      const arr = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([arr], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = data.pdfFilename ?? `diet-plan-v${plan.version}.pdf`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch {
+      toast({ title: "No PDF attached to this plan", variant: "destructive" });
+    }
+  };
 
   if (isLoading) return <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>;
 
@@ -412,9 +428,18 @@ function DietPlanTab() {
                 </div>
                 Current Diet Plan
               </CardTitle>
-              <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
-                {activePlan ? "Active" : "Archived"} · v{displayPlan.version}
-              </Badge>
+              <div className="flex items-center gap-2">
+                {displayPlan.hasPdf && (
+                  <Button size="sm" variant="outline"
+                    className="h-7 text-[10px] gap-1 rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 px-2.5"
+                    onClick={() => handlePdfDownload(displayPlan)}>
+                    <Download className="w-3 h-3" />Download PDF
+                  </Button>
+                )}
+                <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                  {activePlan ? "Active" : "Archived"} · v{displayPlan.version}
+                </Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-5 pb-5">
@@ -444,7 +469,15 @@ function DietPlanTab() {
                   <CardContent className="px-4 py-3">
                     <div className="flex items-start justify-between mb-1">
                       <p className="text-xs font-semibold text-foreground">{plan.title}</p>
-                      <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-500 border-slate-200 shrink-0 ml-2">v{plan.version}</Badge>
+                      <div className="flex items-center gap-1.5 ml-2">
+                        {plan.hasPdf && (
+                          <Button size="sm" variant="ghost" className="h-5 text-[9px] gap-0.5 px-1.5 text-emerald-700 hover:bg-emerald-50"
+                            onClick={() => handlePdfDownload(plan)}>
+                            <Download className="w-2.5 h-2.5" />PDF
+                          </Button>
+                        )}
+                        <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-500 border-slate-200 shrink-0">v{plan.version}</Badge>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-2">
                       <span className="flex items-center gap-0.5"><User className="w-2.5 h-2.5" />{plan.authorName ?? "Care Team"}</span>

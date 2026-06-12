@@ -14,7 +14,7 @@ import {
   UserPlus, Lock, History,
 } from "lucide-react";
 import { StaffConsistencyHistory } from "@/components/ConsistencyHistory";
-import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab } from "@/components/clinical/ClinicalTabs";
+import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab, PatientDocumentsTab } from "@/components/clinical/ClinicalTabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -115,7 +115,7 @@ function exportCSV(patients: any[]) {
 }
 
 type TabType = "pending" | "patients" | "registrations" | "staff" | "credentials";
-type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity";
+type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity" | "documents";
 
 /* ── Appointment Scheduler ────────────────────────────────────────── */
 function AppointmentScheduler({ patient, detail, staff, onRefresh }: { patient: any; detail: any; staff: any[]; onRefresh: () => void }) {
@@ -381,6 +381,7 @@ function PatientDetailPanel({
             { key: "critical-notes", label: "Critical" },
             { key: "escalations", label: "Escalations" },
             { key: "diet-plan", label: "Diet Plan" },
+            { key: "documents", label: "Documents" },
             { key: "records", label: "Records" },
             { key: "activity", label: "Activity" },
           ] as { key: DetailTab; label: string }[]).map(t => (
@@ -839,7 +840,12 @@ function PatientDetailPanel({
 
           {/* Diet Plan tab */}
           {!isLoading && detailTab === "diet-plan" && (
-            <DietPlanTab patientId={patient.id} prefix="ops" canUpload={true} />
+            <DietPlanTab patientId={patient.id} prefix="ops" canUpload={true} canComment={true} />
+          )}
+
+          {/* Documents tab */}
+          {!isLoading && detailTab === "documents" && (
+            <PatientDocumentsTab patientId={patient.id} prefix="ops" />
           )}
 
           {/* Records tab */}

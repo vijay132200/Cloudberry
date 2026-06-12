@@ -370,9 +370,29 @@ router.get("/me/diet-plan", async (req, res) => {
 
     const result = await Promise.all(plans.map(async p => {
       const [author] = await db.select().from(staffTable).where(eq(staffTable.id, p.authorId)).limit(1);
-      return { ...p, pdfData: undefined, authorName: author?.fullName ?? "Care Team", createdAt: p.createdAt.toISOString() };
+      return { ...p, pdfData: undefined, hasPdf: !!p.pdfData, authorName: author?.fullName ?? "Care Team", createdAt: p.createdAt.toISOString() };
     }));
     res.json(result);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /api/patients/me/diet-plans/:id/pdf — patient PDF download
+router.get("/me/diet-plans/:id/pdf", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed) { res.status(401).json({ error: "Unauthorized" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const planId = parseInt(req.params.id);
+    if (Number.isNaN(planId)) { res.status(400).json({ error: "Invalid plan id" }); return; }
+    const [plan] = await db.select().from(dietPlansTable)
+      .where(and(eq(dietPlansTable.id, planId), eq(dietPlansTable.patientId, patient.id))).limit(1);
+    if (!plan) { res.status(404).json({ error: "Diet plan not found" }); return; }
+    if (!plan.pdfData) { res.status(404).json({ error: "No PDF attached to this plan" }); return; }
+    res.json({ pdfData: plan.pdfData, pdfFilename: plan.pdfFilename ?? `diet-plan-v${plan.version}.pdf` });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });

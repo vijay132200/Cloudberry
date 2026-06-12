@@ -754,6 +754,20 @@ router.get("/patients/:id/documents", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// GET /api/ops/patients/:id/documents/:docId — full document with fileData for download
+router.get("/patients/:id/documents/:docId", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const docId = parseInt(req.params.docId);
+    if (Number.isNaN(patientId) || Number.isNaN(docId)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const [doc] = await db.select().from(patientDocumentsTable)
+      .where(and(eq(patientDocumentsTable.id, docId), eq(patientDocumentsTable.patientId, patientId))).limit(1);
+    if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
+    res.json({ ...doc, createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : doc.createdAt });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // POST /api/ops/patients/:id/documents
 router.post("/patients/:id/documents", async (req, res) => {
   try {

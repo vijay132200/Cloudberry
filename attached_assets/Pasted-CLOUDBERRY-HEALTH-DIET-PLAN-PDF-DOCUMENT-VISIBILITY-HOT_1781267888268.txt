@@ -1,0 +1,347 @@
+CLOUDBERRY HEALTH — DIET PLAN PDF & DOCUMENT VISIBILITY HOTFIXES
+
+
+
+IMPORTANT
+
+
+
+This task is limited to fixing the Diet Plan PDF workflow and Document visibility workflow.
+
+
+
+Do NOT modify:
+
+
+
+* Authentication
+
+* Login flows
+
+* DATABASE_URL configuration
+
+* Existing role architecture
+
+* Deployment configuration
+
+* Existing dashboard calculations
+
+
+
+Preserve all existing functionality.
+
+
+
+==================================================
+
+ISSUE 1 — PHYSICIAN CANNOT COMMENT ON DIET PLAN PDF
+
+===================================================
+
+
+
+Current Issue:
+
+
+
+Physicians can view the Diet Plan section but cannot properly comment on uploaded Diet Plan PDFs.
+
+
+
+Required Fix:
+
+
+
+* Enable physician commenting on Diet Plan PDFs.
+
+* Comments must save successfully.
+
+* Comments must persist in the database.
+
+* Comments must remain visible after refresh and restart.
+
+* Comments should display:
+
+
+
+  * Author
+
+  * Role
+
+  * Timestamp
+
+  * Last Modified Timestamp
+
+
+
+Support:
+
+
+
+* Add Comment
+
+* Edit Comment
+
+* View Comment History
+
+
+
+Visibility:
+
+
+
+* Physician Portal
+
+* Operations Portal
+
+* Patient Portal (if visibility settings allow)
+
+
+
+==================================================
+
+ISSUE 2 — PATIENT CANNOT VIEW DIET PLAN PDF
+
+===========================================
+
+
+
+Current Issue:
+
+
+
+Diet Plan PDFs are uploaded successfully but patients cannot view or download them.
+
+
+
+Audit and trace:
+
+
+
+* PDF upload flow
+
+* Database storage
+
+* File reference storage
+
+* Retrieval APIs
+
+* Patient Portal rendering logic
+
+* Permissions layer
+
+
+
+Required Fix:
+
+
+
+When a Diet Plan PDF exists:
+
+
+
+Patient must be able to:
+
+
+
+* View PDF
+
+* Download PDF
+
+* View current version
+
+* View historical versions (if available)
+
+
+
+Replace any incorrect:
+
+
+
+"No PDF attached to this plan"
+
+
+
+messages when a valid file exists.
+
+
+
+Verify functionality across:
+
+
+
+* Patient Portal
+
+* Physician Portal
+
+* Operations Portal
+
+
+
+==================================================
+
+ISSUE 3 — PATIENT DOCUMENTS NOT VISIBLE TO CARE TEAM
+
+====================================================
+
+
+
+Current Issue:
+
+
+
+Documents uploaded through:
+
+
+
+Patient Portal → Health Records → Documents
+
+
+
+remain visible only to the patient.
+
+
+
+Required Fix:
+
+
+
+Documents uploaded by patients must become available through the shared document management system.
+
+
+
+Visible to:
+
+
+
+* Patient
+
+* Physician
+
+* Operations
+
+* Dietician (through Operations Portal)
+
+
+
+For every uploaded document display:
+
+
+
+* File Name
+
+* Category
+
+* Uploaded By
+
+* Upload Timestamp
+
+* File Size
+
+
+
+Support:
+
+
+
+* View
+
+* Download
+
+
+
+==================================================
+
+DOCUMENT ACCESS VALIDATION
+
+==========================
+
+
+
+Verify:
+
+
+
+1. Patient uploads document
+
+
+
+Confirm:
+
+
+
+* Physician can view
+
+* Physician can download
+
+* Operations can view
+
+* Operations can download
+
+
+
+
+
+2. Diet Plan PDF uploaded
+
+
+
+Confirm:
+
+
+
+* Patient can view
+
+* Patient can download
+
+* Physician can view
+
+* Physician can comment
+
+* Operations can view
+
+
+
+==================================================
+
+FINAL REPORT
+
+============
+
+
+
+Provide:
+
+
+
+1. Root cause of physician comment failure
+
+2. Root cause of patient PDF visibility failure
+
+3. Root cause of document visibility failure
+
+4. APIs modified
+
+5. Files modified
+
+6. Permission updates
+
+7. Validation results
+
+8. Screenshots proving:
+
+
+
+* Physician comments on Diet Plan PDF
+
+* Patient can view Diet Plan PDF
+
+* Patient can download Diet Plan PDF
+
+* Physician can view patient-uploaded documents
+
+* Operations can view patient-uploaded documents
+
+
+
+Do not mark the task complete until all three workflows are fully functional and validated against the production DATABASE_URL-backed database.

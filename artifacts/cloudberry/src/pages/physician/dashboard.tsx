@@ -18,7 +18,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea,
 } from "recharts";
-import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab } from "@/components/clinical/ClinicalTabs";
+import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab, PatientDocumentsTab } from "@/components/clinical/ClinicalTabs";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = `${BASE}/api`;
@@ -63,7 +63,7 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 type NavTab = "patients" | "profile";
-type DetailTab = "dashboard" | "profile" | "checkins" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity";
+type DetailTab = "dashboard" | "profile" | "checkins" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity" | "documents";
 
 function formatGoal(g: string) {
   return g?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) ?? "—";
@@ -753,6 +753,7 @@ export default function PhysicianDashboard() {
                 { key: "critical-notes", label: "Critical" },
                 { key: "escalations", label: "Escalations" },
                 { key: "diet-plan", label: "Diet Plan" },
+                { key: "documents", label: "Documents" },
                 { key: "records", label: "Records" },
                 { key: "activity", label: "Activity" },
               ] as { key: DetailTab; label: string }[]).map(t => (
@@ -856,7 +857,12 @@ export default function PhysicianDashboard() {
 
               {/* Diet Plan tab */}
               {detailTab === "diet-plan" && (
-                <DietPlanTab patientId={selectedPatient.id} prefix="physician" canUpload={false} />
+                <DietPlanTab patientId={selectedPatient.id} prefix="physician" canUpload={false} canComment={true} />
+              )}
+
+              {/* Documents tab */}
+              {detailTab === "documents" && (
+                <PatientDocumentsTab patientId={selectedPatient.id} prefix="physician" />
               )}
 
               {/* Records tab */}

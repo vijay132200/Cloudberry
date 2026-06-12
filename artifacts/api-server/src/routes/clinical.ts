@@ -6,7 +6,7 @@ import {
   escalationsTable, escalationAuditLogTable, opsEscalationLogTable,
   dietPlansTable, dietPlanCommentsTable, checkinsTable, metricsTable, appointmentsTable,
   patientNotesTable, staffTable, patientPlansTable, patientPlanHistoryTable,
-  patientsTable,
+  patientsTable, patientDocumentsTable,
 } from "@workspace/db";
 import { eq, desc, and, asc, gte, lte, sql } from "drizzle-orm";
 
@@ -426,7 +426,64 @@ export function buildPhysicianClinicalRouter() {
         dietPlanId, patientId, authorId: auth.staffId, authorRole: auth.role, content: content.trim(),
       }).returning();
       const author = await getStaffInfo(auth.staffId);
-      res.status(201).json({ ...comment, authorName: author?.fullName, createdAt: comment.createdAt.toISOString() });
+      res.status(201).json({ ...comment, authorName: author?.fullName, createdAt: comment.createdAt.toISOString(), updatedAt: comment.updatedAt?.toISOString() ?? comment.createdAt.toISOString() });
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  // PATCH /patients/:id/diet-plan-comments/:commentId — physician edits a comment
+  router.patch("/patients/:id/diet-plan-comments/:commentId", async (req, res) => {
+    try {
+      const auth = await requirePhysicianAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      const commentId = parseInt(req.params.commentId);
+      if (!await verifyPhysicianPatientAccess(patientId, auth.staffId, res)) return;
+      const { content } = req.body;
+      if (!content?.trim()) { res.status(400).json({ error: "content required" }); return; }
+      const [existing] = await db.select().from(dietPlanCommentsTable)
+        .where(and(eq(dietPlanCommentsTable.id, commentId), eq(dietPlanCommentsTable.patientId, patientId))).limit(1);
+      if (!existing) { res.status(404).json({ error: "Comment not found" }); return; }
+      if (existing.authorId !== auth.staffId) { res.status(403).json({ error: "Can only edit your own comments" }); return; }
+      const now = new Date();
+      const [updated] = await db.update(dietPlanCommentsTable)
+        .set({ content: content.trim(), updatedAt: now })
+        .where(eq(dietPlanCommentsTable.id, commentId)).returning();
+      const author = await getStaffInfo(auth.staffId);
+      res.json({ ...updated, authorName: author?.fullName, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt?.toISOString() ?? now.toISOString() });
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  // GET /patients/:id/documents — list patient-uploaded documents (physician view)
+  router.get("/patients/:id/documents", async (req, res) => {
+    try {
+      const auth = await requirePhysicianAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      if (!await verifyPhysicianPatientAccess(patientId, auth.staffId, res)) return;
+      const docs = await db.select({
+        id: patientDocumentsTable.id,
+        patientId: patientDocumentsTable.patientId,
+        filename: patientDocumentsTable.filename,
+        fileType: patientDocumentsTable.fileType,
+        fileSize: patientDocumentsTable.fileSize,
+        category: patientDocumentsTable.category,
+        label: patientDocumentsTable.label,
+        uploadedByPatient: patientDocumentsTable.uploadedByPatient,
+        createdAt: patientDocumentsTable.createdAt,
+      }).from(patientDocumentsTable).where(eq(patientDocumentsTable.patientId, patientId)).orderBy(desc(patientDocumentsTable.createdAt));
+      res.json(docs.map(d => ({ ...d, createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt })));
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  // GET /patients/:id/documents/:docId — full document with fileData for download
+  router.get("/patients/:id/documents/:docId", async (req, res) => {
+    try {
+      const auth = await requirePhysicianAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      const docId = parseInt(req.params.docId);
+      if (!await verifyPhysicianPatientAccess(patientId, auth.staffId, res)) return;
+      const [doc] = await db.select().from(patientDocumentsTable)
+        .where(and(eq(patientDocumentsTable.id, docId), eq(patientDocumentsTable.patientId, patientId))).limit(1);
+      if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
+      res.json({ ...doc, createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : doc.createdAt });
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
 
@@ -643,7 +700,28 @@ export function buildOpsClinicalRouter() {
         dietPlanId, patientId, authorId: auth.staffId, authorRole: "ops", content: content.trim(),
       }).returning();
       const author = await getStaffInfo(auth.staffId);
-      res.status(201).json({ ...comment, authorName: author?.fullName, createdAt: comment.createdAt.toISOString() });
+      res.status(201).json({ ...comment, authorName: author?.fullName, createdAt: comment.createdAt.toISOString(), updatedAt: comment.updatedAt?.toISOString() ?? comment.createdAt.toISOString() });
+    } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+  });
+
+  // PATCH /patients/:id/diet-plan-comments/:commentId — ops edits a comment
+  router.patch("/patients/:id/diet-plan-comments/:commentId", async (req, res) => {
+    try {
+      const auth = await requireOpsAuth(req, res); if (!auth) return;
+      const patientId = parseInt(req.params.id);
+      const commentId = parseInt(req.params.commentId);
+      const { content } = req.body;
+      if (!content?.trim()) { res.status(400).json({ error: "content required" }); return; }
+      const [existing] = await db.select().from(dietPlanCommentsTable)
+        .where(and(eq(dietPlanCommentsTable.id, commentId), eq(dietPlanCommentsTable.patientId, patientId))).limit(1);
+      if (!existing) { res.status(404).json({ error: "Comment not found" }); return; }
+      if (existing.authorId !== auth.staffId) { res.status(403).json({ error: "Can only edit your own comments" }); return; }
+      const now = new Date();
+      const [updated] = await db.update(dietPlanCommentsTable)
+        .set({ content: content.trim(), updatedAt: now })
+        .where(eq(dietPlanCommentsTable.id, commentId)).returning();
+      const author = await getStaffInfo(auth.staffId);
+      res.json({ ...updated, authorName: author?.fullName, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt?.toISOString() ?? now.toISOString() });
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
 

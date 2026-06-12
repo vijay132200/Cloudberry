@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   FileText, ShieldAlert, AlertTriangle, Salad, Activity, Clock,
   Plus, Edit2, ChevronDown, ChevronUp, CheckCircle, RotateCcw,
-  Calendar, Filter, User, History, X, Save,
+  Calendar, Filter, User, History, X, Save, Download,
   TrendingDown, Droplets, Footprints,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -34,6 +34,15 @@ async function patchJson(path: string, body: any) {
   const r = await fetch(`${API}${path}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
+}
+function getMyUserId(): number | null {
+  try { return JSON.parse(atob(localStorage.getItem("cloudberry_token") || "")).userId ?? null; } catch { return null; }
+}
+function fmtFileSize(bytes?: number | null): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function fmtDate(iso: string) {
@@ -465,6 +474,8 @@ export function DietPlanTab({ patientId, prefix, canUpload, canComment }: { pati
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [pdfData, setPdfData] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editCommentContent, setEditCommentContent] = useState("");
 
   function handlePdfChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -499,6 +510,18 @@ export function DietPlanTab({ patientId, prefix, canUpload, canComment }: { pati
       toast({ title: "Comment added" });
     },
     onError: (e: any) => toast({ title: "Failed to add comment", description: e.message, variant: "destructive" }),
+  });
+
+  const editCommentMut = useMutation({
+    mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
+      patchJson(`/${prefix}/patients/${patientId}/diet-plan-comments/${commentId}`, { content }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [`${prefix}-diet-plan-comments`, patientId, activePlanId] });
+      setEditingCommentId(null);
+      setEditCommentContent("");
+      toast({ title: "Comment updated" });
+    },
+    onError: (e: any) => toast({ title: "Failed to update comment", description: e.message, variant: "destructive" }),
   });
 
   const handlePdfDownload = async (planId: number, filename: string) => {
@@ -597,24 +620,55 @@ export function DietPlanTab({ patientId, prefix, canUpload, canComment }: { pati
       {/* Diet plan comments — shown only when canComment is true and there is an active plan */}
       {canComment && activePlan && (
         <div className="space-y-3">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Physician Comments</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Care Team Comments</p>
           {(comments as any[]).length === 0 ? (
             <p className="text-xs text-muted-foreground italic">No comments yet.</p>
           ) : (
             <div className="space-y-2">
-              {(comments as any[]).map((c: any) => (
-                <div key={c.id} className="bg-sky-50/60 border border-sky-200 rounded-xl px-3.5 py-2.5">
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
-                    <User className="w-3 h-3" /><span className="font-semibold text-foreground/80">{c.authorName}</span>
-                    <span className="capitalize">{c.authorRole}</span><span>·</span><Clock className="w-3 h-3" />{fmtDate(c.createdAt)}
+              {(comments as any[]).map((c: any) => {
+                const isEditing = editingCommentId === c.id;
+                const isMine = getMyUserId() === c.authorId;
+                const wasEdited = c.updatedAt && c.updatedAt !== c.createdAt;
+                return (
+                  <div key={c.id} className="bg-sky-50/60 border border-sky-200 rounded-xl px-3.5 py-2.5">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
+                        <User className="w-3 h-3" /><span className="font-semibold text-foreground/80">{c.authorName}</span>
+                        <Badge variant="outline" className="text-[9px] capitalize px-1.5 py-0 h-4 border-sky-300 text-sky-700 bg-sky-50">{c.authorRole}</Badge>
+                        <span>·</span><Clock className="w-3 h-3" />{fmtDate(c.createdAt)}
+                        {wasEdited && <span className="text-[9px] text-amber-600 italic">(edited {fmtDate(c.updatedAt)})</span>}
+                      </div>
+                      {isMine && !isEditing && (
+                        <button className="text-[10px] text-muted-foreground hover:text-sky-700 shrink-0 flex items-center gap-0.5"
+                          onClick={() => { setEditingCommentId(c.id); setEditCommentContent(c.content); }}>
+                          <Edit2 className="w-2.5 h-2.5" />Edit
+                        </button>
+                      )}
+                    </div>
+                    {isEditing ? (
+                      <div className="space-y-2 mt-2">
+                        <Textarea value={editCommentContent} onChange={e => setEditCommentContent(e.target.value)} className="text-sm min-h-[60px] resize-none rounded-xl" />
+                        <div className="flex gap-2">
+                          <Button size="sm" className="h-7 text-[10px] rounded-full gap-1 flex-1" disabled={!editCommentContent.trim() || editCommentMut.isPending}
+                            onClick={() => editCommentMut.mutate({ commentId: c.id, content: editCommentContent })}>
+                            <Save className="w-3 h-3" />{editCommentMut.isPending ? "Saving…" : "Save Edit"}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-[10px] rounded-full"
+                            onClick={() => { setEditingCommentId(null); setEditCommentContent(""); }}>
+                            <X className="w-3 h-3" />Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
+                    )}
                   </div>
-                  <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           <div className="space-y-2">
-            <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Add a physician comment on this diet plan…" className="text-sm min-h-[70px] resize-none rounded-xl" />
+            <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Add a comment on this diet plan…" className="text-sm min-h-[70px] resize-none rounded-xl" />
             <Button size="sm" className="h-8 text-xs rounded-full gap-1 w-full" disabled={!newComment.trim() || commentMut.isPending}
               onClick={() => commentMut.mutate({ dietPlanId: activePlan.id, content: newComment })}>
               <Save className="w-3 h-3" />{commentMut.isPending ? "Saving…" : "Add Comment"}
@@ -1016,6 +1070,93 @@ export function ActivityFeedTab({ patientId, prefix }: { patientId: number; pref
             </div>
           )}
         </div>
+      ))}
+    </div>
+  );
+}
+
+// ── PATIENT DOCUMENTS TAB ────────────────────────────────────────────────────
+// Used by Physician + Ops portals to view patient-uploaded documents
+export function PatientDocumentsTab({ patientId, prefix }: { patientId: number; prefix: string }) {
+  const { toast } = useToast();
+  const { data: docs = [], isLoading } = useQuery<any[]>({
+    queryKey: [`${prefix}-patient-documents`, patientId],
+    queryFn: () => fetchJson(`/${prefix}/patients/${patientId}/documents`),
+  });
+
+  const handleDownload = async (doc: any) => {
+    try {
+      const full = await fetchJson(`/${prefix}/patients/${patientId}/documents/${doc.id}`);
+      if (!full.fileData) { toast({ title: "No file data available", variant: "destructive" }); return; }
+      const byteChars = atob(full.fileData);
+      const arr = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([arr], { type: full.fileType ?? "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = full.filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e: any) {
+      toast({ title: "Download failed", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    lab_report: "bg-rose-50 text-rose-700 border-rose-200",
+    prescription: "bg-violet-50 text-violet-700 border-violet-200",
+    diet_plan: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    medical_history: "bg-amber-50 text-amber-700 border-amber-200",
+    general: "bg-slate-50 text-slate-600 border-slate-200",
+  };
+
+  if (isLoading) return <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />)}</div>;
+
+  if ((docs as any[]).length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-14 text-center">
+        <FileText className="w-10 h-10 text-muted-foreground/30 mb-3" />
+        <p className="text-sm font-medium text-foreground">No documents uploaded</p>
+        <p className="text-xs text-muted-foreground mt-1">Documents uploaded by the patient will appear here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Patient Documents ({(docs as any[]).length})</p>
+      {(docs as any[]).map((doc: any) => (
+        <Card key={doc.id} className="border-border/50 rounded-xl">
+          <CardContent className="px-4 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <FileText className="w-4 h-4 text-slate-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{doc.label || doc.filename}</p>
+                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{doc.filename}</p>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${CATEGORY_COLORS[doc.category] ?? CATEGORY_COLORS.general}`}>
+                      {String(doc.category ?? "general").replace(/_/g, " ")}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <User className="w-2.5 h-2.5" />{doc.uploadedByPatient ? "Patient" : "Care Team"}
+                    </span>
+                    {doc.fileSize && (
+                      <span className="text-[10px] text-muted-foreground">{fmtFileSize(doc.fileSize)}</span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" />{fmtDate(doc.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 rounded-full shrink-0 px-2.5"
+                onClick={() => handleDownload(doc)}>
+                <Download className="w-3 h-3" />Download
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
