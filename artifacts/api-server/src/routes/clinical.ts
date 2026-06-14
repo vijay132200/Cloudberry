@@ -265,10 +265,14 @@ async function getActivity(patientId: number, from?: string, to?: string, type?:
 // Verifies the requesting physician is assigned to the patient (prevents IDOR).
 // Returns true if access is allowed; sends 403/404 and returns false if not.
 async function verifyPhysicianPatientAccess(patientId: number, staffId: number, res: any): Promise<boolean> {
-  const [patient] = await db.select({ id: patientsTable.id, assignedPhysicianId: patientsTable.assignedPhysicianId })
-    .from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
+  const [patient] = await db.select({
+    id: patientsTable.id,
+    assignedPhysicianId: patientsTable.assignedPhysicianId,
+    assignedCoachId: patientsTable.assignedCoachId,
+  }).from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
   if (!patient) { res.status(404).json({ error: "Patient not found" }); return false; }
-  if (patient.assignedPhysicianId !== staffId) {
+  // Allow access if staff is the assigned physician OR assigned coach (matches patient list query)
+  if (patient.assignedPhysicianId !== staffId && patient.assignedCoachId !== staffId) {
     res.status(403).json({ error: "Forbidden: this patient is not assigned to you" });
     return false;
   }

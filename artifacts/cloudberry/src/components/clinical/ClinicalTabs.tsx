@@ -11,7 +11,7 @@ import {
   FileText, ShieldAlert, AlertTriangle, Salad, Activity, Clock,
   Plus, Edit2, ChevronDown, ChevronUp, CheckCircle, RotateCcw,
   Calendar, Filter, User, History, X, Save, Download,
-  TrendingDown, Droplets, Footprints,
+  TrendingDown, Droplets, Footprints, AlertCircle,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -1078,9 +1078,10 @@ export function ActivityFeedTab({ patientId, prefix }: { patientId: number; pref
 // Used by Physician + Ops portals to view patient-uploaded documents
 export function PatientDocumentsTab({ patientId, prefix }: { patientId: number; prefix: string }) {
   const { toast } = useToast();
-  const { data: docs = [], isLoading } = useQuery<any[]>({
+  const { data: docs = [], isLoading, isError, error } = useQuery<any[]>({
     queryKey: [`${prefix}-patient-documents`, patientId],
     queryFn: () => fetchJson(`/${prefix}/patients/${patientId}/documents`),
+    retry: 1,
   });
 
   const handleDownload = async (doc: any) => {
@@ -1108,6 +1109,17 @@ export function PatientDocumentsTab({ patientId, prefix }: { patientId: number; 
   };
 
   if (isLoading) return <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />)}</div>;
+
+  if (isError) {
+    const msg = (error as Error)?.message || "Unknown error";
+    return (
+      <div className="flex flex-col items-center justify-center py-14 text-center">
+        <AlertCircle className="w-10 h-10 text-destructive/50 mb-3" />
+        <p className="text-sm font-medium text-foreground">Could not load documents</p>
+        <p className="text-xs text-muted-foreground mt-1 max-w-xs">{msg}</p>
+      </div>
+    );
+  }
 
   if ((docs as any[]).length === 0) {
     return (

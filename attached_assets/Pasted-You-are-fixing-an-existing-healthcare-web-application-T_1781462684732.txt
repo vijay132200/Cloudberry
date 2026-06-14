@@ -1,0 +1,262 @@
+You are fixing an existing healthcare web application.
+
+The previous attempts did NOT solve the problem.
+
+CURRENT STATE:
+Patient-uploaded documents are already working correctly in:
+
+* Patient Portal
+* Operations Portal
+
+But they are NOT appearing in Doctor Portal.
+
+Do not assume data already exists.
+Do not validate using old documents.
+Create fresh uploads during testing.
+
+REQUIRED FEATURE:
+
+PATIENT SIDE:
+Patient Portal
+→ Health Records
+→ Documents
+→ Upload Document
+
+DOCTOR SIDE:
+Doctor Portal
+→ Dashboard
+→ Click any patient
+→ Patient profile opens
+→ Multiple tabs exist
+→ Add a new tab named "Docs"
+
+Inside this new "Docs" tab:
+
+* Display ALL documents uploaded by that patient from:
+  Patient Portal → Health Records → Documents
+* Match the same structure/design used in Patient Portal and Operations Portal
+* Allow downloading every document
+* Use the same underlying document record (do not duplicate files unless necessary)
+
+BUSINESS LOGIC:
+
+* A doctor is assigned multiple patients.
+* Each patient belongs only to the correct doctor assignment rules.
+* When Doctor opens Patient X → Docs:
+  only Patient X documents appear.
+* Documents uploaded by Patient Y must never appear inside Patient X.
+* Another doctor must not see documents from patients not assigned to them.
+
+IMPORTANT:
+This is NOT only a UI task.
+
+Trace and fix:
+Upload
+→ Storage
+→ DB save
+→ Patient linkage
+→ Doctor assignment
+→ API retrieval
+→ Authorization
+→ Doctor Docs tab rendering
+→ Download flow
+
+Check:
+
+* Upload endpoint
+* File storage
+* Document table/model
+* Patient ID mapping
+* Doctor ID mapping
+* Query filters
+* Backend permissions
+* Doctor portal fetch logic
+
+MANDATORY TESTING (DO NOT SKIP)
+
+This is the most important part.
+
+Run actual tests using NEW uploads.
+
+TEST SCENARIO:
+
+Setup:
+Doctor A assigned:
+
+* Patient 1
+* Patient 2
+
+Doctor B assigned:
+
+* Patient 3
+
+TEST 1 — Fresh Upload Visibility
+
+Login:
+Patient 1
+
+Go to:
+Health Records
+→ Documents
+
+Upload:
+patient1_test_document.pdf
+
+Verify:
+
+* Upload succeeds
+* File appears in Patient Portal
+
+Immediately after upload:
+
+Login:
+Doctor A
+
+Go:
+Dashboard
+→ Patient 1
+→ Docs
+
+Expected:
+
+* patient1_test_document.pdf appears
+* Download works
+
+FAIL if:
+
+* Manual refresh required
+* File missing
+* Wrong patient shown
+
+---
+
+TEST 2 — Multi-Patient Isolation
+
+Login:
+Patient 2
+
+Upload:
+patient2_test_document.pdf
+
+Verify:
+Patient Portal shows file.
+
+Now login:
+Doctor A
+
+Check:
+
+Patient 1 → Docs
+Expected:
+ONLY patient1_test_document.pdf
+
+Patient 2 → Docs
+Expected:
+ONLY patient2_test_document.pdf
+
+FAIL if:
+
+* Documents mix
+* Duplicate documents appear
+* Wrong patient data shown
+
+---
+
+TEST 3 — Doctor Assignment Validation
+
+Login:
+Patient 3
+
+Upload:
+patient3_test_document.pdf
+
+Login:
+Doctor B
+
+Open:
+Patient 3 → Docs
+
+Expected:
+patient3_test_document.pdf visible
+
+Now login:
+Doctor A
+
+Check Patient 3
+
+Expected:
+Access denied OR document unavailable
+
+FAIL if:
+Doctor A can access Patient 3 docs
+
+---
+
+TEST 4 — Operations Portal Regression
+
+Verify:
+All uploaded documents still appear in Operations Portal.
+
+Download each.
+
+Expected:
+No existing functionality broken.
+
+---
+
+TEST 5 — Download Validation
+
+For each uploaded file:
+
+* Download from Patient Portal
+* Download from Operations Portal
+* Download from Doctor Docs tab
+
+Verify:
+
+* Same file
+* Correct filename
+* Opens successfully
+
+---
+
+TEST 6 — Backend Validation
+
+Inspect:
+
+* Network requests
+* API responses
+* Returned patient IDs
+* Returned doctor IDs
+* File IDs
+* Authorization checks
+* DB records
+
+Confirm:
+One uploaded document is accessible through:
+Patient Portal
++
+Operations Portal
++
+Assigned Doctor Portal
+
+without creating inconsistent copies.
+
+DELIVERABLES:
+
+1. Root cause
+2. Exact files changed
+3. DB/API changes
+4. Screenshot or verification notes for every test
+5. Explicit confirmation:
+
+Upload from:
+Patient Portal → Health Records → Documents
+
+Then immediately visible in:
+
+Doctor Portal
+→ Patient
+→ Docs
+
+for multiple patients and correct doctor assignment.
