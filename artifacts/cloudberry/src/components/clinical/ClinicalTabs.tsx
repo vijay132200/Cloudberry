@@ -1078,9 +1078,11 @@ export function ActivityFeedTab({ patientId, prefix }: { patientId: number; pref
 // Used by Physician + Ops portals to view patient-uploaded documents
 export function PatientDocumentsTab({ patientId, prefix }: { patientId: number; prefix: string }) {
   const { toast } = useToast();
+  const validId = typeof patientId === "number" && Number.isFinite(patientId) && patientId > 0;
   const { data: docs = [], isLoading, isError, error } = useQuery<any[]>({
     queryKey: [`${prefix}-patient-documents`, patientId],
     queryFn: () => fetchJson(`/${prefix}/patients/${patientId}/documents`),
+    enabled: validId,
     retry: 1,
   });
 
