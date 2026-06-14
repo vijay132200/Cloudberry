@@ -1,0 +1,177 @@
+You are working on an existing healthcare web application.
+
+There is a bug in document visibility between portals. Fix it completely.
+
+CURRENT BEHAVIOR:
+
+* A patient uploads a document from:
+  Patient Portal → Health Records → Documents tab
+* After upload:
+  ✅ Document is visible in Patient Portal
+  ✅ Document is visible in Operations Portal
+  ❌ Document is NOT visible in Doctor Portal
+
+EXPECTED BEHAVIOR (THIS IS THE REQUIREMENT):
+Inside the Doctor Portal:
+
+Doctor Dashboard
+→ Click any patient
+→ Patient Profile opens
+→ Multiple tabs are available
+→ Open the "Documents" tab
+
+In this exact Documents tab inside that patient’s profile, all documents uploaded by that patient from:
+
+Patient Portal
+→ Health Records
+→ Documents
+
+must appear and be downloadable.
+
+The experience in Doctor Portal should behave consistently with Patient Portal and Operations Portal.
+
+Do not make assumptions. Investigate the exact implementation.
+
+SCOPE OF INVESTIGATION:
+
+Trace the full document lifecycle:
+
+1. Patient uploads document
+   Location:
+   Patient Portal → Health Records → Documents
+
+2. Backend processing
+
+   * Upload handler
+   * File storage
+   * Metadata creation
+   * Patient association
+   * Doctor association (if applicable)
+
+3. Database
+
+   * Check document table/model
+   * Check foreign keys / references
+   * Check patient-doctor mapping
+   * Check document visibility rules
+
+4. APIs
+
+   * Identify endpoint used by Patient Portal
+   * Identify endpoint used by Operations Portal
+   * Identify endpoint used by Doctor Portal
+   * Compare returned payloads
+
+5. Doctor Portal rendering
+   Navigation path:
+   Doctor Dashboard
+   → Select Patient
+   → Documents Tab
+
+   Verify:
+
+   * Data fetch
+   * State updates
+   * Query filters
+   * Rendering logic
+   * Download action
+
+REQUIRED FIX:
+Make documents uploaded by a patient appear in the Documents tab of that exact patient inside Doctor Portal.
+
+If necessary:
+
+* Modify backend APIs
+* Modify DB schema
+* Add joins
+* Fix filters
+* Update permissions
+* Adjust storage references
+* Add doctor-patient lookup
+* Update frontend fetch/render logic
+
+Do NOT break:
+
+* Patient Portal document display
+* Operations Portal document display
+* Existing downloads
+* Existing permissions
+
+ACCESS CONTROL REQUIREMENTS:
+
+* Doctor A should only see documents of patients assigned/allowed to Doctor A.
+* Doctor B must not see Doctor A’s patient documents.
+* Patients must continue seeing only their own documents.
+
+MANDATORY VERIFICATION (DO NOT SKIP):
+
+Test with MULTIPLE PATIENTS.
+
+Create test scenario:
+
+Patient 1:
+
+* Upload Document A
+* Upload Document B
+
+Patient 2:
+
+* Upload Document C
+
+Verification steps:
+
+Test 1 — Patient Portal
+
+* Login as Patient 1
+
+* Open Health Records → Documents
+
+* Verify A and B appear
+
+* Login as Patient 2
+
+* Verify C appears
+
+Test 2 — Operations Portal
+
+* Verify corresponding documents appear
+
+Test 3 — Doctor Portal
+Doctor Dashboard
+→ Open Patient 1
+→ Documents tab
+→ Verify A and B appear
+→ Verify both download successfully
+
+Doctor Dashboard
+→ Open Patient 2
+→ Documents tab
+→ Verify C appears
+→ Verify download works
+
+Test 4 — Isolation Test
+
+* Patient 1 documents must not appear inside Patient 2
+* Doctor opening Patient 2 must not see Patient 1 files
+* Unrelated doctors must not receive documents
+
+Test 5 — Technical Validation
+
+* Inspect API responses
+* Inspect network calls
+* Confirm returned document IDs
+* Confirm file URLs
+* Confirm authorization checks
+* Confirm DB records match UI
+
+DELIVERABLES:
+
+1. Root cause explanation
+2. Exact files changed
+3. What logic was modified
+4. Verification results for all tests
+5. Confirmation that:
+   Patient Portal → Health Records → Documents
+   and
+   Doctor Portal → Patient → Documents
+   are now fully synchronized and working for multiple patients.
