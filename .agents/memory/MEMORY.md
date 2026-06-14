@@ -1,5 +1,5 @@
 - [Auth endpoints](auth-endpoints.md) — staff signin is `/api/auth/ops/signin` and `/api/auth/coach/signin`; patient is `/api/auth/patient/signin`
 - [Coach route isolation](coach-isolation.md) — coach `/patients` route must filter by assigned staff ID using OR across all 4 assignment fields
 - [Ops KPI fields](ops-kpi.md) — `/api/ops/dashboard` returns 8 fields including highRiskCount and upcomingAppointments; frontend grid is lg:grid-cols-8
-- [Patient IDs](patient-ids.md) — actual patient table IDs start at 65 (Rahul=65, Ananya=66); earlier low IDs (46,47) no longer exist
+- [Patient IDs](patient-ids.md) — actual patient table IDs: Rahul=84, Ananya=85, Vikram=86, Meera=87, Karan=88, Divya=89, Arjun=90, Preethi=91; staff: Dr.Mehta=98, Dr.Raj=99, Dr.Priya=100, dietician Priya=101, Ranjit(care)=104
 - [Consistency calculation](consistency-calc.md) — single source of truth in `artifacts/api-server/src/lib/consistency.ts`; denominator = actual check-in days, not 7

@@ -80,9 +80,7 @@ export function ClinicalNotesTab({ patientId, prefix }: { patientId: number; pre
 
   const catColors: Record<string, string> = {
     general: "bg-slate-50 text-slate-600 border-slate-200",
-    physician: "bg-sky-50 text-sky-700 border-sky-200",
-    follow_up: "bg-violet-50 text-violet-700 border-violet-200",
-    observation: "bg-amber-50 text-amber-700 border-amber-200",
+    medication: "bg-sky-50 text-sky-700 border-sky-200",
   };
 
   return (
@@ -94,7 +92,8 @@ export function ClinicalNotesTab({ patientId, prefix }: { patientId: number; pre
             <Select value={newCategory} onValueChange={setNewCategory}>
               <SelectTrigger className="h-8 text-xs rounded-lg"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["general", "physician", "follow_up", "observation"].map(c => <SelectItem key={c} value={c} className="text-xs capitalize">{c.replace(/_/g, " ")}</SelectItem>)}
+                <SelectItem value="general" className="text-xs">General</SelectItem>
+                <SelectItem value="medication" className="text-xs">Medication</SelectItem>
               </SelectContent>
             </Select>
             <Textarea value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Clinical observation or note…" className="text-sm min-h-[80px] resize-none rounded-xl" />
