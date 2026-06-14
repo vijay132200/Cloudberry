@@ -1,0 +1,56 @@
+You are working on an existing healthcare web app.
+
+Problem:
+When a patient uploads a document in the Documents section under Health Records, that document is currently visible in the Patient Portal and Operations Portal, but it does NOT appear in the relevant doctor’s portal. I need this fixed so that it behaves consistently across portals.
+
+Required behavior:
+1. When a patient uploads a document in the Health Records > Documents section, that document must be saved in a way that makes it visible to the correct doctor.
+2. When that doctor opens the patient’s profile in the doctor dashboard, the uploaded document must appear in the Documents section there.
+3. The doctor must be able to download the document from their dashboard.
+4. The document should remain visible in the Patient Portal and Operations Portal as it already does.
+5. Only the relevant doctor/patient relationship should show the document. Do not expose documents to unrelated doctors.
+6. If any backend, API, database schema, permissions, file storage, or frontend rendering changes are needed, make them.
+7. Do not stop at the UI layer. Trace the full flow end to end: upload, storage, retrieval, authorization, and rendering in the doctor portal.
+
+What to inspect:
+- The patient document upload flow
+- Backend save logic for uploaded documents
+- Database fields/tables that store document metadata
+- Doctor-patient relationship mapping
+- API endpoints used by Patient Portal, Operations Portal, and Doctor Portal
+- Frontend query logic for the doctor dashboard Documents section
+- Authorization and access control rules
+- File URL generation / signed URL / download link handling
+
+Implementation expectations:
+- Find why the doctor portal is not receiving or rendering the uploaded document even though the other portals are.
+- Fix the root cause, not just the symptom.
+- Keep existing working functionality intact.
+- If the doctor portal needs a new API endpoint or a modified query, implement it cleanly.
+- If the document is already stored correctly but not being fetched correctly in the doctor portal, fix the fetch/render logic.
+- If the document is stored without doctor linkage, fix the linking logic so new uploads are associated with the correct doctor and can be retrieved from the doctor dashboard.
+- Add any missing error handling so failures are visible and debuggable.
+
+Verification required:
+After making the changes, verify that the fix actually works.
+
+You must check all of the following:
+1. Upload a test document as a patient.
+2. Confirm it appears in the Patient Portal.
+3. Confirm it appears in the Operations Portal.
+4. Log in as the relevant doctor and open that patient’s profile.
+5. Confirm the same document appears in the doctor’s Documents section.
+6. Confirm the doctor can download it successfully.
+7. Confirm an unrelated doctor cannot see that document.
+8. Check browser/network logs and backend logs if needed to confirm the correct API response and file path are being returned.
+9. If tests exist, update or add tests. If no tests exist, perform a full manual validation and report exactly what was checked.
+
+Deliverables:
+- Code changes that fix the issue
+- Brief explanation of the root cause
+- Exact files changed
+- Verification results showing the doctor portal now displays and downloads the patient-uploaded document correctly
+- Mention any edge cases or security concerns you found
+
+Important:
+Do not give a superficial fix. Investigate the system properly and make the feature work end to end.
