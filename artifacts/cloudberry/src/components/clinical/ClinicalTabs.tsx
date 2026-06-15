@@ -94,7 +94,7 @@ export function ClinicalNotesTab({ patientId, prefix }: { patientId: number; pre
             <Select value={newCategory} onValueChange={setNewCategory}>
               <SelectTrigger className="h-8 text-xs rounded-lg"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["general", "physician", "follow_up", "observation"].map(c => <SelectItem key={c} value={c} className="text-xs capitalize">{c.replace(/_/g, " ")}</SelectItem>)}
+                {["general", "medication"].map(c => <SelectItem key={c} value={c} className="text-xs capitalize">{c.replace(/_/g, " ")}</SelectItem>)}
               </SelectContent>
             </Select>
             <Textarea value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Clinical observation or note…" className="text-sm min-h-[80px] resize-none rounded-xl" />
