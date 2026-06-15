@@ -265,18 +265,10 @@ async function getActivity(patientId: number, from?: string, to?: string, type?:
 // Verifies the requesting physician is assigned to the patient (prevents IDOR).
 // Returns true if access is allowed; sends 403/404 and returns false if not.
 async function verifyPhysicianPatientAccess(patientId: number, staffId: number, res: any): Promise<boolean> {
-  if (!Number.isFinite(patientId) || patientId <= 0) {
-    res.status(400).json({ error: "Invalid patient ID" });
-    return false;
-  }
-  const [patient] = await db.select({
-    id: patientsTable.id,
-    assignedPhysicianId: patientsTable.assignedPhysicianId,
-    assignedCoachId: patientsTable.assignedCoachId,
-  }).from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
+  const [patient] = await db.select({ id: patientsTable.id, assignedPhysicianId: patientsTable.assignedPhysicianId })
+    .from(patientsTable).where(eq(patientsTable.id, patientId)).limit(1);
   if (!patient) { res.status(404).json({ error: "Patient not found" }); return false; }
-  // Allow access if staff is the assigned physician OR assigned coach (matches patient list query)
-  if (patient.assignedPhysicianId !== staffId && patient.assignedCoachId !== staffId) {
+  if (patient.assignedPhysicianId !== staffId) {
     res.status(403).json({ error: "Forbidden: this patient is not assigned to you" });
     return false;
   }
@@ -471,6 +463,7 @@ export function buildPhysicianClinicalRouter() {
         patientId: patientDocumentsTable.patientId,
         filename: patientDocumentsTable.filename,
         fileType: patientDocumentsTable.fileType,
+        fileSize: patientDocumentsTable.fileSize,
         category: patientDocumentsTable.category,
         label: patientDocumentsTable.label,
         uploadedByPatient: patientDocumentsTable.uploadedByPatient,

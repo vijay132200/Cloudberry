@@ -373,7 +373,6 @@ function PatientDetailPanel({
           {([
             { key: "dashboard", label: "Dashboard" },
             { key: "profile", label: "Profile" },
-            { key: "documents", label: "Docs" },
             { key: "checkins", label: "Check-ins" },
             { key: "team", label: "Care Team" },
             { key: "content", label: "Content" },
@@ -382,6 +381,7 @@ function PatientDetailPanel({
             { key: "critical-notes", label: "Critical" },
             { key: "escalations", label: "Escalations" },
             { key: "diet-plan", label: "Diet Plan" },
+            { key: "documents", label: "Documents" },
             { key: "records", label: "Records" },
             { key: "activity", label: "Activity" },
           ] as { key: DetailTab; label: string }[]).map(t => (

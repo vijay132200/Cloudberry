@@ -11,7 +11,7 @@ import {
   FileText, ShieldAlert, AlertTriangle, Salad, Activity, Clock,
   Plus, Edit2, ChevronDown, ChevronUp, CheckCircle, RotateCcw,
   Calendar, Filter, User, History, X, Save, Download,
-  TrendingDown, Droplets, Footprints, AlertCircle,
+  TrendingDown, Droplets, Footprints,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -80,7 +80,9 @@ export function ClinicalNotesTab({ patientId, prefix }: { patientId: number; pre
 
   const catColors: Record<string, string> = {
     general: "bg-slate-50 text-slate-600 border-slate-200",
-    medication: "bg-sky-50 text-sky-700 border-sky-200",
+    physician: "bg-sky-50 text-sky-700 border-sky-200",
+    follow_up: "bg-violet-50 text-violet-700 border-violet-200",
+    observation: "bg-amber-50 text-amber-700 border-amber-200",
   };
 
   return (
@@ -92,8 +94,7 @@ export function ClinicalNotesTab({ patientId, prefix }: { patientId: number; pre
             <Select value={newCategory} onValueChange={setNewCategory}>
               <SelectTrigger className="h-8 text-xs rounded-lg"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="general" className="text-xs">General</SelectItem>
-                <SelectItem value="medication" className="text-xs">Medication</SelectItem>
+                {["general", "physician", "follow_up", "observation"].map(c => <SelectItem key={c} value={c} className="text-xs capitalize">{c.replace(/_/g, " ")}</SelectItem>)}
               </SelectContent>
             </Select>
             <Textarea value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="Clinical observation or note…" className="text-sm min-h-[80px] resize-none rounded-xl" />
@@ -1078,12 +1079,9 @@ export function ActivityFeedTab({ patientId, prefix }: { patientId: number; pref
 // Used by Physician + Ops portals to view patient-uploaded documents
 export function PatientDocumentsTab({ patientId, prefix }: { patientId: number; prefix: string }) {
   const { toast } = useToast();
-  const validId = typeof patientId === "number" && Number.isFinite(patientId) && patientId > 0;
-  const { data: docs = [], isLoading, isError, error } = useQuery<any[]>({
+  const { data: docs = [], isLoading } = useQuery<any[]>({
     queryKey: [`${prefix}-patient-documents`, patientId],
     queryFn: () => fetchJson(`/${prefix}/patients/${patientId}/documents`),
-    enabled: validId,
-    retry: 1,
   });
 
   const handleDownload = async (doc: any) => {
@@ -1111,17 +1109,6 @@ export function PatientDocumentsTab({ patientId, prefix }: { patientId: number; 
   };
 
   if (isLoading) return <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />)}</div>;
-
-  if (isError) {
-    const msg = (error as Error)?.message || "Unknown error";
-    return (
-      <div className="flex flex-col items-center justify-center py-14 text-center">
-        <AlertCircle className="w-10 h-10 text-destructive/50 mb-3" />
-        <p className="text-sm font-medium text-foreground">Could not load documents</p>
-        <p className="text-xs text-muted-foreground mt-1 max-w-xs">{msg}</p>
-      </div>
-    );
-  }
 
   if ((docs as any[]).length === 0) {
     return (
