@@ -463,7 +463,6 @@ export function buildPhysicianClinicalRouter() {
         patientId: patientDocumentsTable.patientId,
         filename: patientDocumentsTable.filename,
         fileType: patientDocumentsTable.fileType,
-        fileSize: patientDocumentsTable.fileSize,
         category: patientDocumentsTable.category,
         label: patientDocumentsTable.label,
         uploadedByPatient: patientDocumentsTable.uploadedByPatient,
