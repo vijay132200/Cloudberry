@@ -33,11 +33,11 @@ router.get("/healthz/db", async (req: any, res) => {
       "escalations", "escalation_audit_log", "ops_escalation_log",
       "diet_plans",
     ];
-    const tableResult = await db.execute(sql`
+    const tableResult = await db.execute(sql.raw(`
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public'
-        AND table_name = ANY(${EXPECTED_TABLES}::text[])
-    `);
+        AND table_name IN (${EXPECTED_TABLES.map(t => `'${t}'`).join(",")})
+    `));
     const foundTables = new Set((tableResult.rows as any[]).map(r => r.table_name));
     const tableAudit = EXPECTED_TABLES.map(t => ({ table: t, exists: foundTables.has(t) }));
     const missingTables = tableAudit.filter(t => !t.exists).map(t => t.table);

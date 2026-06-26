@@ -25,6 +25,6 @@ Staff IDs:
 
 Rahul (9876543210) = patient 84, Ananya (9765432109) = patient 85.
 
-Existing patient_documents: patient 84 has 7 docs, patient 85 has 2 docs, patient 89 has 3 docs.
+**Why:** IDs shifted from earlier seed (was 65-72) to 84-91 due to reseed on local PG. Any API test tokens must use staffId 96-100, patient IDs 84-91. IDs are NOT stable across reseeds — always derive from credentials lookup by phone/email.
 
-**Why:** IDs shifted from earlier seed (was 65-72) to 84-91. Any API test tokens must use staffId 96-100, patient IDs 84-91.
+**Database note:** After removing the postgresql-16 module, the server now uses the Neon DATABASE_URL from Replit Secrets exclusively. The local postgresql module was injecting a conflicting DATABASE_URL into workflow processes, bypassing the Neon Secret.

@@ -1,0 +1,213 @@
+CLOUDBERRY HEALTH — NEON DATABASE_URL INTEGRATION, VALIDATION, AND ENFORCEMENT
+
+IMPORTANT
+
+The production Neon PostgreSQL connection string has already been added to Replit Secrets under:
+
+DATABASE_URL
+
+Your task is NOT to create a new database.
+
+Your task is NOT to create a Railway PostgreSQL database.
+
+Your task is NOT to migrate data elsewhere.
+
+Your task is to ensure the entire application uses DATABASE_URL as the single source of truth for all reads and writes.
+
+==================================================
+PHASE 1 — DATABASE CONNECTION AUDIT
+Perform a complete audit of the codebase.
+
+Locate:
+
+ORM configuration
+
+Database clients
+
+Connection factories
+
+Database initialization files
+
+Environment variable loaders
+
+Query builders
+
+Repository layer
+
+Service layer
+
+Migration files
+
+Identify:
+
+Every location where database connections are created
+
+Every environment variable used for database access
+
+Any Railway PostgreSQL references
+
+Any fallback database configurations
+
+Any hardcoded database URLs
+
+Any duplicate connection pools
+
+==================================================
+PHASE 2 — DATABASE_URL ENFORCEMENT
+Verify that DATABASE_URL is the only database connection used in production.
+
+Requirements:
+
+DATABASE_URL must be loaded correctly
+
+DATABASE_URL must be available at runtime
+
+DATABASE_URL must be used by the ORM
+
+DATABASE_URL must be used by all repositories
+
+DATABASE_URL must be used by all API routes
+
+DATABASE_URL must be used by all services
+
+Remove or disable conflicting runtime paths that bypass DATABASE_URL.
+
+Do NOT remove backward compatibility unless required.
+
+==================================================
+PHASE 3 — ACTIVE CONNECTION VERIFICATION
+Prove the application is connected to the Neon database referenced by DATABASE_URL.
+
+Perform:
+
+Connection test
+
+Schema discovery
+
+Table discovery
+
+Read test
+
+Write test
+
+Update test
+
+Delete test
+
+Verify persistence after:
+
+Browser refresh
+
+Backend restart
+
+Rebuild
+
+==================================================
+PHASE 4 — FULL APPLICATION VALIDATION
+Confirm that the following modules read and write through DATABASE_URL:
+
+Authentication
+
+Users
+
+Staff
+
+Patients
+
+Check-ins
+
+Metrics
+
+Notes
+
+Reports
+
+Documents
+
+Diet Plans
+
+Escalations
+
+Activity Feed
+
+Timeline
+
+Historical Dashboards
+
+Records Center
+
+Analytics
+
+No module should use a different database connection.
+
+==================================================
+PHASE 5 — SCHEMA VALIDATION
+Discover all tables currently available through DATABASE_URL.
+
+Verify:
+
+Tables exist
+
+Foreign keys are valid
+
+Relationships are valid
+
+Queries execute correctly
+
+Do NOT recreate tables that already exist.
+
+Do NOT destroy existing data.
+
+Only apply additive fixes if required.
+
+==================================================
+PHASE 6 — PRODUCTION SAFETY
+Do NOT:
+
+Create a new database
+
+Create a second provider
+
+Create a Railway PostgreSQL dependency
+
+Migrate production data elsewhere
+
+Drop tables
+
+Truncate tables
+
+Remove production records
+
+Preserve all existing data.
+
+==================================================
+FINAL REPORT
+Provide:
+
+ORM detected
+
+Database provider detected
+
+Active runtime connection source
+
+Confirmation DATABASE_URL is being used
+
+Files audited
+
+Database configuration files found
+
+Conflicting configurations discovered
+
+Fixes applied
+
+Tables discovered
+
+Connection validation results
+
+Read/Write validation results
+
+Persistence validation results
+
+Exact files modified
+
+Do not mark the task complete until you have verified that the entire Cloudberry platform is actively using the Neon PostgreSQL database specified by DATABASE_URL for all reads and writes.
