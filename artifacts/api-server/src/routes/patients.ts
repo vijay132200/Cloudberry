@@ -13,6 +13,7 @@ import {
   dietPlansTable,
   patientPlanHistoryTable,
   patientDocumentsTable,
+  planChangeRequestsTable,
 } from "@workspace/db";
 import { eq, desc, and, asc, gte, lte, sql } from "drizzle-orm";
 import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
@@ -603,6 +604,54 @@ router.delete("/me/documents/:id", async (req, res) => {
     if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
     await db.delete(patientDocumentsTable).where(eq(patientDocumentsTable.id, docId));
     res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/patients/me/plan-change-request — submit plan change request
+router.post("/me/plan-change-request", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed || parsed.role !== "patient") { res.status(403).json({ error: "Forbidden" }); return; }
+    const [patient] = await db.select().from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const { requestedPlan } = req.body;
+    if (!requestedPlan || !["basic", "comprehensive", "premium"].includes(requestedPlan)) {
+      res.status(400).json({ error: "Valid requestedPlan required (basic, comprehensive, premium)" }); return;
+    }
+    if (requestedPlan === patient.plan) {
+      res.status(400).json({ error: "Already on requested plan" }); return;
+    }
+    const existing = await db.select().from(planChangeRequestsTable)
+      .where(and(eq(planChangeRequestsTable.patientId, patient.id), eq(planChangeRequestsTable.status, "pending"))).limit(1);
+    if (existing.length > 0) {
+      res.status(409).json({ error: "A plan change request is already pending" }); return;
+    }
+    const [request] = await db.insert(planChangeRequestsTable).values({
+      patientId: patient.id,
+      currentPlan: patient.plan,
+      requestedPlan,
+      status: "pending",
+    }).returning();
+    res.status(201).json({ ...request, createdAt: request.createdAt instanceof Date ? request.createdAt.toISOString() : request.createdAt });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/patients/me/plan-change-request/status — check pending request
+router.get("/me/plan-change-request/status", async (req, res) => {
+  try {
+    const parsed = parseToken(req.headers.authorization);
+    if (!parsed || parsed.role !== "patient") { res.status(403).json({ error: "Forbidden" }); return; }
+    const [patient] = await db.select({ id: patientsTable.id }).from(patientsTable).where(eq(patientsTable.userId, parsed.userId)).limit(1);
+    if (!patient) { res.status(404).json({ error: "Patient not found" }); return; }
+    const requests = await db.select().from(planChangeRequestsTable)
+      .where(eq(planChangeRequestsTable.patientId, patient.id))
+      .orderBy(desc(planChangeRequestsTable.createdAt)).limit(3);
+    const pending = requests.find(r => r.status === "pending");
+    res.json({
+      hasPending: !!pending,
+      pending: pending ? { ...pending, createdAt: pending.createdAt instanceof Date ? pending.createdAt.toISOString() : pending.createdAt } : null,
+      recent: requests.map(r => ({ ...r, createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt })),
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

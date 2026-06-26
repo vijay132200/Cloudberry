@@ -64,3 +64,20 @@ export const patientNotesTable = pgTable("patient_notes", {
 export const insertPatientNoteSchema = createInsertSchema(patientNotesTable).omit({ id: true, createdAt: true });
 export type InsertPatientNote = z.infer<typeof insertPatientNoteSchema>;
 export type PatientNote = typeof patientNotesTable.$inferSelect;
+
+export const planChangeRequestsTable = pgTable("plan_change_requests", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull().references(() => patientsTable.id, { onDelete: "cascade" }),
+  currentPlan: text("current_plan").notNull(),
+  requestedPlan: text("requested_plan").notNull(),
+  status: text("status").notNull().default("pending"),
+  reviewedByStaffId: integer("reviewed_by_staff_id").references(() => staffTable.id, { onDelete: "set null" }),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => ({
+  patientIdIdx: index("plan_change_requests_patient_id_idx").on(t.patientId),
+  statusIdx: index("plan_change_requests_status_idx").on(t.status),
+}));
+
+export type PlanChangeRequest = typeof planChangeRequestsTable.$inferSelect;

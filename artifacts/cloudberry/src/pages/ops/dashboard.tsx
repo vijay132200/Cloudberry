@@ -11,10 +11,10 @@ import {
   Stethoscope, Target, Dumbbell, Salad, UserCheck, Shield, ChevronRight,
   X, ChevronDown, Weight, MapPin, CalendarCheck, User, FileText,
   MessageSquare, Plus, ExternalLink, ArrowUp, ArrowDown, CalendarPlus, ClipboardList,
-  UserPlus, Lock, History,
+  UserPlus, Lock, History, FileSpreadsheet, ArrowLeftRight,
 } from "lucide-react";
 import { StaffConsistencyHistory } from "@/components/ConsistencyHistory";
-import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab, PatientDocumentsTab } from "@/components/clinical/ClinicalTabs";
+import { ClinicalNotesTab, CriticalNotesTab, EscalationsTab, DietPlanTab, RecordsTab, ActivityFeedTab, PatientDocumentsTab, OpsPatientLogsTab } from "@/components/clinical/ClinicalTabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -99,6 +99,40 @@ function goalLabel(goal: string) {
   return m[goal] || goal;
 }
 
+async function exportCheckinsExcel(patientId: number, patientName: string) {
+  const API = import.meta.env.BASE_URL?.replace(/\/$/, "") + "/api";
+  const token = localStorage.getItem("cloudberry_token") || "";
+  const r = await fetch(`${API}/ops/patients/${patientId}/all-checkins`, { headers: { Authorization: `Bearer ${token}` } });
+  const checkins: any[] = r.ok ? await r.json() : [];
+
+  const energyScore = (v: string) => v === "high" || v === "good" ? 90 : v === "moderate" || v === "medium" ? 60 : 30;
+  const energyCat = (v: string) => v === "high" || v === "good" ? "High" : v === "moderate" || v === "medium" ? "Moderate" : "Low";
+  const moodScore = (v: string) => v === "great" ? 95 : v === "good" ? 75 : v === "moderate" ? 50 : 25;
+  const moodCat = (v: string) => v === "great" ? "Excellent" : v === "good" ? "Good" : v === "moderate" ? "Moderate" : "Low";
+
+  const rows = checkins.map((c: any) => ({
+    "Date": new Date(c.createdAt).toLocaleDateString("en-IN"),
+    "Energy Score": energyScore(c.energyLevel),
+    "Energy Category": energyCat(c.energyLevel),
+    "Mood Score": moodScore(c.mood),
+    "Mood Category": moodCat(c.mood),
+    "Meals Followed Score": c.mealsFollowed === "yes" ? 100 : c.mealsFollowed === "partially" ? 50 : 0,
+    "Meals Followed Category": c.mealsFollowed === "yes" ? "Followed" : c.mealsFollowed === "partially" ? "Partial" : "Not Followed",
+    "Activity Score": c.activityCompleted ? 100 : 0,
+    "Activity Category": c.activityCompleted ? "Completed" : "Not Completed",
+    "Glucose (mg/dL)": c.glucoseReading ?? "",
+    "Sleep (hrs)": c.sleepHours ?? "",
+    "Weight (kg)": c.weight ?? "",
+    "Notes": c.notes ?? "",
+  }));
+
+  const xlsx = await import("xlsx");
+  const ws = xlsx.utils.json_to_sheet(rows);
+  const wb = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(wb, ws, "Check-ins");
+  xlsx.writeFile(wb, `checkins-${patientName.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 function exportCSV(patients: any[]) {
   const headers = ["ID", "Name", "Phone", "Email", "City", "Plan", "Risk", "Adherence%", "Week", "Last Check-in", "Physician", "Dietician", "Caretaker"];
   const rows = patients.map(p => [
@@ -114,8 +148,8 @@ function exportCSV(patients: any[]) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-type TabType = "pending" | "patients" | "registrations" | "staff" | "credentials";
-type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity" | "documents";
+type TabType = "pending" | "patients" | "registrations" | "staff" | "credentials" | "plan-requests";
+type DetailTab = "dashboard" | "profile" | "checkins" | "team" | "content" | "plan" | "clinical-notes" | "critical-notes" | "escalations" | "diet-plan" | "records" | "activity" | "documents" | "logs";
 
 /* ── Appointment Scheduler ────────────────────────────────────────── */
 function AppointmentScheduler({ patient, detail, staff, onRefresh }: { patient: any; detail: any; staff: any[]; onRefresh: () => void }) {
@@ -382,6 +416,7 @@ function PatientDetailPanel({
             { key: "escalations", label: "Escalations" },
             { key: "diet-plan", label: "Diet Plan" },
             { key: "documents", label: "Documents" },
+            { key: "logs", label: "Ops Logs" },
             { key: "records", label: "Records" },
             { key: "activity", label: "Activity" },
           ] as { key: DetailTab; label: string }[]).map(t => (
@@ -696,7 +731,13 @@ function PatientDetailPanel({
           {/* Check-ins */}
           {!isLoading && detailTab === "checkins" && (
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground mb-3">Last {detail?.checkins?.length ?? 0} check-ins (most recent first)</p>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-muted-foreground">Last {detail?.checkins?.length ?? 0} check-ins (most recent first)</p>
+                <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1.5 rounded-full px-3"
+                  onClick={() => exportCheckinsExcel(patient.id, patient.fullName)}>
+                  <FileSpreadsheet className="w-3 h-3" />Export All Excel
+                </Button>
+              </div>
               {(!detail?.checkins || detail.checkins.length === 0) ? (
                 <div className="text-center text-muted-foreground text-sm py-10">No check-ins recorded yet.</div>
               ) : detail.checkins.map((c: any, i: number) => (
@@ -848,9 +889,14 @@ function PatientDetailPanel({
             <PatientDocumentsTab patientId={patient.id} prefix="ops" />
           )}
 
+          {/* Ops Logs tab */}
+          {!isLoading && detailTab === "logs" && (
+            <OpsPatientLogsTab patientId={patient.id} />
+          )}
+
           {/* Records tab */}
           {!isLoading && detailTab === "records" && (
-            <RecordsTab patientId={patient.id} prefix="ops" enrolledAt={p.createdAt} />
+            <RecordsTab patientId={patient.id} prefix="ops" enrolledAt={p.createdAt} showPngDownload />
           )}
 
           {/* Activity Feed tab */}
@@ -1071,6 +1117,146 @@ function OpsPlanEditor({ patient, detail }: { patient: any; detail: any }) {
       <Button className="w-full rounded-xl" onClick={() => save.mutate()} disabled={save.isPending}>
         {save.isPending ? "Saving..." : "Save Care Plan"}
       </Button>
+    </div>
+  );
+}
+
+/* ── Plan Change Requests Tab ─────────────────────────────────────── */
+function PlanChangeRequestsTab({ fetchJson, postJson }: { fetchJson: (p: string) => Promise<any>; postJson: (p: string, b: any) => Promise<any> }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [rejectNotes, setRejectNotes] = useState("");
+
+  const { data: requests = [], isLoading, refetch } = useQuery<any[]>({
+    queryKey: ["plan-change-requests"],
+    queryFn: () => fetchJson("/ops/plan-change-requests"),
+    refetchInterval: 30000,
+  });
+
+  const approveMut = useMutation({
+    mutationFn: (id: number) => postJson(`/ops/plan-change-requests/${id}/approve`, {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["plan-change-requests"] }); toast({ title: "Plan change approved" }); },
+    onError: () => toast({ title: "Failed to approve", variant: "destructive" }),
+  });
+  const rejectMut = useMutation({
+    mutationFn: ({ id, notes }: { id: number; notes: string }) => postJson(`/ops/plan-change-requests/${id}/reject`, { notes }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["plan-change-requests"] }); setRejectingId(null); setRejectNotes(""); toast({ title: "Plan change rejected" }); },
+    onError: () => toast({ title: "Failed to reject", variant: "destructive" }),
+  });
+
+  const PLAN_LABELS: Record<string, string> = {
+    basic: "Accountability Program (₹990)",
+    comprehensive: "Structured Coaching (₹1,990)",
+    premium: "Advanced Monitoring (₹3,990)",
+  };
+
+  const pending = (requests as any[]).filter(r => r.status === "pending");
+  const reviewed = (requests as any[]).filter(r => r.status !== "pending");
+  const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Plan Change Requests</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Review and approve or reject patient plan upgrade/downgrade requests.</p>
+        </div>
+        <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => refetch()}>Refresh</Button>
+      </div>
+
+      {isLoading && <div className="text-sm text-muted-foreground text-center py-12">Loading...</div>}
+
+      {!isLoading && pending.length === 0 && (
+        <Card className="border-border shadow-sm">
+          <CardContent className="py-16 text-center">
+            <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+            <p className="text-base font-semibold text-foreground">All clear!</p>
+            <p className="text-sm text-muted-foreground mt-1">No pending plan change requests.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {pending.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Pending ({pending.length})</h3>
+          {pending.map((r: any) => (
+            <Card key={r.id} className="border-amber-200/70 shadow-sm bg-amber-50/20">
+              <CardContent className="p-5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-foreground text-sm">{r.patientName}</h3>
+                      <Badge variant="outline" className="text-[10px]">{r.patientPhone}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className={`px-2 py-0.5 rounded-full font-medium ${planColor(r.currentPlan)}`}>{PLAN_LABELS[r.currentPlan] ?? r.currentPlan}</span>
+                      <ArrowLeftRight className="w-3 h-3 text-primary shrink-0" />
+                      <span className={`px-2 py-0.5 rounded-full font-medium border ${planColor(r.requestedPlan)}`}>{PLAN_LABELS[r.requestedPlan] ?? r.requestedPlan}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">Requested {fmtDate(r.createdAt)}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                      onClick={() => approveMut.mutate(r.id)} disabled={approveMut.isPending}>
+                      <CheckCircle className="w-3.5 h-3.5" />Approve
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 gap-1.5"
+                      onClick={() => setRejectingId(r.id)} disabled={rejectMut.isPending}>
+                      <X className="w-3.5 h-3.5" />Reject
+                    </Button>
+                  </div>
+                </div>
+                {rejectingId === r.id && (
+                  <div className="mt-3 space-y-2 border-t border-border/50 pt-3">
+                    <textarea
+                      className="w-full text-xs border border-border/60 rounded-lg p-2 resize-none h-16 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Rejection notes (optional)..."
+                      value={rejectNotes} onChange={e => setRejectNotes(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setRejectingId(null)}>Cancel</Button>
+                      <Button size="sm" className="h-7 text-xs bg-rose-600 hover:bg-rose-700 text-white"
+                        onClick={() => rejectMut.mutate({ id: r.id, notes: rejectNotes })} disabled={rejectMut.isPending}>
+                        Confirm Reject
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {reviewed.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">Recent History ({reviewed.length})</h3>
+          {reviewed.map((r: any) => (
+            <Card key={r.id} className="border-border/40 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm font-semibold text-foreground">{r.patientName}</span>
+                      <Badge variant="outline" className={`text-[10px] ${r.status === "approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+                        {r.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{PLAN_LABELS[r.currentPlan] ?? r.currentPlan}</span>
+                      <ArrowLeftRight className="w-3 h-3" />
+                      <span>{PLAN_LABELS[r.requestedPlan] ?? r.requestedPlan}</span>
+                    </div>
+                    {r.reviewNotes && <p className="text-[10px] text-muted-foreground mt-0.5 italic">"{r.reviewNotes}"</p>}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground shrink-0">{fmtDate(r.updatedAt)}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1357,7 +1543,7 @@ export default function OpsDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border/60 overflow-x-auto">
-          {(["pending", "patients", "registrations", "staff", "credentials"] as TabType[]).map(t => (
+          {(["pending", "plan-requests", "patients", "registrations", "staff", "credentials"] as TabType[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-5 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${tab === t ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               {t === "pending" ? (
@@ -1369,6 +1555,8 @@ export default function OpsDashboard() {
                     </span>
                   )}
                 </span>
+              ) : t === "plan-requests" ? (
+                <span className="flex items-center gap-1.5"><ArrowLeftRight className="w-3.5 h-3.5" />Plan Changes</span>
               ) : t === "patients" ? `Patient Roster (${(patients as any[]).length})`
                 : t === "registrations" ? `Registrations (${(patients as any[]).length})`
                 : t === "staff" ? `Care Team (${(staff as any[]).length})`
@@ -1376,6 +1564,9 @@ export default function OpsDashboard() {
             </button>
           ))}
         </div>
+
+        {/* ── PLAN CHANGE REQUESTS TAB ─────────────────────────────── */}
+        {tab === "plan-requests" && <PlanChangeRequestsTab fetchJson={fetchJson} postJson={postJson} />}
 
         {/* ── PENDING APPROVALS TAB ────────────────────────────────── */}
         {tab === "pending" && (

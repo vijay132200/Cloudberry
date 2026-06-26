@@ -147,6 +147,22 @@ export const patientPlanHistoryTable = pgTable("patient_plan_history", {
   patientIdIdx: index("patient_plan_history_patient_id_idx").on(t.patientId),
 }));
 
+// Ops-only operational call logs — separate from patient health documents
+export const opsPatientLogsTable = pgTable("ops_patient_logs", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").notNull().references(() => patientsTable.id, { onDelete: "cascade" }),
+  uploadedByStaffId: integer("uploaded_by_staff_id").notNull().references(() => staffTable.id, { onDelete: "cascade" }),
+  uploadedByName: text("uploaded_by_name").notNull(),
+  filename: text("filename").notNull(),
+  fileData: text("file_data").notNull(),
+  fileType: text("file_type").notNull(),
+  fileSize: integer("file_size"),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  patientIdIdx: index("ops_patient_logs_patient_id_idx").on(t.patientId),
+}));
+
 export type ClinicalNote = typeof clinicalNotesTable.$inferSelect;
 export type ClinicalNoteVersion = typeof clinicalNoteVersionsTable.$inferSelect;
 export type CriticalNote = typeof criticalNotesTable.$inferSelect;
@@ -155,3 +171,4 @@ export type Escalation = typeof escalationsTable.$inferSelect;
 export type EscalationAuditLog = typeof escalationAuditLogTable.$inferSelect;
 export type OpsEscalationLog = typeof opsEscalationLogTable.$inferSelect;
 export type DietPlan = typeof dietPlansTable.$inferSelect;
+export type OpsPatientLog = typeof opsPatientLogsTable.$inferSelect;

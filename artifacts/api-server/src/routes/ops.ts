@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createHash } from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, patientsTable, checkinsTable, leadsTable, staffTable, appointmentsTable, patientNotesTable, patientPlansTable, metricsTable, patientDocumentsTable } from "@workspace/db";
+import { usersTable, patientsTable, checkinsTable, leadsTable, staffTable, appointmentsTable, patientNotesTable, patientPlansTable, metricsTable, patientDocumentsTable, opsPatientLogsTable, planChangeRequestsTable } from "@workspace/db";
 import { eq, desc, sql, or, and, asc, gte } from "drizzle-orm";
 import { computeConsistency, computeWeeklyHistory, toConsistencyParams } from "../lib/consistency";
 import { getActiveParams } from "../lib/formula-engine";
@@ -796,6 +796,162 @@ router.delete("/patients/:id/documents/:docId", async (req, res) => {
     if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
     await db.delete(patientDocumentsTable).where(eq(patientDocumentsTable.id, docId));
     res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── OPS PATIENT LOGS ──────────────────────────────────────────────────────────
+
+// GET /api/ops/patients/:id/logs — list logs (no fileData)
+router.get("/patients/:id/logs", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const logs = await db.select({
+      id: opsPatientLogsTable.id,
+      patientId: opsPatientLogsTable.patientId,
+      uploadedByStaffId: opsPatientLogsTable.uploadedByStaffId,
+      uploadedByName: opsPatientLogsTable.uploadedByName,
+      filename: opsPatientLogsTable.filename,
+      fileType: opsPatientLogsTable.fileType,
+      fileSize: opsPatientLogsTable.fileSize,
+      description: opsPatientLogsTable.description,
+      createdAt: opsPatientLogsTable.createdAt,
+    }).from(opsPatientLogsTable).where(eq(opsPatientLogsTable.patientId, patientId)).orderBy(desc(opsPatientLogsTable.createdAt));
+    res.json(logs.map(l => ({ ...l, createdAt: l.createdAt instanceof Date ? l.createdAt.toISOString() : l.createdAt })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/ops/patients/:id/logs/:logId — full log with fileData
+router.get("/patients/:id/logs/:logId", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const logId = parseInt(req.params.logId);
+    if (Number.isNaN(patientId) || Number.isNaN(logId)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const [log] = await db.select().from(opsPatientLogsTable)
+      .where(and(eq(opsPatientLogsTable.id, logId), eq(opsPatientLogsTable.patientId, patientId))).limit(1);
+    if (!log) { res.status(404).json({ error: "Log not found" }); return; }
+    res.json({ ...log, createdAt: log.createdAt instanceof Date ? log.createdAt.toISOString() : log.createdAt });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/patients/:id/logs — upload a log
+router.post("/patients/:id/logs", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const { filename, fileData, fileType, fileSize, description } = req.body;
+    if (!filename || !fileData) { res.status(400).json({ error: "filename and fileData required" }); return; }
+    const [staff] = await db.select({ fullName: staffTable.fullName }).from(staffTable).where(eq(staffTable.id, auth.staffId)).limit(1);
+    const [log] = await db.insert(opsPatientLogsTable).values({
+      patientId,
+      uploadedByStaffId: auth.staffId,
+      uploadedByName: staff?.fullName ?? "Ops Agent",
+      filename, fileData,
+      fileType: fileType ?? "application/octet-stream",
+      fileSize: fileSize ?? null,
+      description: description ?? null,
+    }).returning({
+      id: opsPatientLogsTable.id, patientId: opsPatientLogsTable.patientId,
+      uploadedByStaffId: opsPatientLogsTable.uploadedByStaffId, uploadedByName: opsPatientLogsTable.uploadedByName,
+      filename: opsPatientLogsTable.filename, fileType: opsPatientLogsTable.fileType,
+      fileSize: opsPatientLogsTable.fileSize, description: opsPatientLogsTable.description,
+      createdAt: opsPatientLogsTable.createdAt,
+    });
+    res.status(201).json({ ...log, createdAt: log.createdAt instanceof Date ? log.createdAt.toISOString() : log.createdAt });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// DELETE /api/ops/patients/:id/logs/:logId
+router.delete("/patients/:id/logs/:logId", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    const logId = parseInt(req.params.logId);
+    if (Number.isNaN(patientId) || Number.isNaN(logId)) { res.status(400).json({ error: "Invalid id" }); return; }
+    const [log] = await db.select({ id: opsPatientLogsTable.id }).from(opsPatientLogsTable)
+      .where(and(eq(opsPatientLogsTable.id, logId), eq(opsPatientLogsTable.patientId, patientId))).limit(1);
+    if (!log) { res.status(404).json({ error: "Log not found" }); return; }
+    await db.delete(opsPatientLogsTable).where(eq(opsPatientLogsTable.id, logId));
+    res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// GET /api/ops/patients/:id/all-checkins — all checkins for Excel export
+router.get("/patients/:id/all-checkins", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const patientId = parseInt(req.params.id);
+    if (Number.isNaN(patientId)) { res.status(400).json({ error: "Invalid patient id" }); return; }
+    const checkins = await db.select().from(checkinsTable)
+      .where(eq(checkinsTable.patientId, patientId))
+      .orderBy(desc(checkinsTable.createdAt)).limit(500);
+    res.json(checkins.map(c => ({ ...c, createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : c.createdAt })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── PLAN CHANGE REQUESTS ──────────────────────────────────────────────────────
+
+// GET /api/ops/plan-change-requests — list all pending/recent requests
+router.get("/plan-change-requests", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const requests = await db.select({
+      id: planChangeRequestsTable.id,
+      patientId: planChangeRequestsTable.patientId,
+      currentPlan: planChangeRequestsTable.currentPlan,
+      requestedPlan: planChangeRequestsTable.requestedPlan,
+      status: planChangeRequestsTable.status,
+      reviewedByStaffId: planChangeRequestsTable.reviewedByStaffId,
+      reviewNotes: planChangeRequestsTable.reviewNotes,
+      createdAt: planChangeRequestsTable.createdAt,
+      updatedAt: planChangeRequestsTable.updatedAt,
+      patientName: usersTable.fullName,
+      patientPhone: usersTable.phone,
+    }).from(planChangeRequestsTable)
+      .innerJoin(patientsTable, eq(planChangeRequestsTable.patientId, patientsTable.id))
+      .innerJoin(usersTable, eq(patientsTable.userId, usersTable.id))
+      .orderBy(desc(planChangeRequestsTable.createdAt)).limit(200);
+    res.json(requests.map(r => ({
+      ...r,
+      createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+      updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : r.updatedAt,
+    })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/plan-change-requests/:id/approve
+router.post("/plan-change-requests/:id/approve", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const requestId = parseInt(req.params.id);
+    if (Number.isNaN(requestId)) { res.status(400).json({ error: "Invalid request id" }); return; }
+    const [request] = await db.select().from(planChangeRequestsTable).where(eq(planChangeRequestsTable.id, requestId)).limit(1);
+    if (!request) { res.status(404).json({ error: "Request not found" }); return; }
+    if (request.status !== "pending") { res.status(400).json({ error: "Request is not pending" }); return; }
+    await db.update(patientsTable).set({ plan: request.requestedPlan }).where(eq(patientsTable.id, request.patientId));
+    const [updated] = await db.update(planChangeRequestsTable)
+      .set({ status: "approved", reviewedByStaffId: auth.staffId })
+      .where(eq(planChangeRequestsTable.id, requestId)).returning();
+    res.json({ ok: true, status: updated.status, newPlan: request.requestedPlan });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// POST /api/ops/plan-change-requests/:id/reject
+router.post("/plan-change-requests/:id/reject", async (req, res) => {
+  try {
+    const auth = await requireOps(req, res); if (!auth) return;
+    const requestId = parseInt(req.params.id);
+    if (Number.isNaN(requestId)) { res.status(400).json({ error: "Invalid request id" }); return; }
+    const [request] = await db.select().from(planChangeRequestsTable).where(eq(planChangeRequestsTable.id, requestId)).limit(1);
+    if (!request) { res.status(404).json({ error: "Request not found" }); return; }
+    if (request.status !== "pending") { res.status(400).json({ error: "Request is not pending" }); return; }
+    const [updated] = await db.update(planChangeRequestsTable)
+      .set({ status: "rejected", reviewedByStaffId: auth.staffId, reviewNotes: req.body.notes ?? null })
+      .where(eq(planChangeRequestsTable.id, requestId)).returning();
+    res.json({ ok: true, status: updated.status });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

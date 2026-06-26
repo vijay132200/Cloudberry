@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Download, CreditCard, Bell, Shield, User, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Download, CreditCard, Bell, Shield, User, ChevronRight, ArrowLeftRight, Clock, CheckCircle, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
@@ -26,6 +27,15 @@ async function patchJson(path: string, body: any) {
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error("Failed");
+  return r.json();
+}
+async function postJson(path: string, body: any) {
+  const token = localStorage.getItem("cloudberry_token");
+  const r = await fetch(`${API}${path}`, {
+    method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error ?? "Failed"); }
   return r.json();
 }
 
@@ -86,12 +96,40 @@ function ProfileSection() {
   );
 }
 
+const PLANS = [
+  { key: "basic", name: "Accountability Program", price: "₹990/mo", desc: "Daily check-ins, basic coaching" },
+  { key: "comprehensive", name: "Structured Coaching", price: "₹1,990/mo", desc: "Full coaching + dietician access" },
+  { key: "premium", name: "Advanced Monitoring", price: "₹3,990/mo", desc: "Everything + physician priority + glucose" },
+];
+
 function BillingSection() {
+  const qc = useQueryClient();
   const { data: me } = useQuery({ queryKey: ["me"], queryFn: () => fetchJson("/patients/me") });
+  const { data: planStatus } = useQuery({
+    queryKey: ["plan-change-status"],
+    queryFn: () => fetchJson("/patients/me/plan-change-request/status"),
+    staleTime: 10000,
+  });
+
+  const [showChangePlan, setShowChangePlan] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("");
+
   const planKey = me?.plan ?? "comprehensive";
   const plan = PLAN_LABELS[planKey] ?? PLAN_LABELS.comprehensive;
   const startedAt = me?.createdAt ? new Date(me.createdAt) : new Date();
   const nextBilling = new Date(startedAt); nextBilling.setMonth(nextBilling.getMonth() + (me?.weekNumber ? Math.ceil(me.weekNumber / 4) : 1));
+
+  const submitRequest = useMutation({
+    mutationFn: () => postJson("/patients/me/plan-change-request", { requestedPlan: selectedPlan }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["plan-change-status"] });
+      setShowChangePlan(false);
+      setSelectedPlan("");
+    },
+  });
+
+  const hasPending = planStatus?.hasPending;
+  const pendingReq = planStatus?.pending;
 
   return (
     <div className="space-y-6">
@@ -109,6 +147,32 @@ function BillingSection() {
             </div>
             <Badge variant="outline" className="bg-white">Active</Badge>
           </div>
+
+          {/* Pending plan change request banner */}
+          {hasPending && pendingReq && (
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <Clock className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-800">Plan change pending</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Your request to switch to <strong>{PLAN_LABELS[pendingReq.requestedPlan]?.name ?? pendingReq.requestedPlan}</strong> is
+                  awaiting ops review. Usually processed within 24 hours.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Recent approved / rejected */}
+          {!hasPending && planStatus?.recent?.length > 0 && planStatus.recent[0]?.status !== "pending" && (
+            <div className={`flex items-start gap-3 p-3 rounded-xl border ${planStatus.recent[0].status === "approved" ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+              {planStatus.recent[0].status === "approved"
+                ? <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                : <X className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />}
+              <p className="text-xs text-muted-foreground">
+                Your last plan change request was <strong className={planStatus.recent[0].status === "approved" ? "text-emerald-700" : "text-rose-700"}>{planStatus.recent[0].status}</strong>.
+              </p>
+            </div>
+          )}
 
           <div>
             <h4 className="font-medium mb-3 text-sm">Payment Method</h4>
@@ -138,11 +202,62 @@ function BillingSection() {
 
           <Separator />
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" className="rounded-xl" asChild><a href="/cloudberry/#pricing">Change plan</a></Button>
+            <Button
+              variant="outline" className="rounded-xl gap-2"
+              disabled={hasPending}
+              onClick={() => { setSelectedPlan(""); setShowChangePlan(true); }}
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+              {hasPending ? "Change pending..." : "Change Plan"}
+            </Button>
             <Button variant="outline" className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 rounded-xl">Cancel Subscription</Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Plan change dialog */}
+      <Dialog open={showChangePlan} onOpenChange={open => { if (!open) setShowChangePlan(false); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ArrowLeftRight className="w-4 h-4 text-primary" />Request Plan Change</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Your request will be reviewed by our ops team and processed within 24 hours.
+              Currently on: <strong className="text-foreground">{plan.name}</strong>
+            </p>
+            <div className="space-y-2">
+              {PLANS.filter(p => p.key !== planKey).map(p => (
+                <button
+                  key={p.key}
+                  onClick={() => setSelectedPlan(p.key)}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${selectedPlan === p.key ? "border-primary bg-primary/5" : "border-border/60 hover:border-primary/40"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-foreground text-sm">{p.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
+                    </div>
+                    <span className="text-sm font-bold text-primary ml-4 shrink-0">{p.price}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {submitRequest.isError && (
+              <p className="text-xs text-rose-600">{(submitRequest.error as any)?.message ?? "Failed to submit request"}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangePlan(false)}>Cancel</Button>
+            <Button
+              disabled={!selectedPlan || submitRequest.isPending}
+              onClick={() => submitRequest.mutate()}
+            >
+              {submitRequest.isPending ? "Submitting..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

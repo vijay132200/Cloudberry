@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   FileText, ShieldAlert, AlertTriangle, Salad, Activity, Clock,
   Plus, Edit2, ChevronDown, ChevronUp, CheckCircle, RotateCcw,
-  Calendar, Filter, User, History, X, Save, Download,
-  TrendingDown, Droplets, Footprints,
+  Calendar, Filter, User, History, X, Save, Download, Eye, Upload, Trash2,
+  TrendingDown, Droplets, Footprints, Image as ImageIcon,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const API = import.meta.env.BASE_URL?.replace(/\/$/, "") + "/api";
@@ -32,6 +33,12 @@ async function postJson(path: string, body: any) {
 async function patchJson(path: string, body: any) {
   const token = localStorage.getItem("cloudberry_token") || "";
   const r = await fetch(`${API}${path}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function deleteJson(path: string) {
+  const token = localStorage.getItem("cloudberry_token") || "";
+  const r = await fetch(`${API}${path}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -716,10 +723,12 @@ export function DietPlanTab({ patientId, prefix, canUpload, canComment }: { pati
 type TimeRange = "weekly" | "monthly" | "enrollment" | "month" | "custom";
 
 
-export function RecordsTab({ patientId, prefix, enrolledAt }: { patientId: number; prefix: string; enrolledAt?: string }) {
+export function RecordsTab({ patientId, prefix, enrolledAt, showPngDownload }: { patientId: number; prefix: string; enrolledAt?: string; showPngDownload?: boolean }) {
   const [range, setRange] = useState<TimeRange>("monthly");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [downloadingPng, setDownloadingPng] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const now = new Date();
   const [monthYear, setMonthYear] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
 
@@ -769,8 +778,52 @@ export function RecordsTab({ patientId, prefix, enrolledAt }: { patientId: numbe
     : "bg-rose-50 text-rose-700 border-rose-200";
   const scoreLabel = overall === null ? "No data" : overall >= 70 ? "Strong" : overall >= 45 ? "Moderate" : "Needs Work";
 
+  const downloadPNG = async () => {
+    const el = contentRef.current;
+    if (!el) return;
+    setDownloadingPng(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const parent = el.parentElement;
+      const origOverflow = parent?.style.overflow ?? "";
+      el.style.width = "1200px";
+      el.style.minWidth = "1200px";
+      el.style.maxWidth = "none";
+      if (parent) parent.style.overflow = "visible";
+      await new Promise(r => setTimeout(r, 80));
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: 0,
+        width: 1200,
+        height: el.scrollHeight,
+        windowWidth: 1200,
+        windowHeight: el.scrollHeight,
+      });
+      el.style.width = "";
+      el.style.minWidth = "";
+      el.style.maxWidth = "";
+      if (parent) parent.style.overflow = origOverflow;
+      const link = document.createElement("a");
+      link.download = `records-${patientId}-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch { /* silent */ } finally {
+      setDownloadingPng(false);
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={contentRef}>
+      {showPngDownload && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={downloadPNG} disabled={downloadingPng}>
+            <ImageIcon className="w-3.5 h-3.5" />{downloadingPng ? "Capturing..." : "Download PNG"}
+          </Button>
+        </div>
+      )}
       <Card className="border-border/40 rounded-xl">
         <CardHeader className="pb-2 pt-4 px-4"><CardTitle className="text-sm flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" />Historical Records</CardTitle></CardHeader>
         <CardContent className="px-4 pb-4">
@@ -882,6 +935,224 @@ export function RecordsTab({ patientId, prefix, enrolledAt }: { patientId: numbe
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ── OPS PATIENT LOGS TAB ──────────────────────────────────────────────────────
+
+export function OpsPatientLogsTab({ patientId }: { patientId: number }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+  const [description, setDescription] = useState("");
+  const [viewLog, setViewLog] = useState<any>(null);
+  const [viewContent, setViewContent] = useState<{ type: string; content: string } | null>(null);
+  const [loadingView, setLoadingView] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const { data: logs = [], isLoading } = useQuery<any[]>({
+    queryKey: ["ops-patient-logs", patientId],
+    queryFn: () => fetchJson(`/ops/patients/${patientId}/logs`),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (logId: number) => deleteJson(`/ops/patients/${patientId}/logs/${logId}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["ops-patient-logs", patientId] }); toast({ title: "Log deleted" }); },
+    onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+  });
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          try {
+            const dataUrl = ev.target?.result as string;
+            const fileData = dataUrl.split(",")[1];
+            await postJson(`/ops/patients/${patientId}/logs`, {
+              filename: file.name, fileData,
+              fileType: file.type || "application/octet-stream",
+              fileSize: file.size,
+              description: description || null,
+            });
+            qc.invalidateQueries({ queryKey: ["ops-patient-logs", patientId] });
+            setDescription("");
+            if (fileRef.current) fileRef.current.value = "";
+            toast({ title: "Log uploaded successfully" });
+            resolve();
+          } catch { reject(new Error("Upload failed")); }
+        };
+        reader.onerror = () => reject(new Error("Read failed"));
+        reader.readAsDataURL(file);
+      });
+    } catch {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleView = async (log: any) => {
+    setViewLog(log);
+    setLoadingView(true);
+    setViewContent(null);
+    try {
+      const full = await fetchJson(`/ops/patients/${patientId}/logs/${log.id}`);
+      const { fileData, fileType, filename } = full;
+      if (fileType?.startsWith("image/")) {
+        setViewContent({ type: "image", content: `data:${fileType};base64,${fileData}` });
+      } else if (fileType === "application/pdf") {
+        const bytes = atob(fileData);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const blob = new Blob([arr], { type: "application/pdf" });
+        setViewContent({ type: "pdf", content: URL.createObjectURL(blob) });
+      } else if (fileType === "text/plain") {
+        setViewContent({ type: "text", content: atob(fileData) });
+      } else if (
+        fileType?.includes("wordprocessingml") ||
+        filename?.toLowerCase().endsWith(".docx") ||
+        filename?.toLowerCase().endsWith(".doc")
+      ) {
+        const mammoth = (await import("mammoth")).default ?? await import("mammoth");
+        const bytes = atob(fileData);
+        const arr = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        const result = await (mammoth as any).convertToHtml({ arrayBuffer: arr.buffer });
+        setViewContent({ type: "html", content: result.value || "<p>No content</p>" });
+      } else {
+        setViewContent({ type: "download", content: fileData });
+      }
+    } catch {
+      setViewContent({ type: "error", content: "Failed to load file content." });
+    } finally {
+      setLoadingView(false);
+    }
+  };
+
+  const handleDownloadLog = async (log: any) => {
+    try {
+      const full = await fetchJson(`/ops/patients/${patientId}/logs/${log.id}`);
+      const bytes = atob(full.fileData);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      const blob = new Blob([arr], { type: full.fileType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = full.filename;
+      a.click(); URL.revokeObjectURL(url);
+    } catch { /* silent */ }
+  };
+
+  const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+  return (
+    <div className="space-y-4">
+      {/* Upload */}
+      <Card className="border-border/40 rounded-xl">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm flex items-center gap-2"><Upload className="w-4 h-4 text-primary" />Upload Patient Log</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-3">
+          <Textarea placeholder="Description (optional)..." value={description}
+            onChange={e => setDescription(e.target.value)} className="text-xs h-16 resize-none" />
+          <div className="flex items-center gap-3">
+            <input ref={fileRef} type="file" className="hidden" onChange={handleUpload}
+              accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx,.csv,.xls,.xlsx" />
+            <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              <Upload className="w-3.5 h-3.5" />{uploading ? "Uploading..." : "Choose File & Upload"}
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Accepted: PDF, PNG, JPG, TXT, DOC/DOCX, CSV, Excel</p>
+        </CardContent>
+      </Card>
+
+      {/* List */}
+      {isLoading ? (
+        <div className="h-20 bg-slate-100 rounded-xl animate-pulse" />
+      ) : (logs as any[]).length === 0 ? (
+        <Card className="border-border/40 rounded-xl">
+          <CardContent className="py-12 text-center">
+            <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No logs uploaded yet</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {(logs as any[]).map((log: any) => (
+            <Card key={log.id} className="border-border/40 rounded-xl">
+              <CardContent className="px-4 py-3 flex items-start gap-3">
+                <FileText className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">{log.filename}</p>
+                  {log.description && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{log.description}</p>}
+                  <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1"><User className="w-2.5 h-2.5" />{log.uploadedByName}</span>
+                    {log.fileSize && <span>{fmtFileSize(log.fileSize)}</span>}
+                    <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" />{fmtDate(log.createdAt)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2 rounded-full"
+                    onClick={() => handleView(log)}>
+                    <Eye className="w-3 h-3" />View
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 rounded-full"
+                    onClick={() => handleDownloadLog(log)}>
+                    <Download className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 rounded-full text-rose-600 border-rose-200 hover:bg-rose-50"
+                    onClick={() => deleteMut.mutate(log.id)} disabled={deleteMut.isPending}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* View dialog */}
+      <Dialog open={!!viewLog} onOpenChange={open => { if (!open) { setViewLog(null); setViewContent(null); } }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm truncate flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />{viewLog?.filename}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-auto max-h-[60vh]">
+            {loadingView && <div className="h-40 flex items-center justify-center text-sm text-muted-foreground">Loading preview...</div>}
+            {viewContent?.type === "image" && (
+              <img src={viewContent.content} alt={viewLog?.filename} className="max-w-full h-auto rounded" />
+            )}
+            {viewContent?.type === "pdf" && (
+              <iframe src={viewContent.content} className="w-full h-[55vh] rounded" title={viewLog?.filename} />
+            )}
+            {viewContent?.type === "text" && (
+              <pre className="text-xs font-mono whitespace-pre-wrap break-words bg-muted/30 rounded p-3">{viewContent.content}</pre>
+            )}
+            {viewContent?.type === "html" && (
+              <div className="prose prose-sm max-w-none p-2" dangerouslySetInnerHTML={{ __html: viewContent.content }} />
+            )}
+            {viewContent?.type === "download" && (
+              <div className="text-center py-8">
+                <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground mb-3">Preview not available for this file type.</p>
+                <Button size="sm" onClick={() => handleDownloadLog(viewLog)}>
+                  <Download className="w-3.5 h-3.5 mr-1.5" />Download File
+                </Button>
+              </div>
+            )}
+            {viewContent?.type === "error" && (
+              <p className="text-sm text-rose-600 text-center py-8">{viewContent.content}</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
