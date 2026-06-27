@@ -783,34 +783,43 @@ export function RecordsTab({ patientId, prefix, enrolledAt, showPngDownload }: {
     if (!el) return;
     setDownloadingPng(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const parent = el.parentElement;
-      const origOverflow = parent?.style.overflow ?? "";
-      el.style.width = "1200px";
-      el.style.minWidth = "1200px";
-      el.style.maxWidth = "none";
-      if (parent) parent.style.overflow = "visible";
-      await new Promise(r => setTimeout(r, 80));
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(el, {
+        quality: 1,
+        pixelRatio: 2,
         backgroundColor: "#ffffff",
-        scrollX: 0,
-        scrollY: 0,
-        width: 1200,
+        width: el.scrollWidth,
         height: el.scrollHeight,
-        windowWidth: 1200,
-        windowHeight: el.scrollHeight,
+        style: { overflow: "visible" },
+        filter: (node) => {
+          if (node instanceof HTMLElement) {
+            const tag = node.tagName?.toLowerCase();
+            if (tag === "button") return false;
+          }
+          return true;
+        },
       });
-      el.style.width = "";
-      el.style.minWidth = "";
-      el.style.maxWidth = "";
-      if (parent) parent.style.overflow = origOverflow;
       const link = document.createElement("a");
       link.download = `records-${patientId}-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
-    } catch { /* silent */ } finally {
+    } catch (err) {
+      console.error("PNG capture failed:", err);
+      try {
+        const { toJpeg } = await import("html-to-image");
+        const dataUrl = await toJpeg(el, {
+          quality: 0.92,
+          pixelRatio: 2,
+          backgroundColor: "#ffffff",
+        });
+        const link = document.createElement("a");
+        link.download = `records-${patientId}-${new Date().toISOString().slice(0, 10)}.jpg`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err2) {
+        console.error("JPEG capture also failed:", err2);
+      }
+    } finally {
       setDownloadingPng(false);
     }
   };
@@ -947,7 +956,7 @@ export function OpsPatientLogsTab({ patientId }: { patientId: number }) {
   const [uploading, setUploading] = useState(false);
   const [description, setDescription] = useState("");
   const [viewLog, setViewLog] = useState<any>(null);
-  const [viewContent, setViewContent] = useState<{ type: string; content: string } | null>(null);
+  const [viewContent, setViewContent] = useState<{ type: string; content: string; filename?: string } | null>(null);
   const [loadingView, setLoadingView] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -1010,7 +1019,7 @@ export function OpsPatientLogsTab({ patientId }: { patientId: number }) {
         const arr = new Uint8Array(bytes.length);
         for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
         const blob = new Blob([arr], { type: "application/pdf" });
-        setViewContent({ type: "pdf", content: URL.createObjectURL(blob) });
+        setViewContent({ type: "pdf", content: URL.createObjectURL(blob), filename });
       } else if (fileType === "text/plain") {
         setViewContent({ type: "text", content: atob(fileData) });
       } else if (
@@ -1062,12 +1071,12 @@ export function OpsPatientLogsTab({ patientId }: { patientId: number }) {
             onChange={e => setDescription(e.target.value)} className="text-xs h-16 resize-none" />
           <div className="flex items-center gap-3">
             <input ref={fileRef} type="file" className="hidden" onChange={handleUpload}
-              accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx,.csv,.xls,.xlsx" />
+              accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx" />
             <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => fileRef.current?.click()} disabled={uploading}>
               <Upload className="w-3.5 h-3.5" />{uploading ? "Uploading..." : "Choose File & Upload"}
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground">Accepted: PDF, PNG, JPG, TXT, DOC/DOCX, CSV, Excel</p>
+          <p className="text-[10px] text-muted-foreground">Accepted: PDF, PNG, JPG, TXT, DOC/DOCX</p>
         </CardContent>
       </Card>
 
@@ -1130,7 +1139,18 @@ export function OpsPatientLogsTab({ patientId }: { patientId: number }) {
               <img src={viewContent.content} alt={viewLog?.filename} className="max-w-full h-auto rounded" />
             )}
             {viewContent?.type === "pdf" && (
-              <iframe src={viewContent.content} className="w-full h-[55vh] rounded" title={viewLog?.filename} />
+              <div className="flex flex-col items-center justify-center py-10 gap-4">
+                <div className="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center">
+                  <FileText className="w-7 h-7 text-rose-500" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground mb-1">{viewLog?.filename}</p>
+                  <p className="text-xs text-muted-foreground">Opens in your device's PDF viewer</p>
+                </div>
+                <Button size="sm" className="gap-1.5" onClick={() => window.open(viewContent.content, "_blank", "noopener")}>
+                  <Download className="w-3.5 h-3.5" />Open PDF
+                </Button>
+              </div>
             )}
             {viewContent?.type === "text" && (
               <pre className="text-xs font-mono whitespace-pre-wrap break-words bg-muted/30 rounded p-3">{viewContent.content}</pre>
